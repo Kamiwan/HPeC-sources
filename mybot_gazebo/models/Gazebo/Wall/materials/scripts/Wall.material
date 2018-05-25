@@ -1,0 +1,16 @@
+material Wall/Diffuse
+{
+  receive_shadows off
+  technique
+  {
+    pass
+    {
+      
+      texture_unit
+      {
+        texture Wall.jpeg
+      }
+      
+    }
+  }
+}

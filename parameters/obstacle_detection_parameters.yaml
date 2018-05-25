@@ -1,0 +1,10 @@
+# magical parameters from obstacle detection
+# to determine expérimentaly
+
+a: 1.0
+b: 1.0
+c: 1.0
+d: 1.0
+e: 0.5
+q: 1.0
+t: 1.0

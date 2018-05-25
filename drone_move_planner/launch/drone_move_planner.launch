@@ -1,0 +1,30 @@
+<?xml version ='1.0'?>
+
+ <launch>
+ 
+ <!-- load parameters-->
+    <rosparam command="load" file="$(find parameters)/drone_features.yaml" ns="drone_features" /> 
+    <rosparam command="load" file="$(find parameters)/local_pheromone_map.yaml" ns="local_pheromone_map" /> 
+    <rosparam command="load" file="$(find parameters)/video_parameters.yaml"  ns="video_parameters"/> 
+    <rosparam command="load" file="$(find parameters)/node_activation_rates.yaml"  ns="node_activation_rates"/>
+    <rosparam command="load" file="$(find parameters)/system_state.yaml"  ns="system_state"/>
+  
+    <!-- drone move planner -->
+    <node pkg="drone_move_planner" type="drone_move_planner" name="drone_move_planner" output="screen">
+        <remap from="mavros/global_position/compass_hdg" to="compass"/>
+        <remap from="mavros/global_position/local" to="odom" />
+    </node>
+    
+
+    <!-- px4_comm -->
+    <node name="px4_comm" pkg="px4_comm" type="px4_comm_node_copter" output="screen"/>
+    
+    <!-- communication -->
+    <node name="communication_wifi" pkg="communication" type="communication_wifi_node"/>
+    <node name="communication_xbee" pkg="communication" type="communication_xbee_node.py"/>
+    
+    <!-- drone_status_diffusion -->
+    <node name="drone_status_diffusion" pkg="drone_status_diffusion" type="drone_status_diffusion_node"/>
+ 
+</launch>
+

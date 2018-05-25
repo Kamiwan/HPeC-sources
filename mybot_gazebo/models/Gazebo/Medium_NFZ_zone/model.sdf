@@ -1,0 +1,45 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='Medium_NFZ_zone'>
+    <pose> 0 0 0 0 -0 0</pose>
+    <static>True</static>
+    <link name='Medium_NFZ_zone_link'>
+      <collision name='Medium_NFZ_zone_link_Collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>2 2 0.05</size>
+          </box>
+        </geometry>
+        <surface>
+            <friction>
+              <ode>
+                <mu>100</mu>
+                <mu2>50</mu2>
+              </ode>
+            </friction>
+          </surface>
+      </collision>
+      <visual name='Medium_NFZ_zone_link_Visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>2 2 0.05</size>
+          </box>
+        </geometry>
+        <scale>1 1 1</scale>
+        <material>
+          <script>
+              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/Medium_NFZ_zone/materials/scripts</uri>
+              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/Medium_NFZ_zone/materials/textures</uri>
+              <name>NFZ_zone/Diffuse</name>
+          </script>
+          <ambient>1 1 1 1</ambient>
+        </material>
+        <meta>
+          <layer>0</layer>
+        </meta>
+      </visual>
+    </link>
+  </model>
+</sdf>

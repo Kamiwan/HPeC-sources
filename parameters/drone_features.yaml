@@ -1,0 +1,8 @@
+diameter: 0.6 #meters
+irs: 0.8 #meters
+irl: 1.5 #meters
+us: 6.0 #meters
+irs_max: 1.5 #meters
+irl_max: 5.5 #meters
+irl_min: 1.0 #meters
+us_max: 6.0 #meters

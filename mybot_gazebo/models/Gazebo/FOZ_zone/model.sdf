@@ -1,0 +1,45 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='FOZ_zone'>
+    <pose> 0 0 0 0 -0 0</pose>
+    <static>True</static>
+    <link name='FOZ_zone_link'>
+      <collision name='FOZ_zone_link_Collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 0.05</size>
+          </box>
+        </geometry>
+        <surface>
+            <friction>
+              <ode>
+                <mu>100</mu>
+                <mu2>50</mu2>
+              </ode>
+            </friction>
+          </surface>
+      </collision>
+      <visual name='FOZ_zone_link_Visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 0.05</size>
+          </box>
+        </geometry>
+        <scale>1 1 1</scale>
+        <material>
+          <script>
+              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/FOZ_zone/materials/scripts</uri>
+              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/FOZ_zone/materials/textures</uri>
+              <name>FOZ_zone/Diffuse</name>
+          </script>
+          <ambient>1 1 1 1</ambient>
+        </material>
+        <meta>
+          <layer>0</layer>
+        </meta>
+      </visual>
+    </link>
+  </model>
+</sdf>

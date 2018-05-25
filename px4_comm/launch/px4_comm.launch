@@ -1,0 +1,12 @@
+<?xml version ='1.0'?>
+
+<!-- Créé le 16 Août 2016
+     Author: J.J. Estimbre
+ Launch file for one robot detecting garden gnomes
+ Robot simplebot
+  -->
+ 
+ <launch>
+     <node name="px4_comm" pkg="px4_comm" type="px4_comm_node"/>
+ </launch>
+

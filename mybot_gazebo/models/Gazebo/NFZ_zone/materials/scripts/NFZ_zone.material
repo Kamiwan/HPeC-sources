@@ -1,0 +1,16 @@
+material NFZ_zone/Diffuse
+{
+  receive_shadows off
+  technique
+  {
+    pass
+    {
+      
+      texture_unit
+      {
+        texture NFZ.jpeg
+      }
+      
+    }
+  }
+}

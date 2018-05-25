@@ -1,0 +1,10 @@
+<?xml version = '1.0'?>
+
+<launch>
+
+	<rosparam command='load' file="$(find parameters)/node_activation_rates.yaml" ns="node_activation_rates"/>
+	<rosparam command='load' file="$(find parameters)/obstacle_detection_parameters.yaml" ns="obstacle_detection_parameters"/>
+	
+	<node pkg="obstacle_detection" type="obstacle_detection_node" name="obstacle_detection" />
+	
+</launch>

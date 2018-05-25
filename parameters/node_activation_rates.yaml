@@ -1,0 +1,4 @@
+emergency_landing: 10.
+obstacle_detection: 10.
+fake_sensors: 10.
+drone_move_planner: 20.

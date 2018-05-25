@@ -1,0 +1,16 @@
+material Obstacle/Diffuse
+{
+  receive_shadows off
+  technique
+  {
+    pass
+    {
+      
+      texture_unit
+      {
+        texture tonneau.jpg
+      }
+      
+    }
+  }
+}

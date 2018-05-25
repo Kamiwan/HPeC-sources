@@ -1,0 +1,579 @@
+#include <ros/ros.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <image_transport/image_transport.h>
+extern"C"{
+	#include "image.h"
+}
+
+//#include "image.h"
+
+#include <sensor_msgs/NavSatFix.h>
+#include <sensor_msgs/image_encodings.h>
+
+#include <ros/callback_queue.h>
+#include <boost/thread.hpp>
+#include "std_msgs/Int32.h"
+#include "std_msgs/Float32.h"
+
+
+#define SDRAM_SPAN   ( 0x04000000 )
+#define HW_REGS_SPAN ( 0x00020000 )
+#define HWREG_BASE   ( 0xff200000 )
+
+
+
+boost::shared_ptr<ros::Publisher> search_land_pub = NULL;
+
+PPM_IMG img_ibuf_color;
+PGM_IMG img_ibuf_g;
+PGM_IMG img_ibuf_ceh;
+PGM_IMG img_ibuf_me1;
+PGM_IMG img_ibuf_me;
+PGM_IMG img_ibuf_bw;
+PGM_IMG img_ibuf_ccl;
+PGM_IMG img_ibuf_mop;
+PGM_IMG img_ibuf_mop2;
+PGM_IMG img_ibuf_mop3;
+PGM_IMG img_ibuf_ero;
+PGM_IMG img_ibuf_gs;
+PGM_IMG img_ibuf_sp;
+PGM_IMG img_ibuf_zon;
+PGM_IMG img_ibuf_se;
+PGM_IMG img_ibuf_ms;
+int nb_labels;
+COMPONENT *ccl;
+
+
+int hardware = 0;
+int fd;
+
+FILE* cma_dev_file;
+char cma_addr_string[10];
+//time_t beginning, current, start, end;
+struct timeval beginning, current, start, end;
+
+
+unsigned int cma_base_addr;
+void *virtual_base_sdram;
+void *virtual_base_hwreg;
+
+volatile unsigned int *mem_to_stream_dma=NULL;
+volatile unsigned int *stream_to_mem_dma=NULL;
+volatile unsigned int *mem_to_stream_dma_buffer = NULL;
+volatile unsigned char *stream_to_mem_dma_buffer = NULL;
+
+struct pixel * data;
+unsigned char * header;
+
+
+//DEGUG only #define WRITE_IMG
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+//source ppm color image 24bits RGB (packed) 
+// The video IP cores used for edge detection require the RGB 24 bits of each pixel to be
+// word aligned (aka 1 byte of padding per pixel). | unused 8 bits | red 8 bits | green 8 bits | blue 8 bits |
+
+void memcpy_consecutive_to_padded(unsigned char* from, volatile unsigned int * to, int pixels){
+	int i;
+	for (i=0;i<pixels;i++){
+		*(to+i) = (((unsigned int)*((unsigned char*)(from+i*3+2)))&0xff) | 
+			  ((((unsigned int)*((unsigned char*)(from+i*3+1)))<<8)&0xff00) | 
+			  ((((unsigned int)*((unsigned char*)(from+i*3+0)))<<16)&0xff0000);
+	}
+}
+
+
+int acquire () 
+{
+    	//init hardware
+    	// Open /dev/mem
+    	if( ( fd = open( "/dev/mem", ( O_RDWR | O_SYNC ) ) ) == -1 ) {
+        	printf( "ERROR: could not open \"/dev/mem\"...\n" );
+        	return( 1 );
+    	}	
+    	// Open /dev/cma_block
+    	if( ( cma_dev_file = fopen("/dev/cma_block", "r") ) == NULL ) {
+        	printf( "ERROR: could not open \"/dev/cma_block\"...\n" );
+        	close( fd );
+        	return( 1 );
+    	}
+	
+	// Determine the CMA block physical address
+    	fgets(cma_addr_string, sizeof(cma_addr_string), cma_dev_file);
+    	cma_base_addr = strtol(cma_addr_string, NULL, 16);
+	
+    	printf("Use CMA memory block at phys addr: 0x%x\n",cma_base_addr);
+	
+    	fclose(cma_dev_file);
+    
+    	// get virtual addr that maps to the sdram region (through HPS-FPGA non-lightweight bridge)
+    	virtual_base_sdram = mmap( NULL, SDRAM_SPAN,( PROT_READ | PROT_WRITE ),MAP_SHARED, fd, cma_base_addr);    
+    	if( virtual_base_sdram == MAP_FAILED ) {
+        	printf( "ERROR: mmap() failed...\n" );
+        	close( fd ); 
+        	return(1);
+    	}
+	
+	virtual_base_hwreg = mmap( NULL, HW_REGS_SPAN, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd,HWREG_BASE);    
+	if( virtual_base_hwreg == MAP_FAILED ) {
+        	printf( "ERROR: mmap() failed...\n" );
+        	close( fd ); 
+        	return(1);
+    	}	
+	
+	mem_to_stream_dma = (volatile unsigned int *)(virtual_base_hwreg + 0x3100);
+	stream_to_mem_dma = (volatile unsigned int *)(virtual_base_hwreg + 0x3120);
+	mem_to_stream_dma_buffer = (volatile unsigned int *)(virtual_base_sdram);
+	stream_to_mem_dma_buffer = (volatile unsigned char *)(virtual_base_sdram + 0x2000000);
+	
+	// ALL SUCCEDED ;
+	return 0 ;
+}
+
+
+
+void release () 
+{	
+	if( munmap( virtual_base_hwreg, HW_REGS_SPAN ) != 0) {
+        	ROS_ERROR( "ERROR: munmap() failed...\n" );
+	        close( fd );
+	}
+	close( fd );
+	   
+	if( munmap( virtual_base_sdram, SDRAM_SPAN ) != 0 ) {
+        	ROS_ERROR( "ERROR: munmap() failed...\n" );
+	       // close( fd );
+    	} 
+}
+
+
+
+
+
+
+double diameter;
+double altitude;
+double camera_angle;
+double image_height;
+
+
+
+void gps_callback(const sensor_msgs::NavSatFix::ConstPtr& position);
+
+void image_callback(const sensor_msgs::Image::ConstPtr& image_cam);
+
+
+
+bool run = false;
+int current_ver = 0;
+boost::shared_ptr<boost::thread> worker_thread = NULL ;
+boost::shared_ptr<ros::NodeHandle> workerHandle_ptr = NULL;
+
+
+
+
+
+
+
+void search_landing_area_hwsw (const boost::shared_ptr<ros::NodeHandle> & workerHandle_ptr )
+{
+
+  	ROS_ERROR("[THREAD][RUNNING]: Vision Based Autonomous Landing for ppm color images [HW/SW]\r\n");
+  	printf("Rgb2gray, median filter, canny edge detector, morphological closing in hw...\r\n");
+      
+  	run = true;
+  	ros::CallbackQueue queue;
+  	workerHandle_ptr->setCallbackQueue(&queue);
+
+		
+	double rate_double;
+	if (!workerHandle_ptr->getParam("/node_activation_rates/emergency_landing", rate_double))
+	{
+		ROS_ERROR("Could not read obstacle detection's activation rate. Setting 1 Hz");
+		rate_double = 1;
+	}
+	ros::Rate rate(rate_double);
+	
+	if (!workerHandle_ptr->getParam("/drone_features/diameter", diameter))
+	{
+		ROS_ERROR("Could not read drone's diameter. Setting to 0.6 meters");
+		diameter=0.6;
+	}
+	
+	if (!workerHandle_ptr->getParam("/camera_features/camera_angle", camera_angle))
+	{
+		ROS_ERROR("Could not read camera's angle. Setting to 0.4 radian");
+		camera_angle=0.4;
+	}
+	
+	if (!workerHandle_ptr->getParam("/camera_features/image_height", image_height))
+	{
+		ROS_ERROR("Could not read image's height. Setting to 480");
+		image_height=480;
+	}	
+	altitude = 60;
+	
+	
+	   if (acquire () != 0 ) 
+	   {
+		ROS_ERROR("Could not INIT");
+	   }
+	   
+	   
+	
+	
+	//image_transport::ImageTransport it(*workerHandle_ptr);
+	//image_transport::Subscriber cam_sub=it.subscribe("usb_cam/image_raw", 1, image_callback);
+	
+	
+	   	
+	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global",1,gps_callback);	
+	std_msgs::Float32 elapsed_time; 
+	while(workerHandle_ptr->ok())
+	{	   
+	   queue.callAvailable();		       	
+	   img_ibuf_color = read_ppm("/home/ubuntu/search_land_are/sim_cam/test1.ppm");
+		
+	   
+	
+	   // Image dimensions
+	   int width  = img_ibuf_color.w;
+           int height = img_ibuf_color.h; 
+       
+	   // Start measuring time
+	   //start = clock();
+	    gettimeofday (&start , NULL);
+	   /*if (init_hardware () != 0 ) 
+	   {
+		ROS_ERROR("Could not INIT");
+	   }*/
+	   
+	   // Turn off DMAs
+	   *(mem_to_stream_dma+3) = 0;
+	   *(stream_to_mem_dma+3) = 0;
+	
+	
+	   // Write the image to the mem-to-stream buffer
+	   memcpy_consecutive_to_padded(img_ibuf_color.img, mem_to_stream_dma_buffer, width*height);
+		
+	
+	   // Configure DMAs to the correct addresses
+	   *(stream_to_mem_dma+1) = cma_base_addr+0x2000000;
+	   *(mem_to_stream_dma+1) = cma_base_addr;
+	
+	   // Turn on the DMAs and start the swaps
+	   *(stream_to_mem_dma+3) = 4;
+	   *(mem_to_stream_dma+3) = 4;
+	   *(mem_to_stream_dma) = 1;
+	   *(stream_to_mem_dma) = 1;
+	
+	   // wait until the swap is complete
+	   while((*(mem_to_stream_dma+3))&0x1 || (*(stream_to_mem_dma+3))&0x1 ){}
+	   // Write the same addr to the back buffer reg
+	   *(stream_to_mem_dma+1) = cma_base_addr+0x2000000;
+	   *(mem_to_stream_dma+1) = cma_base_addr;
+		
+	   // Write to the buffer reg to start swap
+	   *(mem_to_stream_dma) = 1;
+	   *(stream_to_mem_dma) = 1;
+	 
+	    // wait until the swap is complete
+	   while((*(mem_to_stream_dma+3))&0x1 || (*(stream_to_mem_dma+3))&0x1 ){}
+	
+	   // Turn off DMAs
+	   *(mem_to_stream_dma+3) = 0;
+	   *(stream_to_mem_dma+3) = 0;
+	
+	   // Copy the edge detected image from the stream-to-mem buffer
+    	   img_ibuf_ero.w = width;
+    	   img_ibuf_ero.h = height;
+	
+	   img_ibuf_ero.img=(unsigned char *)stream_to_mem_dma_buffer;//zero copy
+	  // end = clock();
+	    gettimeofday (&end , NULL);
+	   write_pgm(img_ibuf_ero, "/home/ubuntu/search_land_are/erode.pgm");		
+		
+    	   //search big enough zones
+    	   int size_zone=10;
+    	   img_ibuf_zon=zone(img_ibuf_ero,size_zone);
+    	   write_pgm(img_ibuf_zon, "/home/ubuntu/search_land_are/zone.pgm");
+
+	   //printf("Connected components labeling...\r\n");
+           img_ibuf_ccl=connected_component_labeling(img_ibuf_zon,&nb_labels,&ccl,200,100000);
+           //printf("Nb connected components = %d \r\n",nb_labels);
+	   
+   	   #ifdef WRITE_IMG
+    		write_pgm(img_ibuf_ccl, "/home/ubuntu/search_land_are/ccl.pgm");
+    	   #endif
+	   
+	   free_pgm(img_ibuf_ccl);
+    	   free_pgm(img_ibuf_zon);	   
+	   
+	   //elapsed_time.data = ((double) (end - start)) * 1000 / CLOCKS_PER_SEC ;
+	   elapsed_time.data = ((double) (end.tv_usec - start.tv_usec ) / 1000 );
+	   ROS_ERROR("TIME ELAPSED: %.0f ms\n", elapsed_time.data);
+	   printf("wrapper %.0f 2 %.0f\n",((double)(end.tv_usec  - beginning.tv_usec )/1000), elapsed_time.data);
+	   
+	   search_land_pub->publish ( elapsed_time );	   
+	   rate.sleep();	   
+    	} 
+	
+	// STOPPING THE HARDWARE VERSION
+	release () ;
+	
+	run = false ;
+	ROS_ERROR("[THREAD][STOPPED]");
+}
+
+
+
+
+
+
+
+
+void search_landing_area_sw (const boost::shared_ptr<ros::NodeHandle> & workerHandle_ptr)
+{
+  	ROS_ERROR("[THREAD][RUNNING]: Vision Based Autonomous Landing for ppm color images [SW]\r\n"); 
+	ROS_ERROR("Rgb2gray, median filter, canny edge detector, morphological closing in sw...\r\n"); 
+	
+	
+  	run = true;
+  	ros::CallbackQueue queue;
+  	workerHandle_ptr->setCallbackQueue(&queue);
+  
+    
+	
+	double rate_double;
+	if (!workerHandle_ptr->getParam("/node_activation_rates/emergency_landing", rate_double))
+	{
+		ROS_ERROR("Could not read obstacle detection's activation rate. Setting 1 Hz");
+		rate_double = 1;
+	}
+	ros::Rate rate(rate_double);
+	
+	if (!workerHandle_ptr->getParam("/drone_features/diameter", diameter))
+	{
+		ROS_ERROR("Could not read drone's diameter. Setting to 0.6 meters");
+		diameter=0.6;
+	}
+	
+	if (!workerHandle_ptr->getParam("/camera_features/camera_angle", camera_angle))
+	{
+		ROS_ERROR("Could not read camera's angle. Setting to 0.4 radian");
+		camera_angle=0.4;
+	}
+	
+	if (!workerHandle_ptr->getParam("/camera_features/image_height", image_height))
+	{
+		ROS_ERROR("Could not read image's height. Setting to 480");
+		image_height=480;
+	}
+	
+	altitude = 60;
+		
+	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global",1,gps_callback);	
+	//image_transport::ImageTransport it(*workerHandle_ptr);
+	//image_transport::Subscriber cam_sub=it.subscribe("usb_cam/image_raw", 1, image_callback);
+	
+	
+	std_msgs::Float32 elapsed_time; 
+	while(workerHandle_ptr->ok())
+	{
+	    queue.callAvailable();		       	
+	    img_ibuf_color = read_ppm("/home/ubuntu/search_land_are/sim_cam/test1.ppm");
+	    
+	    // Start measuring time
+	    //start = clock();
+	    gettimeofday (&start , NULL);
+	    
+	    img_ibuf_g = rgb2gray(img_ibuf_color);
+	    #ifdef WRITE_IMG
+        	   write_pgm(img_ibuf_g, "/home/ubuntu/search_land_are/gray.pgm");
+	    #endif 
+	    free_ppm(img_ibuf_color);
+	    
+	    img_ibuf_me=medianfilter(img_ibuf_g);
+	    #ifdef WRITE_IMG
+	           write_pgm(img_ibuf_me, "/home/ubuntu/search_land_are/median.pgm");
+	    #endif
+	    free_pgm(img_ibuf_g); 
+	    
+	    img_ibuf_gs=gaussianfilter(img_ibuf_me);
+    	    #ifdef WRITE_IMG
+	       write_pgm(img_ibuf_gs, "/home/ubuntu/search_land_are/gauss.pgm");
+	    #endif
+	    
+	    img_ibuf_sp.w = img_ibuf_gs.w;
+	    img_ibuf_sp.h = img_ibuf_gs.h;
+	    img_ibuf_sp.img = (unsigned char *)malloc(img_ibuf_sp.w * img_ibuf_sp.h * sizeof(unsigned char));
+	    img_ibuf_se.w = img_ibuf_gs.w;
+	    img_ibuf_se.h = img_ibuf_gs.h;
+	    img_ibuf_se.img = (unsigned char *)malloc(img_ibuf_se.w * img_ibuf_se.h * sizeof(unsigned char));
+	    
+	    sobel(img_ibuf_gs,img_ibuf_sp,img_ibuf_se);
+	    free_pgm(img_ibuf_gs);
+	    
+	    #ifdef WRITE_IMG
+		    write_pgm(img_ibuf_sp, "/home/ubuntu/search_land_are/sobel.pgm");
+		    write_pgm(img_ibuf_se, "/home/ubuntu/search_land_are/edge.pgm");
+	    #endif
+	    
+	    img_ibuf_ms=canny(img_ibuf_sp,img_ibuf_se, 20, 80);
+	    #ifdef WRITE_IMG
+	    	write_pgm(img_ibuf_ms, "/home/ubuntu/search_land_are/canny.pgm");
+	    #endif
+	    
+	    img_ibuf_mop=dilate(img_ibuf_ms);
+	    #ifdef WRITE_IMG
+	    	write_pgm(img_ibuf_mop, "/home/ubuntu/search_land_are/dilate.pgm");
+	    #endif
+	    
+	    img_ibuf_mop2=dilate(img_ibuf_mop);
+	    #ifdef WRITE_IMG
+	    	write_pgm(img_ibuf_mop2, "/home/ubuntu/search_land_are/dilate2.pgm");
+	    #endif
+	    
+	    img_ibuf_mop3=dilate(img_ibuf_mop2);
+	   #ifdef WRITE_IMG
+	   	write_pgm(img_ibuf_mop3, "/home/ubuntu/search_land_are/dilate3.pgm");
+	    #endif
+	    
+	   //erode
+	   img_ibuf_ero=erode(img_ibuf_mop3);
+	   //end = clock();	   
+	    gettimeofday (&end , NULL);
+	   
+	   write_pgm(img_ibuf_ero, "/home/ubuntu/search_land_are/erode.pgm");
+	   
+	   free_pgm(img_ibuf_mop);
+	   free_pgm(img_ibuf_mop2);
+	   free_pgm(img_ibuf_mop3);
+	   free_pgm(img_ibuf_sp);
+	   free_pgm(img_ibuf_se);
+	   free_pgm(img_ibuf_ms);
+	   
+		
+    	   //search big enough zones
+    	   int size_zone=10;
+    	   img_ibuf_zon=zone(img_ibuf_ero,size_zone);
+    	   write_pgm(img_ibuf_zon, "/home/ubuntu/search_land_are/zone.pgm");
+
+	   //printf("Connected components labeling...\r\n");
+           img_ibuf_ccl=connected_component_labeling(img_ibuf_zon,&nb_labels,&ccl,200,100000);
+           //printf("Nb connected components = %d \r\n",nb_labels);
+   	   #ifdef WRITE_IMG
+    		write_pgm(img_ibuf_ccl, "/home/ubuntu/search_land_are/ccl.pgm");
+    	   #endif	   
+
+	   free_pgm(img_ibuf_ccl);
+	   free_pgm(img_ibuf_ero);
+    	   free_pgm(img_ibuf_zon);
+	   
+	  
+	   //elapsed_time.data = ((double) (end - start)) * 1000 / CLOCKS_PER_SEC ;
+	   elapsed_time.data = ((double) (end.tv_usec - start.tv_usec )/1000);
+	   ROS_ERROR("TIME ELAPSED: %.0f ms\n", elapsed_time.data);
+	   printf("wrapper %.0f 1 %.0f\n",((double)(end.tv_usec - beginning.tv_usec)/1000), elapsed_time.data);
+    	
+	   search_land_pub->publish ( elapsed_time );
+	   rate.sleep();
+    	} run = false ;
+	ROS_ERROR("[THREAD][STOPPED]");
+}
+
+
+void stop ( ) 
+{
+  if(workerHandle_ptr == NULL && worker_thread == NULL) return ;
+  if(workerHandle_ptr != NULL) workerHandle_ptr->shutdown ();
+  if(worker_thread !=  NULL) {
+    worker_thread->timed_join(boost::posix_time::seconds(3));
+    if (run){ 
+    	pthread_cancel(worker_thread->native_handle());
+		
+	if (hardware == 1) 
+	{
+		release () ;		
+		hardware = 0;
+	}
+    }
+  }
+  // RESET
+  workerHandle_ptr = NULL;
+  worker_thread = NULL;    
+}
+
+
+
+void managing_controller_request (const std_msgs::Int32::ConstPtr& value)
+{
+  
+  //current = clock();  
+  gettimeofday (&current , NULL);	
+  switch (value->data){
+  case 0 : // stop the task
+    printf("wrapper %.0f %d 0\n", ((double) (current.tv_usec - beginning.tv_usec)/1000), value->data);
+    stop ( ) ;
+    hardware = 0;
+    break;
+    
+  case 1 : //starting the Software version  
+    printf("wrapper %.0f %d 0\n", ((double) (current.tv_usec - beginning.tv_usec)/1000), value->data);
+    stop ( ) ;
+    hardware = 0;
+    workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
+    worker_thread =  boost::make_shared<boost::thread>(&search_landing_area_sw, workerHandle_ptr);
+    break;
+    
+    
+  case 2 : //starting the HW version 
+    printf("wrapper %.0f %d 0\n", ((double) (current.tv_usec - beginning.tv_usec)/1000), value->data);
+    stop ( ) ;
+    hardware = 1;
+    workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
+    worker_thread =  boost::make_shared<boost::thread>(&search_landing_area_hwsw, workerHandle_ptr);
+    break;
+    
+    
+  default:
+    break;
+  }
+}
+
+
+int main (int argc, char ** argv)
+{
+	ros::init(argc, argv, "emergency_landing_node");
+	ros::NodeHandle nh;
+	//beginning = clock();
+  	gettimeofday (&beginning , NULL);
+	ros::Subscriber mgt_topic;
+	mgt_topic = nh.subscribe("/search_landing_area_mgt_topic", 1, managing_controller_request);
+	
+	search_land_pub = boost::make_shared<ros::Publisher>( 
+			         nh.advertise<std_msgs::Float32>("/search_landing_notification_topic", 1));
+	//current = clock(); 
+  	gettimeofday (&current , NULL); 	
+	printf("wrapper %.0f 0\n", ((double) (current.tv_usec - beginning.tv_usec)/1000));
+	
+	ros::spin();
+}
+
+void gps_callback(const sensor_msgs::NavSatFix::ConstPtr& position)
+{
+	altitude = position->altitude;
+}
+
+void image_callback(const sensor_msgs::Image::ConstPtr& image_cam)
+{
+	//img_ibuf_color.h=image_cam->height;
+	//img_ibuf_color.w=image_cam->width;
+	//img_ibuf_color.img=image_cam->data;
+}

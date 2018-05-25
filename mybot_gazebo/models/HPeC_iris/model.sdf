@@ -1,0 +1,2164 @@
+<?xml version="1.0"?>
+
+<!-- ======================================================================
+    model.sdf
+    19/01/2018  Erwan Moréac
+    Iris custom quadcopter drone model for HPeC project
+    It contains following sensors: 
+     - 2 cameras 
+     - 6 short range infrared sensors
+     - 6 long range infrared sensors
+     - 6 ultrasound sensors
+
+    Additionnal information:
+      - Ultrasound sensors are modelled with ray sensor type with specific range
+      - Sensor plugins used are gazebo's plugins
+      - For instance, sensors have dummy weight and inertia data (negligible)
+
+    TROOBLESHOOTING: 
+      - cannot modify sensors color
+======================================================================= -->
+<sdf version='1.5'>
+  <model name='iris'>
+    <pose>0 0 0.194923 0 0 0</pose>
+    <link name='base_link'>
+      <velocity_decay>
+        <linear>0.0</linear>
+        <angular>0.0</angular>
+      </velocity_decay>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1.5</mass>
+        <inertia>
+          <ixx>0.008</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.015</iyy>
+          <iyz>0</iyz>
+          <izz>0.017</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_link_collision'>
+        <pose>0 0 -0.08 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.47 0.47 0.23</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <max_vel>100.0</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+          <friction>
+            <ode>
+              <mu>100000.0</mu>
+              <mu2>100000.0</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='base_link_visual'>
+        <geometry>
+          <mesh>
+            <uri>model://iris_with_standoffs/meshes/iris.dae</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/DarkGrey</name>
+          </script>
+        </material>
+      </visual>
+
+      <visual name='front_left_leg_visual'>
+        <pose>0.123 0.22 -0.11 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.005</radius>
+            <length>0.17</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Green</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      <visual name='front_right_leg_visual'>
+        <pose>0.123 -0.22 -0.11 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.005</radius>
+            <length>0.17</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/FlatBlack</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      <visual name='rear_left_leg_visual'>
+        <pose>-0.140 0.21 -0.11 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.005</radius>
+            <length>0.17</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/FlatBlack</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      <visual name='rear_right_leg_visual'>
+        <pose>-0.140 -0.21 -0.11 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.005</radius>
+            <length>0.17</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/FlatBlack</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+    </link>
+    <link name='iris/ground_truth/odometry_sensorgt_link'>
+      <pose>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>0.15</mass>
+        <inertia>
+          <ixx>0.0001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0002</iyy>
+          <iyz>0</iyz>
+          <izz>0.0002</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <joint name='iris/ground_truth/odometry_sensorgt_joint' type='revolute'>
+      <child>iris/ground_truth/odometry_sensorgt_link</child>
+      <parent>base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0</upper>
+          <effort>0</effort>
+          <velocity>0</velocity>
+        </limit>
+        <dynamics>
+          <damping>1.0</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+      <physics>
+        <ode>
+          <implicit_spring_damper>1</implicit_spring_damper>
+        </ode>
+      </physics>
+    </joint>
+    <link name='iris/imu_link'>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.15</mass>
+        <inertia>
+          <ixx>0.00001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00002</iyy>
+          <iyz>0</iyz>
+          <izz>0.00002</izz>
+        </inertia>
+      </inertial>
+      <sensor name="imu_sensor" type="imu">
+        <pose>0 0 0 3.141593 0 0</pose>
+        <always_on>1</always_on>
+        <update_rate>1000.0</update_rate>
+      </sensor>
+    </link>
+    <joint name='iris/imu_joint' type='revolute'>
+      <child>iris/imu_link</child>
+      <parent>base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0</upper>
+          <effort>0</effort>
+          <velocity>0</velocity>
+        </limit>
+        <dynamics>
+          <damping>1.0</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+      <physics>
+        <ode>
+          <implicit_spring_damper>1</implicit_spring_damper>
+        </ode>
+      </physics>
+    </joint>
+<!--
+    <link name='iris/imugt_link'>
+      <pose>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>1e-02</mass>
+        <inertia>
+          <ixx>0.0002</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0002</iyy>
+          <iyz>0</iyz>
+          <izz>0.0002</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <joint name='iris/imugt_joint' type='revolute'>
+      <child>iris/imugt_link</child>
+      <parent>base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0</upper>
+          <effort>0</effort>
+          <velocity>0</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+-->
+    <link name='rotor_0'>
+      <pose>0.13 -0.22 0.023 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>0.025</mass>
+        <inertia>
+          <ixx>9.75e-06</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000166704</iyy>
+          <iyz>0</iyz>
+          <izz>0.000167604</izz>
+        </inertia>
+      </inertial>
+      <collision name='rotor_0_collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.005</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='rotor_0_visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://iris_with_standoffs/meshes/iris_prop_ccw.dae</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Blue</name>
+            <uri>__default__</uri>
+          </script>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='rotor_0_joint' type='revolute'>
+      <child>rotor_0</child>
+      <parent>base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <damping>0.004</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+      <physics>
+        <ode>
+          <implicit_spring_damper>1</implicit_spring_damper>
+        </ode>
+      </physics>
+    </joint>
+    <link name='rotor_1'>
+      <pose>-0.13 0.2 0.023 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>0.025</mass>
+        <inertia>
+          <ixx>9.75e-06</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000166704</iyy>
+          <iyz>0</iyz>
+          <izz>0.000167604</izz>
+        </inertia>
+      </inertial>
+      <collision name='rotor_1_collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.005</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='rotor_1_visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://iris_with_standoffs/meshes/iris_prop_ccw.dae</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/DarkGrey</name>
+            <uri>__default__</uri>
+          </script>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='rotor_1_joint' type='revolute'>
+      <child>rotor_1</child>
+      <parent>base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <damping>0.004</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+      <physics>
+        <ode>
+          <implicit_spring_damper>1</implicit_spring_damper>
+        </ode>
+      </physics>
+    </joint>
+    <link name='rotor_2'>
+      <pose>0.13 0.22 0.023 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>0.025</mass>
+        <inertia>
+          <ixx>9.75e-06</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000166704</iyy>
+          <iyz>0</iyz>
+          <izz>0.000167604</izz>
+        </inertia>
+      </inertial>
+      <collision name='rotor_2_collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.005</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='rotor_2_visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://iris_with_standoffs/meshes/iris_prop_cw.dae</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Blue</name>
+            <uri>__default__</uri>
+          </script>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='rotor_2_joint' type='revolute'>
+      <child>rotor_2</child>
+      <parent>base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <damping>0.004</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+      <physics>
+        <ode>
+          <implicit_spring_damper>1</implicit_spring_damper>
+        </ode>
+      </physics>
+    </joint>
+    <link name='rotor_3'>
+      <pose>-0.13 -0.2 0.023 0 -0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <mass>0.025</mass>
+        <inertia>
+          <ixx>9.75e-06</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.000166704</iyy>
+          <iyz>0</iyz>
+          <izz>0.000167604</izz>
+        </inertia>
+      </inertial>
+      <collision name='rotor_3_collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.005</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='rotor_3_visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://iris_with_standoffs/meshes/iris_prop_cw.dae</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/DarkGrey</name>
+            <uri>__default__</uri>
+          </script>
+        </material>
+      </visual>
+      <gravity>1</gravity>
+      <velocity_decay/>
+      <self_collide>0</self_collide>
+    </link>
+    <joint name='rotor_3_joint' type='revolute'>
+      <child>rotor_3</child>
+      <parent>base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <damping>0.004</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+      <physics>
+        <ode>
+          <implicit_spring_damper>1</implicit_spring_damper>
+        </ode>
+      </physics>
+    </joint>
+    <static>0</static>
+
+<!-- ======================================================================
+     19/01/2018  Erwan Moréac
+     Adding of HPeC sensors: 
+     - 2 cameras 
+     - 6 short range infrared sensors
+     - 6 long range infrared sensors
+     - 6 ultrasound sensors
+======================================================================= -->
+
+<!-- ===================== Add of the 2 cameras  =====================-->
+  <link name='iris/camera1_link'>
+    <pose>0 0 -.07 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.001</mass>
+        <inertia>
+          <ixx>0.00001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00002</iyy>
+          <iyz>0</iyz>
+          <izz>0.00002</izz>
+        </inertia>
+      </inertial>
+    <collision name='camera1_link_collision'>
+      <geometry>
+        <box>
+            <size>0.05 0.05 0.05</size>
+        </box>
+      </geometry>
+    </collision>
+    <visual name='camera1_link_visual'>
+      <geometry>
+        <box>
+            <size>0.05 0.05 0.05</size>
+        </box>
+      </geometry>
+    </visual>
+    <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/FlatBlack</name>
+          </script>
+    </material>
+    <sensor name='camera1_sensor' type='camera'>
+      <update_rate>30.0</update_rate>
+      <camera name='head'>
+        <horizontal_fov>1.3962634</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+      </camera>
+      <plugin name='camera_controller' filename='libgazebo_ros_camera.so'>
+        <robotNamespace>/</robotNamespace>
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>iris/camera1</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>camera</frameName>
+        <hackBaseline>0.07</hackBaseline>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+    </sensor>
+  </link>
+  <joint name='iris/camera1_joint' type='fixed'>
+    <child>iris/camera1_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<link name='iris/camera2_link'>
+    <pose>0 0 -.07 0 1.570796 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.001</mass>
+        <inertia>
+          <ixx>0.00001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00002</iyy>
+          <iyz>0</iyz>
+          <izz>0.00002</izz>
+        </inertia>
+      </inertial>
+    <collision name='camera2_link_collision'>
+      <geometry>
+        <box>
+            <size>0.05 0.05 0.05</size>
+        </box>
+      </geometry>
+    </collision>
+    <visual name='camera2_link_visual'>
+      <geometry>
+        <box>
+            <size>0.05 0.05 0.05</size>
+        </box>
+      </geometry>
+    </visual>
+    <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/FlatBlack</name>
+          </script>
+    </material>
+    <sensor name='camera2_sensor' type='camera'>
+      <update_rate>30.0</update_rate>
+      <camera name='head'>
+        <horizontal_fov>1.3962634</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+      </camera>
+      <plugin name='camera_controller' filename='libgazebo_ros_camera.so'>
+        <robotNamespace>/</robotNamespace>
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>iris/camera2</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>camera</frameName>
+        <hackBaseline>0.07</hackBaseline>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+    </sensor>
+  </link>
+  <joint name='iris/camera2_joint' type='fixed'>
+    <child>iris/camera2_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+  <!-- ===================== Add of the 6 short range infrared sensors ===================== -->
+  <link name='iris/IRS1_link'>
+      <pose>0.15 0 0 0 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRS1_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRS1_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRS1_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>1.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRS/IRS1</topicName>
+        <frameName>IRS1</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRS1_joint' type='fixed'>
+    <child>iris/IRS1_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<link name='iris/IRS2_link'>
+      <pose>0.075 0.129904 0 0 0 1.047197</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRS2_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRS2_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRS2_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>1.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRS/IRS2</topicName>
+        <frameName>IRS2</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRS2_joint' type='fixed'>
+    <child>iris/IRS2_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<link name='iris/IRS3_link'>
+      <pose>-0.075 0.129904 0 0 0 2.094395</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRS3_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRS3_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRS3_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>1.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRS/IRS3</topicName>
+        <frameName>IRS3</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRS3_joint' type='fixed'>
+    <child>iris/IRS3_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<link name='iris/IRS4_link'>
+      <pose>-0.15 0 0 0 0 3.141592654</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRS4_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRS4_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRS4_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>1.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRS/IRS4</topicName>
+        <frameName>IRS4</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRS4_joint' type='fixed'>
+    <child>iris/IRS4_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<link name='iris/IRS5_link'>
+      <pose>-0.075 -0.129904 0 0 0 4.188790</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRS5_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRS5_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRS5_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>1.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRS/IRS5</topicName>
+        <frameName>IRS5</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRS5_joint' type='fixed'>
+    <child>iris/IRS5_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<link name='iris/IRS6_link'>
+      <pose>0.075 -0.129904 0 0 0 -1.047197</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRS6_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRS6_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRS6_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>1.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRS/IRS6</topicName>
+        <frameName>IRS6</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRS6_joint' type='fixed'>
+    <child>iris/IRS6_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<!-- ===================== Add of the 6 long range infrared sensors ===================== -->
+  <link name='iris/IRL1_link'>
+      <pose>0.15 0 0.02 0 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRL1_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRL1_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRL1_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>1.00</min>
+          <max>5.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRL/IRL1</topicName>
+        <frameName>IRL1</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRL1_joint' type='fixed'>
+    <child>iris/IRL1_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<link name='iris/IRL2_link'>
+      <pose>0.075 0.129904 0.02 0 0 1.047197</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRL2_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRL2_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRL2_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>1.00</min>
+          <max>5.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRL/IRL2</topicName>
+        <frameName>IRL2</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRL2_joint' type='fixed'>
+    <child>iris/IRL2_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+
+<link name='iris/IRL3_link'>
+      <pose>-0.075 0.129904 0.02 0 0 2.094395</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRL3_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRL3_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRL3_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>1.00</min>
+          <max>5.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRL/IRL3</topicName>
+        <frameName>IRL3</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRL3_joint' type='fixed'>
+    <child>iris/IRL3_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<link name='iris/IRL4_link'>
+      <pose>-0.15 0 0.02 0 0 3.141592654</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRL4_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRL4_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRL4_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>1.00</min>
+          <max>5.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRL/IRL4</topicName>
+        <frameName>IRL4</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRL4_joint' type='fixed'>
+    <child>iris/IRL4_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+  <link name='iris/IRL5_link'>
+      <pose>-0.075 -0.129904 0.02 0 0 4.188790</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRL5_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRL5_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRL5_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>1.00</min>
+          <max>5.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRL/IRL5</topicName>
+        <frameName>IRL5</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRL5_joint' type='fixed'>
+    <child>iris/IRL5_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+  <link name='iris/IRL6_link'>
+      <pose>0.075 -0.129904 0.02 0 0 -1.047197</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='IRL6_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='IRL6_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='IRL6_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>1.00</min>
+          <max>5.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/IRL/IRL6</topicName>
+        <frameName>IRL6</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/IRL6_joint' type='fixed'>
+    <child>iris/IRL6_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+
+<!-- ============================ Add of the 6 ultrasound sensors ======================= -->
+  <link name='iris/US1_link'>
+      <pose>0.15 0 0.04 0 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='US1_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='US1_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='US1_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>61</samples>
+            <resolution>1</resolution>
+            <min_angle>-0.523599</min_angle>
+            <max_angle>0.523599</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>6.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/US/US1</topicName>
+        <frameName>US1</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/US1_joint' type='fixed'>
+    <child>iris/US1_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+  <link name='iris/US2_link'>
+      <pose>0.075 0.129904 0.04 0 0 1.047197</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='US2_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='US2_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='US2_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>61</samples>
+            <resolution>1</resolution>
+            <min_angle>-0.523599</min_angle>
+            <max_angle>0.523599</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>6.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/US/US2</topicName>
+        <frameName>US2</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/US2_joint' type='fixed'>
+    <child>iris/US2_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<link name='iris/US3_link'>
+      <pose>-0.075 0.129904 0.04 0 0 2.094395</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='US3_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='US3_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='US3_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>61</samples>
+            <resolution>1</resolution>
+            <min_angle>-0.523599</min_angle>
+            <max_angle>0.523599</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>6.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/US/US3</topicName>
+        <frameName>US3</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/US3_joint' type='fixed'>
+    <child>iris/US3_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+
+<link name='iris/US4_link'>
+      <pose>-0.15 0 0.04 0 0 3.141592654</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='US4_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='US4_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='US4_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>61</samples>
+            <resolution>1</resolution>
+            <min_angle>-0.523599</min_angle>
+            <max_angle>0.523599</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>6.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/US/US4</topicName>
+        <frameName>US4</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/US4_joint' type='fixed'>
+    <child>iris/US4_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<link name='iris/US5_link'>
+      <pose>-0.075 -0.129904 0.04 0 0 4.188790</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='US5_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='US5_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='US5_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>61</samples>
+            <resolution>1</resolution>
+            <min_angle>-0.523599</min_angle>
+            <max_angle>0.523599</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>6.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/US/US5</topicName>
+        <frameName>US5</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/US5_joint' type='fixed'>
+    <child>iris/US5_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+
+  <link name='iris/US6_link'>
+      <pose>0.075 -0.129904 0.04 0 0 -1.047197</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='US6_link_collision'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='US6_link_visual'>
+        <geometry>
+          <box>
+              <size>.02 .02 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='US6_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>61</samples>
+            <resolution>1</resolution>
+            <min_angle>-0.523599</min_angle>
+            <max_angle>0.523599</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>6.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/iris/US/US6</topicName>
+        <frameName>US6</frameName>
+      </plugin>
+    </sensor>
+  </link>
+
+  <joint name='iris/US6_joint' type='fixed'>
+    <child>iris/US6_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+<!-- ======================================================================
+     END OF Adding of HPeC sensors
+======================================================================= -->
+
+
+    <!-- plugins -->
+    <plugin name="rotor_0_blade_1" filename="libLiftDragPlugin.so">
+      <a0>0.3</a0>
+      <alpha_stall>1.4</alpha_stall>
+      <cla>4.2500</cla>
+      <cda>0.10</cda>
+      <cma>0.00</cma>
+      <cla_stall>-0.025</cla_stall>
+      <cda_stall>0.0</cda_stall>
+      <cma_stall>0.0</cma_stall>
+      <area>0.002</area>
+      <air_density>1.2041</air_density>
+      <cp>0.084 0 0</cp>
+      <forward>0 1 0</forward>
+      <upward>0 0 1</upward>
+      <link_name>iris::rotor_0</link_name>
+    </plugin>
+    <plugin name="rotor_0_blade_2" filename="libLiftDragPlugin.so">
+      <a0>0.3</a0>
+      <alpha_stall>1.4</alpha_stall>
+      <cla>4.2500</cla>
+      <cda>0.10</cda>
+      <cma>0.00</cma>
+      <cla_stall>-0.025</cla_stall>
+      <cda_stall>0.0</cda_stall>
+      <cma_stall>0.0</cma_stall>
+      <area>0.002</area>
+      <air_density>1.2041</air_density>
+      <cp>-0.084 0 0</cp>
+      <forward>0 -1 0</forward>
+      <upward>0 0 1</upward>
+      <link_name>iris::rotor_0</link_name>
+    </plugin>
+
+    <plugin name="rotor_1_blade_1" filename="libLiftDragPlugin.so">
+      <a0>0.3</a0>
+      <alpha_stall>1.4</alpha_stall>
+      <cla>4.2500</cla>
+      <cda>0.10</cda>
+      <cma>0.00</cma>
+      <cla_stall>-0.025</cla_stall>
+      <cda_stall>0.0</cda_stall>
+      <cma_stall>0.0</cma_stall>
+      <area>0.002</area>
+      <air_density>1.2041</air_density>
+      <cp>0.084 0 0</cp>
+      <forward>0 1 0</forward>
+      <upward>0 0 1</upward>
+      <link_name>iris::rotor_1</link_name>
+    </plugin>
+    <plugin name="rotor_1_blade_2" filename="libLiftDragPlugin.so">
+      <a0>0.3</a0>
+      <alpha_stall>1.4</alpha_stall>
+      <cla>4.2500</cla>
+      <cda>0.10</cda>
+      <cma>0.00</cma>
+      <cla_stall>-0.025</cla_stall>
+      <cda_stall>0.0</cda_stall>
+      <cma_stall>0.0</cma_stall>
+      <area>0.002</area>
+      <air_density>1.2041</air_density>
+      <cp>-0.084 0 0</cp>
+      <forward>0 -1 0</forward>
+      <upward>0 0 1</upward>
+      <link_name>iris::rotor_1</link_name>
+    </plugin>
+
+    <plugin name="rotor_2_blade_1" filename="libLiftDragPlugin.so">
+      <a0>0.3</a0>
+      <alpha_stall>1.4</alpha_stall>
+      <cla>4.2500</cla>
+      <cda>0.10</cda>
+      <cma>0.00</cma>
+      <cla_stall>-0.025</cla_stall>
+      <cda_stall>0.0</cda_stall>
+      <cma_stall>0.0</cma_stall>
+      <area>0.002</area>
+      <air_density>1.2041</air_density>
+      <cp>0.084 0 0</cp>
+      <forward>0 -1 0</forward>
+      <upward>0 0 1</upward>
+      <link_name>iris::rotor_2</link_name>
+    </plugin>
+    <plugin name="rotor_2_blade_2" filename="libLiftDragPlugin.so">
+      <a0>0.3</a0>
+      <alpha_stall>1.4</alpha_stall>
+      <cla>4.2500</cla>
+      <cda>0.10</cda>
+      <cma>0.00</cma>
+      <cla_stall>-0.025</cla_stall>
+      <cda_stall>0.0</cda_stall>
+      <cma_stall>0.0</cma_stall>
+      <area>0.002</area>
+      <air_density>1.2041</air_density>
+      <cp>-0.084 0 0</cp>
+      <forward>0 1 0</forward>
+      <upward>0 0 1</upward>
+      <link_name>iris::rotor_2</link_name>
+    </plugin>
+
+    <plugin name="rotor_3_blade_1" filename="libLiftDragPlugin.so">
+      <a0>0.3</a0>
+      <alpha_stall>1.4</alpha_stall>
+      <cla>4.2500</cla>
+      <cda>0.10</cda>
+      <cma>0.00</cma>
+      <cla_stall>-0.025</cla_stall>
+      <cda_stall>0.0</cda_stall>
+      <cma_stall>0.0</cma_stall>
+      <area>0.002</area>
+      <air_density>1.2041</air_density>
+      <cp>0.084 0 0</cp>
+      <forward>0 -1 0</forward>
+      <upward>0 0 1</upward>
+      <link_name>iris::rotor_3</link_name>
+    </plugin>
+    <plugin name="rotor_3_blade_2" filename="libLiftDragPlugin.so">
+      <a0>0.3</a0>
+      <alpha_stall>1.4</alpha_stall>
+      <cla>4.2500</cla>
+      <cda>0.10</cda>
+      <cma>0.00</cma>
+      <cla_stall>-0.025</cla_stall>
+      <cda_stall>0.0</cda_stall>
+      <cma_stall>0.0</cma_stall>
+      <area>0.002</area>
+      <air_density>1.2041</air_density>
+      <cp>-0.084 0 0</cp>
+      <forward>0 1 0</forward>
+      <upward>0 0 1</upward>
+      <link_name>iris::rotor_3</link_name>
+    </plugin>
+    <plugin name="arducopter_plugin" filename="libArduPilotPlugin.so">
+      <fdm_addr>127.0.0.1</fdm_addr>
+      <fdm_port_in>9002</fdm_port_in>
+      <fdm_port_out>9003</fdm_port_out>
+      <!--
+          Required by APM :
+          Only change model and gazebo from XYZ to XY-Z coordinates
+      -->
+      <modelXYZToAirplaneXForwardZDown>0 0 0 3.141593 0 0</modelXYZToAirplaneXForwardZDown>
+      <gazeboXYZToNED>0 0 0 3.141593 0 0</gazeboXYZToNED>
+      <imuName>iris::iris::iris/imu_link::imu_sensor</imuName>
+      <connectionTimeoutMaxCount>5</connectionTimeoutMaxCount>
+      <control channel="0">
+      <!--
+          incoming control command [0, 1]
+          so offset it by 0 to get [0, 1]
+          and divide max target by 1.
+          offset = 0
+          multiplier = 838 max rpm / 1 = 838
+        -->
+        <type>VELOCITY</type>
+        <offset>0</offset>
+        <p_gain>0.20</p_gain>
+        <i_gain>0</i_gain>
+        <d_gain>0</d_gain>
+        <i_max>0</i_max>
+        <i_min>0</i_min>
+        <cmd_max>2.5</cmd_max>
+        <cmd_min>-2.5</cmd_min>
+        <jointName>iris::rotor_0_joint</jointName>
+        <multiplier>838</multiplier>
+        <controlVelocitySlowdownSim>1</controlVelocitySlowdownSim>
+      </control>
+      <control channel="1">
+        <type>VELOCITY</type>
+        <offset>0</offset>
+        <p_gain>0.20</p_gain>
+        <i_gain>0</i_gain>
+        <d_gain>0</d_gain>
+        <i_max>0</i_max>
+        <i_min>0</i_min>
+        <cmd_max>2.5</cmd_max>
+        <cmd_min>-2.5</cmd_min>
+        <jointName>iris::rotor_1_joint</jointName>
+        <multiplier>838</multiplier>
+        <controlVelocitySlowdownSim>1</controlVelocitySlowdownSim>
+      </control>
+      <control channel="2">
+        <type>VELOCITY</type>
+        <offset>0</offset>
+        <p_gain>0.20</p_gain>
+        <i_gain>0</i_gain>
+        <d_gain>0</d_gain>
+        <i_max>0</i_max>
+        <i_min>0</i_min>
+        <cmd_max>2.5</cmd_max>
+        <cmd_min>-2.5</cmd_min>
+        <jointName>iris::rotor_2_joint</jointName>
+        <multiplier>-838</multiplier>
+        <controlVelocitySlowdownSim>1</controlVelocitySlowdownSim>
+      </control>
+      <control channel="3">
+        <type>VELOCITY</type>
+        <offset>0</offset>
+        <p_gain>0.20</p_gain>
+        <i_gain>0</i_gain>
+        <d_gain>0</d_gain>
+        <i_max>0</i_max>
+        <i_min>0</i_min>
+        <cmd_max>2.5</cmd_max>
+        <cmd_min>-2.5</cmd_min>
+        <jointName>iris::rotor_3_joint</jointName>
+        <multiplier>-838</multiplier>
+        <controlVelocitySlowdownSim>1</controlVelocitySlowdownSim>
+      </control>
+    </plugin>
+
+  </model>
+</sdf>

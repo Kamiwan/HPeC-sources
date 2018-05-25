@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+	<rosparam command='load' file="$(find parameters)/node_activation_rates.yaml" ns="node_activation_rates"/>
+	<rosparam command='load' file="$(find parameters)/obstacle_detection_parameters.yaml" ns="obstacle_detection_parameters"/>
+	<rosparam command='load' file="$(find parameters)/drone_features.yaml" ns="drone_features"/>
+	<rosparam command="load" file="$(find parameters)/system_state.yaml"  ns="system_state"/>
+	<rosparam command="load" file="$(find parameters)/camera_features.yaml" ns="camera_features" />
+		
+	<!--node pkg="fake_sensors" type="fake_sensors_node" name="fake_sensors" /-->
+		
+	<node pkg="obstacle_detection" type="obstacle_detection_node" name="obstacle_detection"/>
+    <node pkg="drone_move_planner" type="drone_move_planner" name="drone_move_planner" />
+    <node name="px4_comm" pkg="px4_comm" type="px4_comm_node_copter"/>
+    <node pkg="emergency_landing" type="emergency_landing_node" name="emergency_landing_node" output="screen" />
+ 
+</launch>

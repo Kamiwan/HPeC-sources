@@ -1,0 +1,11 @@
+<?xml version ='1.0'?>
+
+	<launch>
+	
+		<rosparam command="load" file="$(find parameters)/drone_features.yaml" ns="drone_features" />
+		<rosparam command="load" file="$(find parameters)/camera_features.yaml" ns="camera_features" />
+		<rosparam command="load" file="$(find parameters)/node_activation_rates.yaml" ns="node_activation_rates" />
+		
+		<node pkg="emergency_landing" type="emergency_landing_node" name="emergency_landing_node" />
+		
+	</launch>

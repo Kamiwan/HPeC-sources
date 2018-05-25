@@ -1,0 +1,40 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/devel/include",
+                    "/opt/ros/kinetic/include",
+                    "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/image_common-hydro-devel/camera_calibration_parsers/include",
+                    "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/image_common-hydro-devel/camera_info_manager/include",
+                    "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/emergency_landing/include",
+                    "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/image_common-hydro-devel/image_transport/include",
+                    "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/generic_task_wrapper/include",
+                    "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/planning_msgs/include",
+                    "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/image_common-hydro-devel/polled_camera/include",
+                    "/usr/include"
+                ]
+            },
+            "includePath": [
+                "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/devel/include",
+                "/opt/ros/kinetic/include",
+                "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/image_common-hydro-devel/camera_calibration_parsers/include",
+                "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/image_common-hydro-devel/camera_info_manager/include",
+                "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/emergency_landing/include",
+                "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/image_common-hydro-devel/image_transport/include",
+                "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/generic_task_wrapper/include",
+                "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/planning_msgs/include",
+                "/home/labsticc/Bureau/HW_in_the_Loop/SoCKit_simu_ws/src/image_common-hydro-devel/polled_camera/include",
+                "/usr/include"
+            ],
+            "name": "Linux",
+            "intelliSenseMode": "clang-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 3
+}
