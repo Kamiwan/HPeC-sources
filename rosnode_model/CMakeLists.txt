@@ -148,7 +148,8 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(rosnode_model_node
-			src/rosnode_model_node.cpp	
+			src/rosnode_model.cpp
+      src/debug.c	
 )
 
 ## Rename C++ executable without prefix
