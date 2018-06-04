@@ -100,7 +100,7 @@ The command should end with:
 [100%] Built target px4_comm_node_copter
 ```
 
-ds
+Now your project directory is ready to run current installed packages and also to create new ones.
 
 
 ## Running the tests
