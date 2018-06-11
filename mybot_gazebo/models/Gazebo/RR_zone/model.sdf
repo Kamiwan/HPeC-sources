@@ -30,8 +30,8 @@
         <scale>1 1 1</scale>
         <material>
           <script>
-              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/RR_zone/materials/scripts</uri>
-              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/RR_zone/materials/textures</uri>
+              <uri>model:///Gazebo/RR_zone/materials/scripts</uri>
+              <uri>model:///Gazebo/RR_zone/materials/textures</uri>
               <name>RR_zone/Diffuse</name>
           </script>
           <ambient>1 1 1 1</ambient>

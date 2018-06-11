@@ -30,8 +30,8 @@
         <scale>1 1 1</scale>
         <material>
           <script>
-              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/Medium_NFZ_zone/materials/scripts</uri>
-              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/Medium_NFZ_zone/materials/textures</uri>
+              <uri>model:///Gazebo/Medium_NFZ_zone/materials/scripts</uri>
+              <uri>model:///Gazebo/Medium_NFZ_zone/materials/textures</uri>
               <name>NFZ_zone/Diffuse</name>
           </script>
           <ambient>1 1 1 1</ambient>

@@ -16,8 +16,8 @@
         </geometry>
         <material>
           <script>
-              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/Obstacle/materials/scripts</uri>
-              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/Obstacle/materials/textures</uri>
+              <uri>model:///Gazebo/Obstacle/materials/scripts</uri>
+              <uri>model:///Gazebo/Obstacle/materials/textures</uri>
               <name>Obstacle/Diffuse</name>
           </script>
           <shader type='vertex'>

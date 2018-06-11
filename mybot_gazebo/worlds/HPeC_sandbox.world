@@ -7,6 +7,7 @@
       </camera>
     </gui>
     <physics type="ode">
+      <real_time_factor>1</real_time_factor>
       <ode>
         <solver>
           <type>quick</type>
@@ -102,7 +103,8 @@
       </link>
     </model>
 
-<!--actor name="animated_box" FOR GAZEBO 8 OR HIGHER  > 
+<!-- FOR GAZEBO 8 OR HIGHER  -->
+<actor name="animated_box"> 
         <link name="link">
           <visual name="visual">
             <geometry>
@@ -119,27 +121,44 @@
         <trajectory id="0" type="square">
           <waypoint>
             <time>0.0</time>
-            <pose>-1 -1 1 0 0 0</pose>
+            <pose>-10 -10 1 0 0 0</pose>
+          </waypoint>
+          <waypoint>
+            <time>0.5</time>
+            <pose>-10 -9 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>1.0</time>
-            <pose>-1 1 1 0 0 0</pose>
+            <pose>-10 -8 1 0 0 0</pose>
+          </waypoint>
+          <waypoint>
+            <time>1.5</time>
+            <pose>-9 -8 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>2.0</time>
-            <pose>1 1 1 0 0 0</pose>
+            <pose>-8 -8 1 0 0 0</pose>
+          </waypoint>
+          <waypoint>
+            <time>2.5</time>
+            <pose>-8 -9 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>3.0</time>
-            <pose>1 -1 1 0 0 0</pose>
+            <pose>-8 -10 1 0 0 0</pose>
+          </waypoint>
+          <waypoint>
+            <time>3.5</time>
+            <pose>-9 -10 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>4.0</time>
-            <pose>-1 -1 1 0 0 0</pose>
+            <pose>-10 -10 1 0 0 0</pose>
           </waypoint>
         </trajectory>
       </script>
-</actor-->
+</actor>
+<!-- FOR GAZEBO 8 OR HIGHER  -->
 
     <model name="T_zone">
       <include>
