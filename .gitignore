@@ -2,4 +2,4 @@
 CMakeLists.txt
 
 # Ignore the folder of Visual Studio Code project
-/.vscode
+.vscode/

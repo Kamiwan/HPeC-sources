@@ -27,6 +27,23 @@ You need to install the following applications:
 * [Plugin ardupilot_gazebo](https://github.com/khancyr/ardupilot_gazebo)
   * If you want to work with Gazebo 8 to get _movable objects_, please follow the [part 2](###-**2.-Upgrading-to-Gazebo-8**) of Getting Started before installing this plugin.
 
+* Additional packages:
+
+1. We need octomap packages to compile the project
+```
+$ sudo apt-get install ros-kinetic-octomap ros-kinetic-octomap-mapping ros-kinetic-octomap-msgs ros-kinetic-octomap-ros ros-kinetic-octomap-rviz-plugins ros-kinetic-octomap-server
+```
+
+2. In order to run gazebo and ros this package is required:
+```
+$ sudo apt-get install ros-kinetic-gazebo-ros-pkgs
+```
+
+3. Geographic lib is mandatory to execute MAVROS, to install the dataset, run the script at the following location:
+```
+/opt/ros/kinetic/lib/mavros/install_geographiclib_datasets.sh
+```
+
 As soon as all programs have been installed, we configure the terminal environment by editing the .bashrc. First, we source ROS to get all commands: 
 ```
 $ echo 'source /opt/ros/kinetic/setup.bash' >> ~/.bashrc
@@ -258,6 +275,17 @@ Now you should see the drone flying in the virtual world created by gazebo. :)
 ### **1. catkin_ws**
 
 ### **2. Gazebo**
+#### Missing libArduPilotPlugin.so ... etc
+In case you see this message when you launch gazebo with demo worlds, check you have no error after sudo make install the plugin ardupilot_gazebo.
+If no error use "ls" on the install path given to see if the plugin is really here.
+If this is correct, check with "cat /usr/share/gazebo/setup.sh" the variable GAZEBO_PLUGIN_PATH. It should be the same as the install path. If not use "cp" to copy the lib to right path.
+
+For Example
+
+```
+sudo cp -a /usr/lib/x86_64-linux-gnu/gazebo-7.0/plugins/ /usr/lib/x86_64-linux-gnu/gazebo-7/
+```
+path mismatch is confirmed as ROS's glitch. It'll be fixed.
 
 ### **3. MAVROS**
 
