@@ -21,8 +21,8 @@
         </geometry>
         <material>
           <script>
-              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/Wall/materials/scripts</uri>
-              <uri>model:///home/labsticc/Bureau/Erwan/Gazebo/Wall/materials/textures</uri>
+              <uri>model:///Gazebo/Wall/materials/scripts</uri>
+              <uri>model:///Gazebo/Wall/materials/textures</uri>
               <name>Wall/Diffuse</name>
           </script>
           <ambient>1 1 1 1</ambient>
