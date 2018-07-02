@@ -126,6 +126,7 @@ Replace the path of *image_transport* lib by yours in the CMakeLists.txt of foll
 * emergency_landing
 * generic_task_wrapper
 * rosnode_model
+* harris_detector
 
 in the include directories
 ```bash 
