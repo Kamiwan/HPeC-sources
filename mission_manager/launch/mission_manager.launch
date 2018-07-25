@@ -1,0 +1,7 @@
+<?xml version ='1.0'?>
+
+	<launch>
+	
+		<node pkg="mission_manager" type="mission_manager_node" name="mission_manager_node" />
+		
+	</launch>

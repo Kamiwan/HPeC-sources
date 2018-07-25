@@ -1,0 +1,27 @@
+--------------------- Hpec partial reconfiguration API ---------------------
+les deux fonction principale sont dans le fichier hpec_dpr_api.cpp
+
+void start_reconfiguration(int fd_mem, int bitstream_address, int region_id)
+
+- int fd_mem        : pointeur sur fichier mémoire linux (copier et coller la déclaration suivante) : 
+
+                     int fd_mem, ret = EXIT_FAILURE;
+                     fd_mem = open("/dev/mem", O_RDWR|O_SYNC);
+                     if (fd_mem < 0) 
+                     {
+                        perror("open");
+                        exit(EXIT_FAILURE);
+                     }
+
+- bitstream_address : l'addresse du bitstream à configurer.
+- region_id         : l'id de la region reconfigurable à configuer
+
+NB : les deux derniers paramètres sont extraits à partir de la table de conversion où chaque id du bitstream donne son addresse équivalante ainsi que l'id de la region reconfiguration qu'il cible.
+
+
+
+int reconfiguration_done(int fd_mem)
+
+cette fonction devera s'éxecuter immédiatement après le démarrage de la reconfiguration par start_reconfiguration. Elle retourne un entier 0 si la reconfiguration est toujours en cours et 1 quand la reconfiguration est terminée.
+
+

@@ -1,0 +1,10 @@
+
+op - 14:25:04 up 8 days,  1:57,  1 user,  load average: 1,31, 1,20, 1,05
+Tâches:   2 total,   0 en cours,   1 en veille,   1 arrêté,   0 zombie
+%Cpu(s):  3,1 ut,  1,5 sy, 13,9 ni, 81,2 id,  0,2 wa,  0,0 hi,  0,0 si,  0,0 st
+KiB Mem :  8132452 total,  1271252 libr,  2836176 util,  4025024 tamp/cache
+KiB Éch:  7998460 total,  7993496 libr,     4964 util.  4806548 dispo Mem 
+
+  PID UTIL.     PR  NI    VIRT    RES    SHR S  %CPU %MEM    TEMPS+ COM.
+ 7072 labsticc  20   0  473528  10316   9416 S   0,0  0,1   0:09.52 mission_ma+
+ 4043 labsticc  20   0  417888  12764  11480 T   0,0  0,2   0:00.46 adaptation+
