@@ -1,31 +1,6 @@
-#include <ros/ros.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <image_transport/image_transport.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <sensor_msgs/image_encodings.h>
-#include <ros/callback_queue.h>
-#include <boost/thread.hpp>
-#include "std_msgs/Int32.h"
-#include "std_msgs/Float32.h"
-#include <sys/wait.h>
 
-#include <time.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-#include <iosfwd>
-
-#include <iostream>
-#include <fstream>
-#include <string>
-using namespace std; 
+//EM Add header calls here
+#include "adaptation_manager_node.h"
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
@@ -34,12 +9,16 @@ using namespace std;
 #include "initimg.cpp"
 #include "fpga_header.h"
 
-using namespace cv;
-
 extern"C"{
 	#include "main.h"
 	//#include "call.h"
 }
+
+#include "utils.h"
+#include "handle_applications.h"
+
+using namespace std; 
+using namespace cv;
 
 boost::shared_ptr<ros::Publisher> search_land_pub = NULL;
 boost::shared_ptr<ros::Publisher> contrast_img_pub = NULL;
@@ -67,125 +46,14 @@ boost::shared_ptr<ros::Publisher> rotoz_s_s_land_pub= NULL;
 //******************
 boost::shared_ptr<ros::Publisher> achievable_pub=NULL;
 
-//time_t beginning, current1, current2, current3, current4, current5;
+/****** GLOBAL VARIABLES ********/
+
 struct timeval  beginning, current1,  current2, current3, current4, current5;
-//Main__main_mem mem;
-
-
-int r = 0;
-int e = 0;
 int time_tk = 0;
-int min_thres = 0;
-int max_thres = 2000;
-int f = 0;
-int rp = 0;
-//Main__main_out _res;
+int time_notif = 0;
 
-int time_notif = 0 ;
-  
-std_msgs::Int32 search_landing_task_vers;
+/******END GLOBAL VARIABLES ********/
 
-
-long elapse_time_u (struct timeval *end, struct timeval *start ) 
-{
-	long seconds = end->tv_sec - start->tv_sec ;
-	long micro_seconds = end->tv_usec - start->tv_usec ;
-	if (micro_seconds < 0)
-	{
-		seconds -= 1;
-	}
-	return (seconds * 1000000) + abs (micro_seconds) ;
-}
-
-long time_micros (struct timeval *end, struct timeval *start ) 
-{
-	if (end != NULL && start != NULL )
-		return  (((double) elapse_time_u (end, start)) / 1000 ) ;
-	return -1;
-}
-
-/*void reset ( ) 
-{
-    Main__main_reset(&mem);
-    search_landing_task_vers.data = 0;
-}*/
-
-
-/*void do_step ( ) 
-{
-    Main__main_step(r, e, time_tk, min_thres, max_thres, f, rp, &_res, &mem);
-    
-    gettimeofday (&current1 , NULL);
-    		
-    printf("adaptation_manager_ver %.0f %d\n",((double) time_micros(&current1, &beginning)), _res.res);
-    if(search_landing_task_vers.data != _res.res ) 
-    {
-    	if( e == 1){
-		time_tk = 0;
-		min_thres = 0;
-		max_thres = 2000;
-	}
-	r = 0;
-	e = 0;
-    	
-    	ROS_ERROR("[COMPUTE][STEP] : %.0f execution time = [%d ms] min = [%d ms] max = [%d ms]\n",
-    			((double)time_micros (&current1, &beginning)),  time_tk, min_thres, max_thres);
-   	search_landing_task_vers.data = _res.res;
-    	search_land_pub -> publish ( search_landing_task_vers );
-    }
-}*/
-
-void handle_notification_from_search_landing_wrapper (const std_msgs::Float32::ConstPtr& value)
-{
-	
-	//current5 = clock();  
-	gettimeofday (&current5 , NULL);
-	time_tk = (int) value -> data;	
-	printf("adaptation_manager_time %.0f %d\n", ((double) time_micros (&current5, &beginning)), time_tk);
-	
-	time_notif = 1 ;
-}
-
-void handle_search_landing_activation (const std_msgs::Int32::ConstPtr& value) 
-{
-	//current4 = clock(); 
-	gettimeofday (&current4 , NULL);
-	if (value -> data == 0) 
-	{
-		r = 0;
-		e = 1;	
-		time_notif = 1; 
-		printf("adaptation_manager_req %.0f 0\n", ((double) time_micros(&current4, &beginning)));
-		return ;
-	}
-	
-	if (value -> data == 1)
-	{	 
-		r = 1;
-		e = 0;
-		time_notif = 1;
-		printf("adaptation_manager_req %.0f 1\n", ((double) time_micros(&current4, &beginning)));
-	}
-}
-
-
-void handle_search_landing_min_threshold (const std_msgs::Int32::ConstPtr& value) 
-{
-
-	//current3 = clock();  
-	gettimeofday (&current3 , NULL);
-	min_thres = value -> data;	
-	printf("adaptation_manager_min %.0f %d\n", ((double) time_micros(&current3, &beginning)), min_thres);
-}
-
-
-void handle_search_landing_max_threshold (const std_msgs::Int32::ConstPtr& value) 
-{
-	//current2 = clock();  
-	gettimeofday (&current2 , NULL);
-	max_thres = value -> data;	
-	printf("adaptation_manager_max %.0f %d\n", ((double) time_micros (&current2, &beginning)), max_thres);
-}
 //*****************
 /* author : El Mehdi ABDALI    Laboratory: Institut Pascal, CNRS UMR 6602, FRANCE        */
 /* contact information : el_mehdi.abdali@uca.fr  , elmehdi.abdali@gmail.com              */
@@ -222,10 +90,10 @@ int reconfiguration_done(int fd_mem)
 //******************
 
 vector<string> readfile1(const char* path){
-      std::ifstream fichier(path); 
+    std::ifstream fichier(path); 
     vector<string> lignes;
-   int i(0); 
-   string temp;
+   	int i(0); 
+   	string temp;
     if ( fichier ) 
     { 
         while ( std::getline( fichier, temp) ) 
@@ -234,91 +102,19 @@ vector<string> readfile1(const char* path){
         }
 	}
 	else
-   {
+    {
       cout << "ERREUR: Impossible d'ouvrir le fichier en lecture." << endl;
-
-   }  fichier.close();
-   //cout << "il y a "<< lignes.size() << " lignes dans le fichier" << endl;
-
-   /*for (size_t i = 0; i < lignes.size(); ++i)
-    {   
+    }  
+	fichier.close();
+   
+   	/*cout << "il y a "<< lignes.size() << " lignes dans le fichier" << endl;
+   	for (size_t i = 0; i < lignes.size(); ++i)
        cout << "Ligne " << i << " : " << lignes[i] <<  endl;
-	}*/
+	*/
 	return lignes;
-        }
+}
 	  //*************** entree automate :
-typedef struct Task_in Task_in;
-struct Task_in
-{
-    int req; // 1 : activation, 0 : arrêt
 
-    int texec; // texec , [mintexec, maxtexec]
-    int mintexec;
-    int maxtexec;
-
-    int qos;      //qos , [minqos, maxqos]
-    int minqos;
-    int maxqos;
-
-	int priority; //priorite de tache  
-};
-typedef struct Hw_st Hw_st;
-struct Hw_st 
-{
-	int av; // 1 (YES : Available) , 0 (NO)
-};
-
-typedef struct Step_in Step_in;
-struct Step_in
-{
-	Task_in contrast_img;
-	Task_in motion_estim_imu;
-	Task_in motion_estim_img;
-	Task_in search_landing; 
-	Task_in obstacle_avoidance;
-	Task_in t_landing;
-	Task_in rotoz_s;
-	Task_in rotoz_b;
-	Task_in replanning;
-	Task_in detection; 
-	Task_in tracking;
-
-	Hw_st h1;
-	Hw_st h2;
-	Hw_st h3;
-};
- //*********** sortie automate
-	  typedef struct Task_out Task_out;
-struct Task_out
-{  
-    int act; // 1 : active, 0: stop or attente ressource
-    int version; // -1, (SW =>) 0,  (HW/tile =>) 1, 2, 3
-
-    int code;
-
-    int achievable; // 0 (NO), 1 :tache realisable (YES)
-
-    int up_pos;   // 1 si l'automate peut choisir une version plus rapide sinon 0
-    int down_pos; // 1 si l'automate peut choisir une version moins rapide sinon 0
-    int keep_pos; // 1 si l'automate peut conserver la version courante sinon 0
-    int qos_pos;  // 1 si possible, sinon 0
-};
-
-typedef struct Step_out Step_out;
-struct Step_out
-{
-	Task_out contrast_img;
-	Task_out motion_estim_imu;
-	Task_out motion_estim_img;
-	Task_out search_landing; 
-	Task_out obstacle_avoidance;
-	Task_out t_landing;
-	Task_out rotoz_s;
-	Task_out rotoz_b;
-	Task_out replanning;
-	Task_out detection; 
-	Task_out tracking;
-};
 //********** initialiser l'entree du step
 struct Step_in entree0(vector<string> C3){
     struct Step_in e;  //std::string::size_type sz;
@@ -656,19 +452,17 @@ struct Step_out sortie(){
 	 cout<<s.contrast_img.code<<endl; 
      cout<<s.contrast_img.achievable<<endl;
 
-     
-	 s.motion_estim_imu.act = 0;
+     s.motion_estim_imu.act = 0;
 	 s.motion_estim_imu.code = 122; 
      s.motion_estim_imu.achievable = 1;
-    
-	
+    	
 	 s.motion_estim_img.act = 1;
 	 s.motion_estim_img.code = 182; 
      s.motion_estim_img.achievable = 1;
 
 	 s.search_landing.act = 1;
 	 s.search_landing.code = 13; 
-     s.search_landing.achievable = 1;
+     s.search_landing.achievable = 0;
 
 	 s.obstacle_avoidance.act = 0;
 	 s.obstacle_avoidance.code = 50; 
@@ -760,27 +554,33 @@ void achievable_tab(struct Step_out s){
 //******************BOUDABZA Ghizlane; verification de la realisation de toutes les APPs..
 int verify(struct Step_out s){
     int a =1; 
-   a = a & (s.contrast_img.achievable) & (s.motion_estim_imu.achievable)& (s.motion_estim_img.achievable)& (s.search_landing.achievable)& (s.obstacle_avoidance.achievable)& (s.t_landing.achievable)& (s.rotoz_s.achievable)& (s.rotoz_b.achievable)& (s.replanning.achievable)& (s.detection.achievable)& (s.tracking.achievable);
-			  return a;
-   }
-  //********************* Publier l'alerte à Mission Manager
-void publish(int a,struct Step_out s)
-    {   ros::Rate loop_rate(0.5); 
+	a = a & (s.contrast_img.achievable) & (s.motion_estim_imu.achievable)
+		  & (s.motion_estim_img.achievable)& (s.search_landing.achievable)
+		  & (s.obstacle_avoidance.achievable)& (s.t_landing.achievable)
+		  & (s.rotoz_s.achievable)& (s.rotoz_b.achievable)& (s.replanning.achievable)
+		  & (s.detection.achievable)& (s.tracking.achievable);
+	return a;
+}
+
+//********************* Publier l'alerte à Mission Manager
+void publish_to_MM(int a,struct Step_out s)
+{   
+	ros::Rate loop_rate(0.5); 
 	std_msgs::Int32 msg1;
 	//remplissage de liste des taches nn realisables
-   achievable_tab(s);
-   if(a==1){
-         ROS_INFO("[CHARGEMENT][BITSTREAM][SCHEDULING] , Achievable : [%d]", a);
-		  }
-		  else{
+   	achievable_tab(s);
+   	if(a==1)
+	{
+        ROS_INFO("[CHARGEMENT][BITSTREAM][SCHEDULING] , Achievable : [%d]", a);
+	}else{
         ROS_ERROR("[ALTERTE][MISSION_MANAGER]");
-         msg1.data =1;      
-         achievable_pub->publish(msg1);   
+        msg1.data =1;      
+        achievable_pub->publish(msg1);   
         loop_rate.sleep();   	
 		ROS_ERROR("LISTE DES TACHES NN REALISABLES ENVOYEE, Total_Achievable : [%d]", a);
 		ROS_INFO("[CHARGEMENT][BITSTREAM][DERNIERE_SORTIE_AUTOMATE]");
-		  }
-     }
+	}
+}
 //********************BOUDABZA Ghizlane; la fonction qui permet de creer la table de sortie de l'automate..EXEMPLE: S_L ET DETECTION
 vector < vector<string> > initilise_sortie(int n, int m, struct Step_out s){
    int i;
@@ -1529,7 +1329,7 @@ void do1(struct Step_in e){
           // struct Step_out s;
 	      // doStep ( &e, &s);   //l'automate de config auto-adaptatif
 		   int a = verify(s); //VERIFIER la variable Achievable des taches
-		   publish(a,s);       //alerter le niveau mission si il exuste des taches nn réalisables
+		   publish_to_MM(a,s);       //alerter le niveau mission si il exuste des taches nn réalisables
 		   M= initilise_sortie(5, 12, s); //conversion sortie step -> table 
            mapping(M); //chargement des bITSTREAMS DANS LA CARTE 
     }
@@ -1618,10 +1418,8 @@ double cpuload ( ) {
 ************************************************************/
 int main (int argc, char ** argv)
 {   
-	
 	ros::init(argc, argv, "adaptation_manager_node");
 	ros::NodeHandle nh;
-	
 	
 	//reset ();
 	//beginning = clock();
@@ -1690,7 +1488,8 @@ int main (int argc, char ** argv)
 			         nh.advertise<std_msgs::Int32>("/t_landing_s_land_area_mgt_topic", 1));
  //rotoz_s&s_land_pub;
  rotoz_s_s_land_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/rotoz_s_s_land_area_mgt_topic", 1));					 					 					 
+			         nh.advertise<std_msgs::Int32>("/rotoz_s_s_land_area_mgt_topic", 1));	
+
 //***************************envoie de liste des taches nn realisables
 achievable_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/achievable_topic", 1000));
@@ -1706,19 +1505,16 @@ ros::Subscriber mgt_topic;
 ros::Publisher cpu_pub;
 	cpu_pub = nh.advertise<std_msgs::Float32>("/cpu_load_topic", 1);				    
 //*********************				  
-	/*ros::Subscriber mgt_request_topic;
-	mgt_request_topic = nh.subscribe("/activate_search_landing_topic", 1, 		
-				  handle_search_landing_activation);			  
-				  
-	ros::Subscriber search_landing_set_max_topic;
-	search_landing_set_max_topic = nh.subscribe("/search_landing_set_max_topic", 1, 		
-				  handle_search_landing_max_threshold);
-				  
-	ros::Subscriber search_landing_set_min_topic;
-	search_landing_set_min_topic = nh.subscribe("/search_landing_set_min_topic", 1, 		
-				  handle_search_landing_min_threshold);*/
-				  
-	
+
+//Global variables moved to the Main
+/*
+int r = 0;
+int e = 0;
+*/
+int min_thres = 0;
+int max_thres = 2000;
+int time_notif = 0 ;
+
 	//current1 = clock();  
 	gettimeofday (&current1 , NULL);
 	printf("adaptation_manager_req %.0f 0\n", ((double) time_micros(&current1, &beginning)));	
@@ -1727,7 +1523,6 @@ ros::Publisher cpu_pub;
 	//printf("adaptation_manager_ver %.0f %d\n",((double) time_micros(&current1, &beginning)), _res.res);
 	
 //*****************Ghizlane BOUDABZA
-//.
 const char* path0 ="./src/parameters/map_tab.txt";
 const char* path1 ="./src/parameters/time_qos_task.txt";
 const char* path3 = "./src/parameters/tableC3.txt";
@@ -1735,10 +1530,10 @@ const char* path4 = "./src/parameters/tableC3(2).txt";
 
 std_msgs::Float32 load;
 vector<string> lignes, C3;
-struct Step_in e0,e;
-struct Step_out s;
-struct Step_in* in;
 
+Step_in e0,e;
+Step_out s;
+Step_in* in;
 
 ROS_ERROR("[ADAPTATION MANAGER] [RUNNING] \n");
 C3 = readfile1(path4);
@@ -1746,53 +1541,25 @@ e0 = entree0(C3); // texe,qos observé =0; 1ere utilisation du step()
 
 do1(e0); 
 
-
- ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
- while(ros::ok()){ 
+ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
+while(ros::ok()){ 
 	ros::spinOnce();
 
-  load.data = cpuload ( ) ;
-   cpu_pub.publish ( load );
+	load.data = cpuload ( ) ;
+	cpu_pub.publish( load );
 
-  lignes = readfile1(path1); 
-  if(lignes.size()!=0){
-	  e = entree(C3,lignes);
-      comparer(lignes,C3, e);	
-  }
-
-	loop_rate.sleep();
+	lignes = readfile1(path1); 
+	if(lignes.size()!=0)
+	{
+		e = entree(C3,lignes);
+		comparer(lignes,C3, e);	
 	}
+	loop_rate.sleep();
+}
 
 }
 
-
-  
-
-
-
-//1 er methode faut changer pid si j'ouvre un nv terminal(ou j'ouvre et je ferme un nv term et je relance de l'ancien term) ; voir top -i : pid nv des taches
-	//system("top -b -n1 -p 7072,4043 > ./src/parameters/cpu.txt");
-//2 eme methode faut ios:app et ligne1 : adap / ligne2 :m_m
-	//system("top -i -b -n15 |grep mission_manager > ./src/parameters/cpu1.txt");//-n3 (1fois)sur terminal
-   //system("top -i -b -n15|grep adaptation_mana > ./src/parameters/cpu1.txt");
-
-
-//************************************************ 
-	/*ROS_ERROR("[ADAPTATION MANAGER] [RUNNING] \n");
-	ros::Rate rate(1); 
-	while(ros::ok())
-	{
-		ros::spinOnce();			
-		if (time_notif == 1 )
-		{
-			do_step ( );  		
-			time_notif = 0;
-
-		} 
-	   	rate.sleep();	   	
-	}*/
-	
-
+ 
 /************************************************************
 * 
 *	EM 24/07/2018, Useless code below
@@ -1801,50 +1568,4 @@ do1(e0);
 *		   are identified
 *
 ************************************************************/
-
-// ----------->> FONCTION QUI RECUPERE LA SORTIE STANDARD D'UNE COMMANDE UNIX DANS UNE CHAINE DE CARACTERE <<----------- 
-  char *redirection_sortie_standard();
-  char buf, sortie1[10000];
-char *redirection_sortie(char *commande, char *option)
-{
-    int tube[2];
-    pid_t cpid;
-	int i=0;
-
-    if (pipe(tube) == -1) 
-	{
-        perror("Le pipe n'a pas fonctionné");
-        exit(EXIT_FAILURE); // quitte le programme si le pipe n'est pas créé
-    }
-     
-	cpid = fork();
-
-    if (cpid == -1)
-	{
-        perror("Le fork n'a pas fonctionné");
-        exit(EXIT_FAILURE); // quitte le programme si le fork n'as pas fonctionné
-    }
-     
-	if (cpid != 0) /* Le pere est lecteur sur le tube */
-	{    
-        close(tube[1]);          /* Fermeture du coté écriture non utilisé par le pere */
-  		/*cette boucle while permet de lire les caractères présent sur le coté lecture du tube et les stocker dans la chaine sortie */
-        while (read(tube[0], &buf, 1) > 0)
-		{
-	   		sortie1[i]=buf; // rempli la chaine sortie caractère par caractère
-    		i++;
-    		sortie1[i]='\0'; // indique la fin de la chaine de caractère
-       	}
-		close(tube[0]); // fermeture du coté lecture du tube une fois la lecture une fois que la fonction read a renvoyé 0 : EOF, la lecture terminée
-		return sortie1; // la fonction retourne la chaine qui contient le contenu de la sortie standard
-    	exit(EXIT_SUCCESS);
- 	} else {                             /* Le fils écrit dans le tube  */
-		close(tube[0]);          /* Fermeture du coté lecture non utilisé par le fil */
-		dup2(tube[1],1);     /* */
-		execlp(commande,commande,option,(char *) NULL);
-		close(tube[1]);          /* Le pere lecteur verra un "EOF" ce qui permet la synchronisation */
-		wait(NULL);                /* Attendre que le fils se termine */
-		exit(EXIT_SUCCESS);
-	}
-}
 

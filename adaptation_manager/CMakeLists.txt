@@ -129,10 +129,10 @@ CATKIN_DEPENDS roscpp std_msgs message_runtime
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-  ${catkin_INCLUDE_DIRS} 
-  /usr/include/image_transport
-  /usr/local/include
-/usr/local/include/opencv
+  	${catkin_INCLUDE_DIRS} 
+  	/usr/include/image_transport
+	/usr/local/include
+	/usr/local/include/opencv
 )
 
 ## Declare a C++ library
@@ -149,21 +149,16 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(adaptation_manager_node
-                        src/call.c
-                        src/call.h
-			src/main_controller.c
-			src/main_controller_types.c
-			src/main_types.c
-			src/math.h
-			src/main.c
-			src/main_controller.h
-			src/main_controller_types.h
-			src/main.h
-			src/main_types.h
-			src/math.c
-			src/pervasives.h
-			src/adaptation_manager_node.cpp	
-	)
+    src/call.c
+	src/main_controller.c
+	src/main_controller_types.c
+	src/main_types.c
+	src/main.c
+	src/math.c
+	src/utils.cpp
+	src/handle_applications.cpp
+	src/adaptation_manager_node.cpp	
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -175,12 +170,12 @@ add_executable(adaptation_manager_node
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Specify libraries to link a library or executable target against
- target_link_libraries(adaptation_manager_node
-   ${catkin_LIBRARIES}
-${OpenCV_LIBRARIES}
+target_link_libraries(adaptation_manager_node
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
     /usr/local/lib/
     /opt/ros/kinetic/lib/libimage_transport.so
- )
+)
 
 #############
 ## Install ##
