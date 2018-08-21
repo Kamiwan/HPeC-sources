@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <string.h>
-#include "fpga_header.h"
-#include <opencv2/opencv.hpp>
-
 /* author : El Mehdi ABDALI    Laboratory: Institut Pascal, CNRS UMR 6602, FRANCE        */
 /* contact information : el_mehdi.abdali@univ.bpclermont.fr  , elmehdi.abdali@gmail.com  */
 /*											 */
@@ -14,6 +9,7 @@
 /* int mem_str_adrss : start address, the binary file physical address in target memory  */
 /* int mem_cntrl_adrss : physical target memory address into HPS address space           */
 
+#include "initimg.h"
 
 int setimg(uchar* imgptr, int fd_mem,unsigned int mem_str_adrss, unsigned int mem_cntrl_adrss,size_t img_rws,size_t img_clmns)
 {
@@ -143,8 +139,6 @@ int getimg(uchar* imgptr, int fd_mem,int mem_str_adrss, int mem_cntrl_adrss,size
 /* int fd_mem : pointer to file sys/mem                                                  */
 /* int mem_str_adrss : start address, the binary file physical address in target memory  */
 /* int mem_cntrl_adrss : physical target memory address into HPS address space           */
-
-
 
 int get_array_mem(int* pageptr, int fd_mem,int mem_str_adrss, int mem_cntrl_adrss)
 {
