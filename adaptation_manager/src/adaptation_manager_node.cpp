@@ -44,31 +44,12 @@ string verify1[3][7]={{"0","0","0"},{"1","2","3"}};
 /****** END GLOBAL VARIABLES ********/
 
 
-vector<string> readfile1(const char* path){
-    std::ifstream fichier(path); 
-    vector<string> lignes;
-   	int i(0); 
-   	string temp;
-    if ( fichier ) 
-    { 
-        while ( std::getline( fichier, temp) ) 
-        { 
-		 lignes.push_back(temp);
-        }
-	}
-	else
-    {
-      cout << "ERREUR: Impossible d'ouvrir le fichier en lecture." << endl;
-    }  
-	fichier.close();
-   
-   	/*cout << "il y a "<< lignes.size() << " lignes dans le fichier" << endl;
-   	for (size_t i = 0; i < lignes.size(); ++i)
-       cout << "Ligne " << i << " : " << lignes[i] <<  endl;
-	*/
-	return lignes;
-}
+void Step_in::init()
+{
 
+	// Do nothing
+
+}
 
 //***************
 void achievable_tab(Step_out s){
@@ -101,7 +82,7 @@ void achievable_tab(Step_out s){
    M[9][1] = to_string(s.detection.achievable);
    M[10][1] = to_string(s.tracking.achievable);
 
-	ofstream file("./src/parameters/achievable_tab.txt", ios::out); 
+	ofstream file(PATH_ACHIEVABLE_TAB, ios::out); 
    if ( file ) 
     {       
 		for (int i = 0; i < 11; ++i){
@@ -263,11 +244,13 @@ void activate_desactivate_task(string t[][7],int i,std_msgs::Int32 msg){
 		rotoz_s_s_land_pub->publish(msg);
 			}
 }
+
+
 //********************mapping :Remplissage des tableaux de scheduling
 void mapping(vector< vector<string> > M){
       int nb=6; int t1=0, t2=0;
    string static_tab[nb][7]; string as[4][7]; string as2[4][7]; string as3[4][7]; std_msgs::Int32 msg;
-   vector <string> map =readfile1("./src/parameters/map_tab.txt");
+   vector <string> map =readfile1(PATH_MAP_TAB);
  
     /*string** static_tab = (string**)malloc(7*sizeof(string*)); //allocation des colonnes
 	for(i=0;i<9;i++)
@@ -515,7 +498,7 @@ void mapping(vector< vector<string> > M){
 				}     
 				for(int i(0);i < 4; ++i) { 
 	            for(int j(0); j < 7; ++j) { 
-                cout <<as[i][j] << "        "; 
+                cout << as[i][j] << "        "; 
                  } 
                  cout << endl; 
                   } 
@@ -671,8 +654,7 @@ void mapping(vector< vector<string> > M){
 			i=1; int i3=1,i4=1; bool done1 = false; bool done2= false; bool done3= false; 
 		   if(as[i][0]!=""){
 				do{ 
-					const char* path ="./src/parameters/done.txt";
-					vector<string> done = readfile1(path);
+					vector<string> done = readfile1(PATH_DONE);
 					for(int l=0;l<done.size();l++){
 						if(done[l]==as[i][0]){
 							as[i][6]=done[l+1];
@@ -686,8 +668,7 @@ void mapping(vector< vector<string> > M){
 			}
 			if(as2[i3][0]!=""){
 				do{ 
-					const char* path ="./src/parameters/done.txt";
-					vector<string> done = readfile1(path);
+					vector<string> done = readfile1(PATH_DONE);
 					for(int l=0;l<done.size();l++){
 						if(done[l]==as2[i3][0]){
 							as2[i3][6]=done[l+1];
@@ -701,8 +682,7 @@ void mapping(vector< vector<string> > M){
 			}
 			if(as3[i4][0]!=""){
 				do{ 
-					const char* path ="./src/parameters/done.txt";
-					vector<string> done = readfile1(path);
+					vector<string> done = readfile1(PATH_DONE);
 					for(int l=0;l<done.size();l++){
 						if(done[l]==as3[i4][0]){
 							as3[i4][6]=done[l+1];
@@ -758,34 +738,38 @@ void mapping(vector< vector<string> > M){
 
 //**************************BOUDABZA Ghizlane; 
 //la fonction qui verifie est ce que texe appartient à l'intervalle [Tmin, Tmax]...pour chaque fonction;
-void comparer(vector<string> lignes, vector<string> C3, Step_in e) 
+void comparer(vector<string> timing_data, vector<string> C3, Step_in e) 
 { 
-	 vector<int> T; int t=0; int a=1;
-  for(int j = 0; j < C3.size(); j++){
-  for(int m=0;m<lignes.size();m=m+3){
-    if(C3[j]==lignes[m]){
-    if((lignes[m+1] >= C3[j+3] && lignes[m+1] <= C3[j+4]) && (lignes[m+2] > C3[j+6] && lignes[m+2] <= C3[j+7])){
-	   t=1;
-	   T.push_back(t);
-    }
-	else{
-		t=0;
-		T.push_back(t);
+	//EM, TODO change 2 following variabls in boolean
+	vector<int> T; int a=1;
+
+	for(int j = 0; j < C3.size(); j++)
+	{
+		for(int m=0;m<timing_data.size();m=m+3)
+		{
+			if(C3[j]==timing_data[m])
+			{
+				if((timing_data[m+1] >= C3[j+3] && timing_data[m+1] <= C3[j+4]) 
+				&& (timing_data[m+2] > C3[j+6] && timing_data[m+2] <= C3[j+7]))
+				{
+					T.push_back(1);
+				}else{
+					T.push_back(0);
+				}
+			}
+		}
 	}
-  }
-  }
-  }
- for(int i=0;i<T.size();i++){
-	 a= a & T[i];
-	 cout<<T[i]<<" ";
- }
- cout<<endl;
- if(a==1){
- cout<<"[Texe,qos sont bien dans l'intervalle, on attend la prochaine lecture du texe_file]"<<endl;
+	for(int i=0;i<T.size();i++){
+		a= a & T[i];
+		cout<<T[i]<<" ";
+	}
+	cout<<endl;
+	if(a==1){
+		cout<<"[Texe,qos sont bien dans l'intervalle, on attend la prochaine lecture du texe_file]"<<endl;
 	}
 	else{
-		  cout<<"[INTERVALLE TEMPS,QOS NON RESPECTEE ][RECHERCHE SOLUTION]..[APPEL A MY_STEP]"<<endl;
-		    do1(e);
+		cout<<"[INTERVALLE TEMPS,QOS NON RESPECTEE ][RECHERCHE SOLUTION]..[APPEL A MY_STEP]"<<endl;
+		do1(e);
 	}
 }
 
@@ -794,7 +778,7 @@ void notify_Callback(const std_msgs::Int32::ConstPtr& msg){
   	ROS_ERROR("[RECU][MISSION_M][CHANGEMENT D'INTERVALLES DANS TABLE C3..] \n");
   	ROS_ERROR("%d", msg->data);
   	float texe; vector<string> C3;
-  	C3 = readfile1("./src/parameters/tableC3(2).txt");
+  	C3 = readfile1(PATH_TABLE_C3);
   	Step_in e= entree1(C3); 
   	do1(e);
 }
@@ -810,99 +794,95 @@ int main (int argc, char ** argv)
 	ros::init(argc, argv, "adaptation_manager_node");
 	ros::NodeHandle nh;
 	
-	//reset ();
-	//beginning = clock();
 	gettimeofday (&beginning , NULL);
 	
-//search_land_pub;
+	//search_land_pub;
 	search_land_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/search_landing_area_mgt_topic", 1));
- //contrast_img_pub;
+ 	//contrast_img_pub;
 	contrast_img_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/contrast_img_area_mgt_topic", 1));
- //motion_estim_imu_pub;
+	//motion_estim_imu_pub;
 	motion_estim_imu_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/motion_estim_imu_area_mgt_topic", 1));
- //motion_estim_img_pub;
+ 	//motion_estim_img_pub;
 	motion_estim_img_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/motion_estim_img_area_mgt_topic", 1));
- //obstacle_avoidance_pub;
+ 	//obstacle_avoidance_pub;
 	obstacle_avoidance_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/obstacle_avoidance_area_mgt_topic", 1));
- //t_landing_pub;
+ 	//t_landing_pub;
 	t_landing_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/t_landing_area_mgt_topic", 1));
- //rotoz_s_pub;
+ 	//rotoz_s_pub;
 	rotoz_s_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/rotoz_s_area_mgt_topic", 1));
- //rotoz_b_pub;
+ 	//rotoz_b_pub;
 	rotoz_b_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/rotoz_b_area_mgt_topic", 1));
- //detection_pub;
+ 	//detection_pub;
 	detection_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/detection_area_mgt_topic", 1));
- //tracking_pub;
+ 	//tracking_pub;
 	tracking_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/tracking_area_mgt_topic", 1));
- //replanning_pub;
+ 	//replanning_pub;
 	replanning_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/replanning_area_mgt_topic", 1));   
- //Pour les noeuds ros de fusion					 
- //ctr_img&m_e_imu_pub;
- ctr_img_m_e_imu_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/ctr_img_m_e_img_area_mgt_topic", 1));
- //ctr_img&m_e_img_pub;
- ctr_img_m_e_img_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/ctr_img_m_e_img_area_mgt_topic", 1));
- //ctr_img&s_land_pub;
- ctr_img_s_land_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/ctr_img_s_land_area_mgt_topic", 1));
- //ctr_img&rotoz_s_pub;
- ctr_img_rotoz_s_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/ctr_img_rotoz_s_area_mgt_topic", 1));
- //m_e_img&t_landing_pub;
- m_e_img_t_landing_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/m_e_img_t_landing_area_mgt_topic", 1));
- //m_e_img&rotoz_s_pub;
- m_e_img_rotoz_s_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/m_e_img_rotoz_s_area_mgt_topic", 1));
- //m_e_img&s_land_pub;
- m_e_img_s_land_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/m_e_img_s_land_area_mgt_topic", 1));
- //rotoz_s&t_landing_pub;
- rotoz_s_t_landing_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/rotoz_s_t_landing_area_mgt_topic", 1));
- //t_landing&s_land_pub;
- t_landing_s_land_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/t_landing_s_land_area_mgt_topic", 1));
- //rotoz_s&s_land_pub;
- rotoz_s_s_land_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/rotoz_s_s_land_area_mgt_topic", 1));	
 
-//***************************envoie de liste des taches nn realisables
-achievable_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/achievable_topic", 1000));
+ 	//Pour les noeuds ros de fusion					 
+ 	//ctr_img&m_e_imu_pub;
+ 	ctr_img_m_e_imu_pub= boost::make_shared<ros::Publisher>( 
+				    nh.advertise<std_msgs::Int32>("/ctr_img_m_e_img_area_mgt_topic", 1));
+ 	//ctr_img&m_e_img_pub;
+ 	ctr_img_m_e_img_pub= boost::make_shared<ros::Publisher>( 
+				    nh.advertise<std_msgs::Int32>("/ctr_img_m_e_img_area_mgt_topic", 1));
+ 	//ctr_img&s_land_pub;
+ 	ctr_img_s_land_pub= boost::make_shared<ros::Publisher>( 
+				    nh.advertise<std_msgs::Int32>("/ctr_img_s_land_area_mgt_topic", 1));
+ 	//ctr_img&rotoz_s_pub;
+ 	ctr_img_rotoz_s_pub= boost::make_shared<ros::Publisher>( 
+				    nh.advertise<std_msgs::Int32>("/ctr_img_rotoz_s_area_mgt_topic", 1));
+ 	//m_e_img&t_landing_pub;
+ 	m_e_img_t_landing_pub= boost::make_shared<ros::Publisher>( 
+				    nh.advertise<std_msgs::Int32>("/m_e_img_t_landing_area_mgt_topic", 1));
+ 	//m_e_img&rotoz_s_pub;
+ 	m_e_img_rotoz_s_pub= boost::make_shared<ros::Publisher>( 
+				    nh.advertise<std_msgs::Int32>("/m_e_img_rotoz_s_area_mgt_topic", 1));
+ 	//m_e_img&s_land_pub;
+ 	m_e_img_s_land_pub= boost::make_shared<ros::Publisher>( 
+				    nh.advertise<std_msgs::Int32>("/m_e_img_s_land_area_mgt_topic", 1));
+ 	//rotoz_s&t_landing_pub;
+ 	rotoz_s_t_landing_pub= boost::make_shared<ros::Publisher>( 
+				    nh.advertise<std_msgs::Int32>("/rotoz_s_t_landing_area_mgt_topic", 1));
+ 	//t_landing&s_land_pub;
+ 	t_landing_s_land_pub= boost::make_shared<ros::Publisher>( 
+				    nh.advertise<std_msgs::Int32>("/t_landing_s_land_area_mgt_topic", 1));
+ 	//rotoz_s&s_land_pub;
+ 	rotoz_s_s_land_pub= boost::make_shared<ros::Publisher>( 
+				    nh.advertise<std_msgs::Int32>("/rotoz_s_s_land_area_mgt_topic", 1));	
 
-ros::Subscriber notify_from_MM_sub;
-	notify_from_MM_sub= nh.subscribe("/notify_from_MM_topic", 1000, notify_Callback);
-				  
-	
-ros::Subscriber mgt_topic;
-	mgt_topic = nh.subscribe("/search_landing_notification_topic", 1, 		
-				  handle_notification_from_search_landing_wrapper);
-				  
-ros::Publisher cpu_pub;
-	cpu_pub = nh.advertise<std_msgs::Float32>("/cpu_load_topic", 1);				    
-//*********************				  
+	//***************************envoie de liste des taches nn realisables
+	achievable_pub= boost::make_shared<ros::Publisher>( 
+						nh.advertise<std_msgs::Int32>("/achievable_topic", 1000));
 
-//Global variables moved to the Main
-/*
-int r = 0;
-int e = 0;
-*/
-int min_thres = 0;
-int max_thres = 2000;
-int time_notif = 0 ;
+	ros::Subscriber notify_from_MM_sub;
+		notify_from_MM_sub= nh.subscribe("/notify_from_MM_topic", 1000, notify_Callback);
+
+	ros::Subscriber mgt_topic;
+		mgt_topic = nh.subscribe("/search_landing_notification_topic", 1, 		
+					handle_notification_from_search_landing_wrapper);
+					
+	ros::Publisher cpu_pub;
+		cpu_pub = nh.advertise<std_msgs::Float32>("/cpu_load_topic", 1);				    
+	//*********************				  
+
+	//EM, Global variables moved to the Main
+	int min_thres = 0;
+	int max_thres = 2000;
+	int time_notif = 0 ;
+	/*int r = 0;
+	int e = 0;*/
 
 	//current1 = clock();  
 	gettimeofday (&current1 , NULL);
@@ -911,40 +891,38 @@ int time_notif = 0 ;
 	printf("adaptation_manager_min %.0f %d\n",((double) time_micros(&current1, &beginning)),min_thres);
 	//printf("adaptation_manager_ver %.0f %d\n",((double) time_micros(&current1, &beginning)), _res.res);
 	
-//*****************Ghizlane BOUDABZA
-const char* path0 ="./src/parameters/map_tab.txt";
-const char* path1 ="./src/parameters/time_qos_task.txt";
-const char* path3 = "./src/parameters/tableC3.txt";
-const char* path4 = "./src/parameters/tableC3(2).txt";
+	//*****************Ghizlane BOUDABZA
 
-std_msgs::Float32 load;
-vector<string> lignes, C3;
 
-Step_in e0,e;
-Step_out s;
-Step_in* in;
+	std_msgs::Float32 load;
+	vector<string> time_qos_data, C3;
 
-ROS_ERROR("[ADAPTATION MANAGER] [RUNNING] \n");
-C3 = readfile1(path4);
-e0 = entree0(C3); // texe,qos observé =0; 1ere utilisation du step()
+	Step_in e0,e;
+	Step_out s;
+	Step_in* in;
 
-do1(e0); 
+	ROS_ERROR("[ADAPTATION MANAGER] [RUNNING] \n");
+	C3 = readfile1(PATH_TABLE_C3);
+	e0 = entree0(C3); // texe,qos observé =0; 1ere utilisation du step()
 
-ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
-while(ros::ok()){ 
-	ros::spinOnce();
+	do1(e0); 
 
-	load.data = cpuload ( ) ;
-	cpu_pub.publish( load );
+	ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
+	while(ros::ok())
+	{ 
+		ros::spinOnce();
 
-	lignes = readfile1(path1); 
-	if(lignes.size()!=0)
-	{
-		e = entree(C3,lignes);
-		comparer(lignes,C3, e);	
+		load.data = cpuload ( ) ;
+		cpu_pub.publish( load );
+
+		time_qos_data = readfile1(PATH_TIME_QOS); 
+		if(time_qos_data.size()!=0)
+		{
+			e = entree(C3,time_qos_data);
+			comparer(time_qos_data,C3, e);	
+		}
+		loop_rate.sleep();
 	}
-	loop_rate.sleep();
-}
 
 }
 

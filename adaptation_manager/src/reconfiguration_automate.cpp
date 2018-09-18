@@ -15,10 +15,9 @@ Step_out doStep (Step_in e){
 void do1( Step_in e){	
     std::vector < std::vector<std::string> > M;
     Step_out s = doStep (e);
-    //  Step_out s;
 	// doStep ( &e, &s);   //l'automate de config auto-adaptatif
 	int a = verify(s); //VERIFIER la variable Achievable des taches
-	publish_to_MM(a,s);       //alerter le niveau mission si il exuste des taches nn réalisables
+	publish_to_MM(a,s);       //alerter le niveau mission si il existe des taches nn réalisables
 	M= initialise_sortie(5, 12, s); //conversion sortie step -> table 
     mapping(M); //chargement des bITSTREAMS DANS LA CARTE 
 }
@@ -159,8 +158,8 @@ std::vector < std::vector<std::string> > initialise_sortie(int n, int m, Step_ou
 }
 
 //********** initialiser l'entree du step
- Step_in entree0(std::vector< std::string> C3){
-     Step_in e;  //std::string::size_type sz;
+Step_in entree0(std::vector< std::string> C3){
+    Step_in e;  //std::string::size_type sz;
 	e.contrast_img.req =stoi(C3[1]);
     e.contrast_img.texec =0;
     e.contrast_img.mintexec =stoi(C3[3]);

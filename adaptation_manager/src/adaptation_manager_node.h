@@ -4,6 +4,7 @@
 #define ADAPTATION_MANAGER_NODE_H
 
 #include <ros/ros.h>
+#include <ros/callback_queue.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -15,18 +16,12 @@
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/image_encodings.h>
-#include <ros/callback_queue.h>
 #include <boost/thread.hpp>
 #include "std_msgs/Int32.h"
 #include "std_msgs/Float32.h"
 #include <sys/wait.h>
 
-#include <time.h>
-#include <unistd.h>
-#include <fcntl.h>
-
 #include <iosfwd>
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -43,10 +38,16 @@ extern"C"{
 	//#include "call.h"
 }
 
+#define PATH_TIME_QOS  		"./src/parameters/time_qos_task.txt"
+#define PATH_TABLE_C3  		"./src/parameters/tableC3.txt"
+#define PATH_ACHIEVABLE_TAB "./src/parameters/achievable_tab.txt"
+#define PATH_MAP_TAB 		"./src/parameters/map_tab.txt"
+#define PATH_DONE 			"./src/parameters/done.txt"
+
 using namespace std; 
 using namespace cv;
 
-extern struct timeval  beginning, current1,  current2, current3, current4, current5;
+extern struct timeval  beginning, current1, current2, current3, current4, current5;
 extern int time_tk;
 extern int time_notif;
 
@@ -63,6 +64,9 @@ struct Task_in
     int maxqos;
 
 	int priority; //priorite de tache  
+
+	void raz_timing_qos();
+
 };
 
 struct Hw_st 
@@ -87,6 +91,10 @@ struct Step_in
 	Hw_st h1;
 	Hw_st h2;
 	Hw_st h3;
+
+	void init();
+
+
 };
 
 //*********** sortie automate
@@ -139,8 +147,6 @@ void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
 
 
 
-
-
-
-
 #endif
+
+

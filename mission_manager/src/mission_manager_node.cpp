@@ -164,7 +164,7 @@ notify_from_MM_pub= boost::make_shared<ros::Publisher>(
 
 ros::Subscriber cpu_sub = n.subscribe("/cpu_load_topic", 1000, cpu_load_Callback); 
 
-const char*path0 ="./src/parameters/tableC3(2).txt";
+const char*path0 ="./src/parameters/tableC3.txt";
 const char*path4 ="./src/parameters/cpu.txt";
  vector<string> C3, cpu;
   

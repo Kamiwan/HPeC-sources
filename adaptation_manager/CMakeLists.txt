@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(adaptation_manager)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
-# add_definitions(-std=c++11)
+add_definitions(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -17,7 +17,7 @@ cv_bridge
 
 )
 
-SET(CMAKE_CXX_FLAGS"-std=c++11 -I/usr/local/include -I/usr/local/include/opencv")
+SET(CMAKE_CXX_FLAGS" -I/usr/local/include -I/usr/local/include/opencv")
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
