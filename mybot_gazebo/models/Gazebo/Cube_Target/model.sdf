@@ -1,0 +1,45 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='Cube_Target'>
+    <pose> 0 0 0 0 -0 0</pose>
+    <static>True</static>
+    <link name='Cube_Target_link'>
+      <collision name='Cube_Target_link_Collision'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+        <surface>
+            <friction>
+              <ode>
+                <mu>100</mu>
+                <mu2>50</mu2>
+              </ode>
+            </friction>
+          </surface>
+      </collision>
+      <visual name='Cube_Target_link_Visual'>
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+        <scale>1 1 1</scale>
+        <material>
+          <script>
+              <uri>model:///Gazebo/Cube_Target/materials/scripts</uri>
+              <uri>model:///Gazebo/Cube_Target/materials/textures</uri>
+              <name>Cube_Target/Diffuse</name>
+          </script>
+          <ambient>1 1 1 1</ambient>
+        </material>
+        <meta>
+          <layer>0</layer>
+        </meta>
+      </visual>
+    </link>
+  </model>
+</sdf>
