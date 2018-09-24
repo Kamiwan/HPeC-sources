@@ -37,6 +37,7 @@
 #define MAIN_HPP_
 
 #include <tld/TLD.h>
+#include <boost/thread.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 
 #include <opencv2/core/core.hpp>
@@ -45,6 +46,7 @@
 #include <opencv2/objdetect/objdetect.hpp>
 
 #include <ros/ros.h>
+#include <ros/callback_queue.h>
 #include <cv_bridge/cv_bridge.h>
 #include <std_msgs/Header.h>
 #include <sensor_msgs/Image.h>
@@ -62,12 +64,14 @@ class Main
 			tld = new tld::TLD();
 			state = INIT;
 
+			ROS_INFO("EST CE QUE C EST OK EN INIT?");
+
 			ros::NodeHandle np("~");
 			np.param("showOutput", showOutput, true);
 			np.param("loadModel", loadModel, false);
 			np.param("autoFaceDetection", autoFaceDetection, false);
 			np.param("exportModelAfterRun", exportModelAfterRun, false);
-			np.param("modelImportFile", modelImportFile, std::string("model"));
+			np.param("modelImportFile", modelImportFile, std::string("motus"));
 			np.param("modelExportFile", modelExportFile, std::string("model"));
 			np.param("cascadePath", face_cascade_path, 
 					std::string("haarcascade_frontalface_alt.xml"));
@@ -77,6 +81,8 @@ class Main
 			np.param("width", target_bb.width, 100);
 			np.param("height", target_bb.height, 100);
 			np.param("correctBB", correctBB, false);
+
+			std::cout << "PARAM???? LOAD=" << loadModel << " FILE=" << modelImportFile << " x" << target_bb.x << std::endl;
 
 			pub1 = n.advertise<tld_msgs::BoundingBox>(
                     "tld_tracked_object", 1000, true);
@@ -90,14 +96,21 @@ class Main
                     "cmds", 1000, &Main::cmdReceivedCB, this);
 
 			semaphore.lock();
+			ROS_INFO("FIN INIT MAIN?");
 		}
 
 		~Main()
 		{
 			delete tld;
+			//mutex.unlock();
+			//semaphore.unlock();
+			printf("DESTRUCTOR DONE!\n");
 		}
 
 		void process();
+		void process2(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, ros::Rate rate);
+
+		static void cleanup_handler(void *arg);
 
 	private:
 		tld::TLD * tld; 

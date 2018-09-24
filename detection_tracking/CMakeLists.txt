@@ -1,15 +1,22 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(tld_tracker)
+project(detection_tracking)
+
+## Add support for C++11, supported in ROS Kinetic and newer
+add_definitions(-std=c++11 -pthread)
+
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  cv_bridge
   std_msgs
+  image_transport
+  cv_bridge
+  message_generation
   sensor_msgs
   tld_msgs
+  communication REQUIRED
 )
 
 ## System dependencies are found with CMake's conventions
@@ -36,6 +43,11 @@ externalproject_add(opentld
                   ${OPENTLD_OUTPUT_DIR}
 )
 
+
+## System dependencies are found with CMake's conventions
+# find_package(Boost REQUIRED COMPONENTS system)
+#blabla blabla 
+
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
@@ -50,10 +62,10 @@ externalproject_add(opentld
 ## * Let MSG_DEP_SET be the set of packages whose message types you use in
 ##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
 ## * In the file package.xml:
+##   * add a build_depend tag for "message_generation"
 ##   * add a build_depend and a run_depend tag for each package in MSG_DEP_SET
-##   * If MSG_DEP_SET isn't empty the following dependencies might have been
-##     pulled in transitively but can be declared for certainty nonetheless:
-##     * add a build_depend tag for "message_generation"
+##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
+##     but can be declared for certainty nonetheless:
 ##     * add a run_depend tag for "message_runtime"
 ## * In this file (CMakeLists.txt):
 ##   * add "message_generation" and every package in MSG_DEP_SET to
@@ -66,11 +78,10 @@ externalproject_add(opentld
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
+#add_message_files(
 #   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+#   area_location.msg
+#)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -87,9 +98,29 @@ externalproject_add(opentld
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
+################################################
+## Declare ROS dynamic reconfigure parameters ##
+################################################
+
+## To declare and build dynamic reconfigure parameters within this
+## package, follow these steps:
+## * In the file package.xml:
+##   * add a build_depend and a run_depend tag for "dynamic_reconfigure"
+## * In this file (CMakeLists.txt):
+##   * add "dynamic_reconfigure" to
+##     find_package(catkin REQUIRED COMPONENTS ...)
+##   * uncomment the "generate_dynamic_reconfigure_options" section below
+##     and list every .cfg file to be processed
+
+## Generate dynamic reconfigure parameters in the 'cfg' folder
+# generate_dynamic_reconfigure_options(
+#   cfg/DynReconf1.cfg
+#   cfg/DynReconf2.cfg
 # )
 
 ###################################
@@ -102,10 +133,17 @@ externalproject_add(opentld
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  #  INCLUDE_DIRS include
   LIBRARIES libopentld
-  CATKIN_DEPENDS roscpp cv_bridge std_msgs sensor_msgs tld_msgs
-#  DEPENDS system_lib
+  CATKIN_DEPENDS 
+  roscpp 
+  std_msgs 
+  message_runtime
+  communication
+  cv_bridge
+  sensor_msgs
+  tld_msgs
+  #  DEPENDS system_lib
 )
 
 ###########
@@ -123,22 +161,32 @@ include(${QT_USE_FILE})
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
-
 include_directories(
-  ${catkin_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS} 
+  /opt/ros/kinetic/include/image_transport
+  ${OpenCV_INCLUDE_DIRS}
   ${OPENTLD_OUTPUT_DIR}/include/libopentld
 )
 
 link_directories(${OPENTLD_OUTPUT_DIR}/lib/libopentld/)
 
-## Declare a cpp library
-# add_library(tld_tracker
-#   src/${PROJECT_NAME}/tld_tracker.cpp
-# )
+## Declare a C++ library
+#add_library(${PROJECT_NAME}(
+#   src/${PROJECT_NAME}/detection_tracking.cpp /opt/ros/kinetic/lib/libimage_transport.so
+#)
 
-## Declare a cpp executable
-add_executable(tld_tracker_node	src/tld_tracker_node.cpp
-                                src/main.cpp                              
+## Add cmake target dependencies of the library
+## as an example, code may need to be generated before libraries
+## either from message generation or dynamic reconfigure
+#add_dependencies(detection_tracking detection_tracking_generate_messages_cpp)
+
+## Declare a C++ executable
+## With catkin_make all packages are built within a single CMake context
+## The recommended prefix ensures that target names across packages don't collide
+add_executable(detection_tracking_node
+			src/detection_tracking_node.cpp
+      src/main.cpp 
+      src/debug.c	
 )
 
 add_executable(tld_gui_node     src/tld_gui_node.cpp
@@ -147,26 +195,34 @@ add_executable(tld_gui_node     src/tld_gui_node.cpp
                                 ${TLD_QT_HEADERS_MOC}
 )
 
-## Add cmake target dependencies of the executable/library
-## as an example, message headers may need to be generated before nodes
+## Rename C++ executable without prefix
+## The above recommended prefix causes long target names, the following renames the
+## target back to the shorter Version for ease of user use
+## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
+# set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
-add_dependencies(tld_tracker_node opentld)
-add_dependencies(tld_tracker_node tld_msgs_generate_messages_cpp)
+## Add cmake target dependencies of the executable
+## same as for the library above
+# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(detection_tracking_node detection_tracking_generate_messages_cpp)
+add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_node opentld)
+add_dependencies(${PROJECT_NAME}_node tld_msgs_generate_messages_cpp)
 
 add_dependencies(tld_gui_node tld_msgs_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(tld_tracker_node
-  libopentld
-  ${OpenCV_LIBS}
+ target_link_libraries(detection_tracking_node
   ${catkin_LIBRARIES}
-)
+  /opt/ros/kinetic/lib/libimage_transport.so
+  ${OpenCV_LIBRARIES}
+  libopentld
+ )
 
-target_link_libraries(tld_gui_node
+ target_link_libraries(tld_gui_node
   ${QT_LIBRARIES}
   ${catkin_LIBRARIES}
 )
-
 
 #############
 ## Install ##
@@ -183,7 +239,7 @@ target_link_libraries(tld_gui_node
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS tld_tracker tld_tracker_node
+# install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -208,7 +264,7 @@ target_link_libraries(tld_gui_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_tld_tracker.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_detection_tracking.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

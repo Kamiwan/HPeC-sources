@@ -37,9 +37,9 @@ void Main::process()
         ROS_FATAL("--(!)Error loading cascade detector\n"); 
         return;
     }
-
     while (ros::ok())
-    {
+    {   
+        ROS_INFO("ET ICI %d ?????", state);
         switch (state)
         {
             case INIT:
@@ -53,6 +53,7 @@ void Main::process()
                     tld->detectorCascade->imgWidthStep = gray.step;
 
                     state = TRACKER_INIT;
+                    ROS_INFO("TRACKER INIT ?????");
                 }
                 break;
             case TRACKER_INIT:
@@ -85,8 +86,8 @@ void Main::process()
                     ros::Duration(1.0).sleep();
                     ROS_INFO("Waiting for a BB");
                 }
-                break;
-                  case TRACKING:
+              break;
+              case TRACKING:
                 if(newImageReceived())
                 {
                   ros::Time tic = ros::Time::now();
@@ -100,7 +101,6 @@ void Main::process()
                   std_msgs::Float32 msg_fps;
                   msg_fps.data = fps;
                   pub2.publish(msg_fps);
-
                   if(showOutput)
                   {
                     if(tld->currBB != NULL)
@@ -114,11 +114,12 @@ void Main::process()
                   }
                 }
                 break;
-                  case STOPPED:
+                case STOPPED:
                     ros::Duration(1.0).sleep();
                     ROS_INFO("Tracker stopped");
                 break;
                   default:
+                  ROS_INFO("EN DEFAULT SERIEUXUU ?????");
                 break;
                 }
         }
@@ -130,6 +131,124 @@ void Main::process()
 
         semaphore.unlock();
     }
+
+  void Main::process2(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, ros::Rate rate)
+  {
+
+    pthread_cleanup_push(cleanup_handler,this);
+
+    if(autoFaceDetection && !face_cascade.load(face_cascade_path))
+    {
+        ROS_FATAL("--(!)Error loading cascade detector\n"); 
+        return;
+    }
+    while (workerHandle_ptr->ok())
+    {   
+      ROS_INFO("BOUCLE CALCUL?? %d", state);
+      ros::CallbackQueue queue;
+	    workerHandle_ptr->setCallbackQueue(&queue);
+    	queue.callAvailable();
+      //EM, This call checks if a something from a topic has been received 
+		  // and run callback functions if yes.
+
+        switch (state)
+        {
+            case INIT:
+                if(newImageReceived())
+                {
+                    if(showOutput)
+                        sendTrackedObject(0, 0, 0, 0, 0.0);
+                    getLastImageFromBuffer();
+                    tld->detectorCascade->imgWidth = gray.cols;
+                    tld->detectorCascade->imgHeight = gray.rows;
+                    tld->detectorCascade->imgWidthStep = gray.step;
+
+                    state = TRACKER_INIT;
+                    ROS_INFO("TRACKER INIT ?????");
+                }
+                break;
+            case TRACKER_INIT:
+                if(loadModel && !modelImportFile.empty())
+                {
+                    ROS_INFO("Loading model %s", modelImportFile.c_str());
+
+                    tld->readFromFile(modelImportFile.c_str());
+                    tld->learningEnabled = false;
+                    state = TRACKING;
+                }
+                else if(autoFaceDetection || correctBB)
+                {
+                    if(autoFaceDetection)
+                    {
+                        target_image = gray;
+                        target_bb = faceDetection();
+                    }
+
+                    sendTrackedObject(target_bb.x,target_bb.y,target_bb.width,target_bb.height,1.0);
+
+                    ROS_INFO("Starting at %d %d %d %d\n", target_bb.x, target_bb.y, target_bb.width, target_bb.height);
+
+                    tld->selectObject(target_image, &target_bb);
+                    tld->learningEnabled = true;
+                    state = TRACKING;
+                }
+                else
+                {
+                    ros::Duration(1.0).sleep();
+                    ROS_INFO("Waiting for a BB");
+                }
+              break;
+              case TRACKING:
+                if(newImageReceived())
+                {
+                  ros::Time tic = ros::Time::now();
+
+                  getLastImageFromBuffer();
+                  tld->processImage(img);
+
+                  ros::Duration toc = (ros::Time::now() - tic);
+                  float fps = 1.0/toc.toSec();
+
+                  std_msgs::Float32 msg_fps;
+                  msg_fps.data = fps;
+                  pub2.publish(msg_fps);
+                  if(showOutput)
+                  {
+                    if(tld->currBB != NULL)
+                    {
+                      sendTrackedObject(tld->currBB->x,tld->currBB->y,tld->currBB->width,tld->currBB->height,tld->currConf);
+                    }
+                    else
+                    {
+                      sendTrackedObject(1, 1, 1, 1, 0.0);
+                    }
+                  }
+                  ROS_INFO("Detection and Tracking done!");
+                }
+                break;
+                case STOPPED:
+                    ros::Duration(1.0).sleep();
+                    ROS_INFO("Tracker stopped");
+                break;
+                  default:
+                break;
+                }
+
+          rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
+        }
+
+        if(exportModelAfterRun)
+        {
+          tld->writeToFile(modelExportFile.c_str());
+        }
+
+        printf("We are at POPING TIME\n");
+        pthread_cleanup_pop(1);
+        printf("POP DONE\n");
+        semaphore.unlock();
+        printf("PROCESS UNLOCK DONE\n");
+    }
+
 
     void Main::imageReceivedCB(const sensor_msgs::ImageConstPtr & msg)
     {
@@ -323,4 +442,21 @@ void Main::process()
 
       return faces[0];
     }
+
+
+		void Main::cleanup_handler(void *arg)
+		{
+    	printf("Called clean-up handlers\n");
+
+      Main * my_main;
+      my_main = (Main *) arg;
+
+      printf("Here we go\n");
+    	//my_main->mutex.unlock();
+      printf("CRASH SEMAPHORE\n");
+			//my_main->semaphore.unlock();
+      printf("CRASH MUTEX\n");
+
+      //delete my_main;
+		}
 

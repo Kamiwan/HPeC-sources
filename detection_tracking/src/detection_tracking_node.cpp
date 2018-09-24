@@ -1,19 +1,10 @@
 /*************************************************************************************
- * File   : rosnode_model.cpp, file to create easily ros nodes for HPeC
+ * File   : detection_tracking.cpp, tracker opentld ros node for HPeC
  * Copyright (C) 2018 Lab-STICC Laboratory
  * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
  *
- * This model allows the user to create an application ros node that 
- * the adaptation manager can handle in the HPeC project.
- * 
- * This model must be used by copying the folder, then rename the package and files
- * according to your needs.
- * 
- * You can test this program:
- * 	1. run on a terminal "roscore" to get a ROS master
- *  2. on another terminal, run the command "rosrun rosnode_model rosnode_model_node"
  *  3. on another terminal, run the command 
- *     "rostopic pub -1 /rosnode_model_mgt_topic std_msgs/Int32 "0" or "1" or "2""
+ *     "rostopic pub -1 /detection_tracking_mgt_topic std_msgs/Int32 "0" or "1" or "2""
  *************************************************************************************/
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
@@ -23,6 +14,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <signal.h>
 #include <iostream>
 
 extern "C" {
@@ -39,6 +31,7 @@ extern "C" {
 #include "std_msgs/Float32.h"
 #include "std_msgs/String.h"
 
+#include "main.hpp"
 
 //Erwan Moréac, 05/03/18 : Setup #define
 #define HIL				 //Code modifications for Hardware In the Loop
@@ -49,7 +42,7 @@ extern "C" {
  *  - Topic names to subscribe or publish
 **********************************************************************/
 
-#define SL_INPUT_TOPIC "/iris/camera2/image_raw" //example of Topic name def
+#define TLD_INPUT_TOPIC "/iris/camera2/image_raw" 
 
 /*******************************************
  * EM, Sample code for image topic
@@ -73,6 +66,8 @@ time_t start, ends;
 time_t imcpy_start,imcpy_end;
 struct timeval beginning, current, end;
 
+struct sigaction action;
+
 bool run = false;
 int current_ver = 0;
 int hardware = 0;
@@ -80,7 +75,7 @@ double altitude;
 
 boost::shared_ptr<boost::thread> worker_thread;
 boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
-boost::shared_ptr<ros::Publisher> search_land_pub;
+boost::shared_ptr<ros::Publisher> detect_track_pub;
 
 /************************************************************************
  * EM, Insert here global variables if needed
@@ -109,18 +104,19 @@ long time_micros(struct timeval *end, struct timeval *start)
 }
 
 
+void termination_handler(int signum);
+
+
 /*************************************************************
- * appname_hwsw
+ * detection_tracking_hwsw
  * Author : EM 
  * @param workerHandle_ptr allow the function to get ROS 
  * master events, to handle topics for example
  * 
- * Write in this function the Hardware version of your app
- * /!\ RENAME IT
 **************************************************************/
-void appname_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
+void detection_tracking_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 {
-	ROS_INFO("[THREAD][RUNNING][HW]: rosnode_model HARDWARE VERSION \r\n");
+	ROS_INFO("[THREAD][RUNNING][HW]: detection_tracking HARDWARE VERSION \r\n");
 
 	run = true;
 	ros::CallbackQueue queue;
@@ -128,9 +124,9 @@ void appname_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 
 	//EM 22/02/18, Topic Subscribtion (Input) 
 	//I let the gps and camera subscriptions and callbacks as an example of ROS topic subscription
-	//Erase them if you do not need it.
+	//Erase them if you do not need them.
 	image_transport::ImageTransport it(*workerHandle_ptr);
-	image_transport::Subscriber cam_sub = it.subscribe(SL_INPUT_TOPIC, 1, image_callback);
+	image_transport::Subscriber cam_sub = it.subscribe(TLD_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 
 	/**********************************************************************
@@ -140,9 +136,9 @@ void appname_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	//EM, App parameters reading
 	// /!\ Node activation rate is mandatory, add it in parameters folder
 	double rate_double;
-	if (!workerHandle_ptr->getParam("/node_activation_rates/rosnode_model", rate_double))
+	if (!workerHandle_ptr->getParam("/node_activation_rates/detection_tracking", rate_double))
 	{
-		ROS_INFO("Could not read rosnode_model activation rate. Setting 1 Hz");
+		ROS_INFO("Could not read detection_tracking activation rate. Setting 1 Hz");
 		rate_double = 1;
 	}
 	ros::Rate rate(rate_double);
@@ -178,7 +174,7 @@ void appname_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 		//EM, Compute execution time
 		ends = clock();
 		elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
-		std::cout << "HARDWARE rosnode_model Processing time : " << elapsed_time.data << std::endl;
+		std::cout << "HARDWARE detection_tracking Processing time : " << elapsed_time.data << std::endl;
 
 		rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
 		
@@ -189,17 +185,15 @@ void appname_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 
 
 /*************************************************************
- * appname_sw
+ * detection_tracking_sw
  * Author : EM 
  * @param workerHandle_ptr allow the function to get ROS 
  * master events, to handle topics for example
- * 
- * Write in this function the Software version of your app
- * /!\ RENAME IT
+ *
 **************************************************************/
-void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
+void detection_tracking_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 {
-	ROS_INFO("[THREAD][RUNNING][SW]: rosnode_model SOFTWARE VERSION \r\n");
+	ROS_INFO("[THREAD][RUNNING][SW]: detection_tracking SOFTWARE VERSION \r\n");
 
 	run = true;
 	ros::CallbackQueue queue;
@@ -209,7 +203,7 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	//I let the gps and camera subscriptions and callbacks as an example of ROS topic subscription
 	//Erase them if you do not need it.
 	image_transport::ImageTransport it(*workerHandle_ptr);
-	image_transport::Subscriber cam_sub = it.subscribe(SL_INPUT_TOPIC, 1, image_callback);
+	image_transport::Subscriber cam_sub = it.subscribe(TLD_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 
 	/**********************************************************************
@@ -219,18 +213,31 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	//EM, App parameters reading
 	//Node activation rate is mandatory
 	double rate_double;
-	if (!workerHandle_ptr->getParam("/node_activation_rates/rosnode_model", rate_double))
+	if (!workerHandle_ptr->getParam("/node_activation_rates/detection_tracking", rate_double))
 	{
-		ROS_INFO("Could not read rosnode_model activation rate. Setting 1 Hz");
+		ROS_INFO("Could not read detection_tracking activation rate. Setting 1 Hz");
 		rate_double = 1;
 	}
 	ros::Rate rate(rate_double);
 
-	/**********************************************************************
-	* EM, Insert here Other parameters loading
-	**********************************************************************/
+	ros::AsyncSpinner spinner(1);
+	Main * main_node = new Main();
 
+	/* Set up the structure to specify the action */
+	action.sa_handler = termination_handler;
+	sigemptyset(&action.sa_mask);
+	//action.sa_flags = 0;
+	//sigaction(SIGINT, &action, NULL);
+	
 
+	main_node->process2(workerHandle_ptr, rate);
+
+	/*spinner.start();
+	main_node->process();
+	spinner.stop();
+	*/
+
+	/*
 	std_msgs::Float32 elapsed_time;
 	while (workerHandle_ptr->ok()) //Main processing loop
 	{
@@ -241,23 +248,20 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 		//EM, Start app execution time
 		start = clock();
 
-
-		/**********************************************************************
-		 * EM, Insert here some application functions
-		**********************************************************************/
 		std::cout << "Hello World!" << std::endl;
-
-
 
 		//EM, Compute execution time
 		ends = clock();
 
 		elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
-		std::cout << "SOFTWARE rosnode_model Processing time : " << elapsed_time.data << std::endl;
+		std::cout << "SOFTWARE detection_tracking Processing time : " << elapsed_time.data << std::endl;
 		rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
 		
 	}	 // end while
+	*/
+
 	run = false;
+	//delete main_node;
 	ROS_INFO("[THREAD][STOPPED]");
 }
 
@@ -276,16 +280,23 @@ void stop()
 		workerHandle_ptr->shutdown();
 	if (worker_thread != NULL)
 	{
+		ROS_INFO("THREAD JOIN");
 		worker_thread->timed_join(boost::posix_time::seconds(3));
 		if (run)
 		{
-			pthread_cancel(worker_thread->native_handle());
-
+			ROS_INFO("THREAD CANCELLING");
+			if(pthread_cancel(worker_thread->native_handle()) != 0)
+			{
+				perror("pthread_cancel() error");                                           
+    			exit(3);
+			}
+			
 			if (hardware == 1)
 			{
 				//release(); EM, create a function to release mem allocated for the HW
 				hardware = 0;
 			}
+			ROS_INFO("THREAD CANCELLING DONE");
 		}
 	}
 	// RESET
@@ -332,7 +343,7 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		stop();
 		hardware = 0;
 		workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
-		worker_thread = boost::make_shared<boost::thread>(&appname_sw, workerHandle_ptr);
+		worker_thread = boost::make_shared<boost::thread>(&detection_tracking_sw, workerHandle_ptr);
 		break;
 		
 	case 2: //starting the HW version
@@ -340,7 +351,7 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		stop();
 		hardware = 1;
 		workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
-		worker_thread = boost::make_shared<boost::thread>(&appname_hwsw, workerHandle_ptr);
+		worker_thread = boost::make_shared<boost::thread>(&detection_tracking_hwsw, workerHandle_ptr);
 		break;
 
 	default:
@@ -360,21 +371,27 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 ##################################################################**/
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "rosnode_model_node");
+	ros::init(argc, argv, "detection_tracking_node");
 	ros::NodeHandle nh;
 	
 	gettimeofday(&beginning, NULL);
 	ros::Subscriber mgt_topic;
-	mgt_topic = nh.subscribe("rosnode_model_mgt_topic", 1, managing_controller_request);
+	mgt_topic = nh.subscribe("detection_tracking_mgt_topic", 1, managing_controller_request);
 
-	search_land_pub = boost::make_shared<ros::Publisher>(
-	nh.advertise<std_msgs::Float32>("/rosnode_model_notification_topic", 1));
+	detect_track_pub = boost::make_shared<ros::Publisher>(
+	nh.advertise<std_msgs::Float32>("/detection_tracking_notification_topic", 1));
 	gettimeofday(&current, NULL);
 
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
 
-	ROS_INFO("[TASK WRAPPER][RUNNING]");
+
+	//Main * main_node = new Main();
+
+
+	ROS_INFO("[TASK WRAPPER][RUNNING] TRACKING ONLINE");
 	ros::spin();
+
+	//delete main_node;
 }
 
 
@@ -455,10 +472,16 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 			#endif
 		}
 
-		ROS_INFO("IMAGE RECOVERY SUCCEED");
+		ROS_INFO("NODE MODEL IMAGE RECOVERY SUCCEED");
 	}
 	catch (cv_bridge::Exception &e)
 	{
 		ROS_INFO("Could not convert from '%s' to 'bgr'.", image_cam->encoding.c_str());
 	}
+}
+
+
+void termination_handler(int signum)
+{
+	ros::shutdown();
 }
