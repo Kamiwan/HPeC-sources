@@ -64,7 +64,7 @@ class Main
 			tld = new tld::TLD();
 			state = INIT;
 
-			ROS_INFO("EST CE QUE C EST OK EN INIT?");
+			get_first_image = false;
 
 			ros::NodeHandle np("~");
 			np.param("showOutput", showOutput, true);
@@ -82,8 +82,6 @@ class Main
 			np.param("height", target_bb.height, 100);
 			np.param("correctBB", correctBB, false);
 
-			std::cout << "PARAM???? LOAD=" << loadModel << " FILE=" << modelImportFile << " x" << target_bb.x << std::endl;
-
 			pub1 = n.advertise<tld_msgs::BoundingBox>(
                     "tld_tracked_object", 1000, true);
 			pub2 = n.advertise<std_msgs::Float32>(
@@ -95,8 +93,7 @@ class Main
 			sub3 = n.subscribe(
                     "cmds", 1000, &Main::cmdReceivedCB, this);
 
-			semaphore.lock();
-			ROS_INFO("FIN INIT MAIN?");
+			//semaphore.lock();
 		}
 
 		~Main()
@@ -104,7 +101,7 @@ class Main
 			delete tld;
 			//mutex.unlock();
 			//semaphore.unlock();
-			printf("DESTRUCTOR DONE!\n");
+			printf("\n **** DESTRUCTOR DONE! ****\n");
 		}
 
 		void process();
@@ -120,6 +117,8 @@ class Main
 		bool autoFaceDetection;
 		std::string modelImportFile;
 		std::string modelExportFile;
+
+		bool get_first_image;
 
 		enum
 		{
@@ -137,8 +136,8 @@ class Main
 		cv::Mat img;
 		cv_bridge::CvImagePtr img_buffer_ptr;
 		cv::Mat gray;
-		boost::interprocess::interprocess_mutex mutex;
-		boost::interprocess::interprocess_mutex semaphore;
+		//boost::interprocess::interprocess_mutex mutex;
+		//boost::interprocess::interprocess_mutex semaphore;
 		ros::NodeHandle n;
 		ros::Publisher pub1;
 		ros::Publisher pub2;

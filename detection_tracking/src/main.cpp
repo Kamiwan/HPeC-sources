@@ -39,7 +39,6 @@ void Main::process()
     }
     while (ros::ok())
     {   
-        ROS_INFO("ET ICI %d ?????", state);
         switch (state)
         {
             case INIT:
@@ -53,7 +52,6 @@ void Main::process()
                     tld->detectorCascade->imgWidthStep = gray.step;
 
                     state = TRACKER_INIT;
-                    ROS_INFO("TRACKER INIT ?????");
                 }
                 break;
             case TRACKER_INIT:
@@ -119,7 +117,6 @@ void Main::process()
                     ROS_INFO("Tracker stopped");
                 break;
                   default:
-                  ROS_INFO("EN DEFAULT SERIEUXUU ?????");
                 break;
                 }
         }
@@ -129,7 +126,7 @@ void Main::process()
           tld->writeToFile(modelExportFile.c_str());
         }
 
-        semaphore.unlock();
+        //semaphore.unlock();
     }
 
   void Main::process2(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, ros::Rate rate)
@@ -154,11 +151,15 @@ void Main::process()
         switch (state)
         {
             case INIT:
-                if(newImageReceived())
+                ROS_INFO("DEBUT INIT");
+                //EM, Add a test in the case the camera topic is not activated
+                if(get_first_image)
                 {
+                  ROS_INFO("IMAGE RECEIVED");
                     if(showOutput)
                         sendTrackedObject(0, 0, 0, 0, 0.0);
                     getLastImageFromBuffer();
+                    ROS_INFO("RECOVER LAST IMAGE");
                     tld->detectorCascade->imgWidth = gray.cols;
                     tld->detectorCascade->imgHeight = gray.rows;
                     tld->detectorCascade->imgWidthStep = gray.step;
@@ -166,6 +167,7 @@ void Main::process()
                     state = TRACKER_INIT;
                     ROS_INFO("TRACKER INIT ?????");
                 }
+                ROS_INFO("DEBUT INIT");
                 break;
             case TRACKER_INIT:
                 if(loadModel && !modelImportFile.empty())
@@ -199,11 +201,13 @@ void Main::process()
                 }
               break;
               case TRACKING:
-                if(newImageReceived())
+                //EM, Add a test in the case the camera topic is not activated
+                if(img_buffer_ptr->image.rows != 0 && img_buffer_ptr->image.rows != 0)
                 {
                   ros::Time tic = ros::Time::now();
 
                   getLastImageFromBuffer();
+
                   tld->processImage(img);
 
                   ros::Duration toc = (ros::Time::now() - tic);
@@ -233,7 +237,7 @@ void Main::process()
                   default:
                 break;
                 }
-
+          ROS_INFO("SLEEP TIME");
           rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
         }
 
@@ -245,7 +249,7 @@ void Main::process()
         printf("We are at POPING TIME\n");
         pthread_cleanup_pop(1);
         printf("POP DONE\n");
-        semaphore.unlock();
+        //semaphore.unlock();
         printf("PROCESS UNLOCK DONE\n");
     }
 
@@ -253,12 +257,15 @@ void Main::process()
     void Main::imageReceivedCB(const sensor_msgs::ImageConstPtr & msg)
     {
       bool empty = false;
-      mutex.lock();
+      //mutex.lock();
 
       if(img_buffer_ptr.get() == 0)
       {
         empty = true;
       }
+
+      printf("CALLBACK ENTRANCE\n");
+      get_first_image = true;
 
       try
       {
@@ -278,9 +285,9 @@ void Main::process()
 
       if(empty)
       {
-        semaphore.unlock();
+        //semaphore.unlock();
       }
-      mutex.unlock();
+      //mutex.unlock();
     }
 
     void Main::targetReceivedCB(const tld_msgs::TargetConstPtr & msg)
@@ -354,20 +361,26 @@ void Main::process()
 
     bool Main::newImageReceived()
     {
-      semaphore.lock();
+      //semaphore.lock();
       return true;
     }
 
     void Main::getLastImageFromBuffer()
     {
-      mutex.lock();
+      //mutex.lock();
+      if(!img_buffer_ptr)
+          ROS_INFO("HEADER BUFFER VIDE NORMAL QUE CA PLANTE!");
+
+      if(!img_buffer_ptr)
+          ROS_INFO("PTR IMAGE VIDE NORMAL QUE CA PLANTE!");
+
       img_header = img_buffer_ptr->header;
       img = img_buffer_ptr->image;
 
       cv::cvtColor(img, gray, CV_BGR2GRAY);
 
       img_buffer_ptr.reset();
-      mutex.unlock();
+      //mutex.unlock();
     }
 
     void Main::clearBackground()

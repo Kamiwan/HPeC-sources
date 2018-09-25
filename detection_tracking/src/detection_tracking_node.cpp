@@ -220,32 +220,21 @@ void detection_tracking_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandl
 	}
 	ros::Rate rate(rate_double);
 
-	ros::AsyncSpinner spinner(1);
+	//ros::AsyncSpinner spinner(1);
 	Main * main_node = new Main();
 
 	/* Set up the structure to specify the action */
+	
 	action.sa_handler = termination_handler;
 	sigemptyset(&action.sa_mask);
-	//action.sa_flags = 0;
-	//sigaction(SIGINT, &action, NULL);
+	action.sa_flags = 0;
+	sigaction(SIGINT, &action, NULL);
 	
 
 	main_node->process2(workerHandle_ptr, rate);
 
-	/*spinner.start();
-	main_node->process();
-	spinner.stop();
-	*/
-
 	/*
-	std_msgs::Float32 elapsed_time;
-	while (workerHandle_ptr->ok()) //Main processing loop
-	{
-		//EM, This call checks if a somethubg from a topic has been received 
-		//	  and run callback functions if yes.
-		queue.callAvailable();
-
-		//EM, Start app execution time
+	//EM, Start app execution time
 		start = clock();
 
 		std::cout << "Hello World!" << std::endl;
@@ -256,12 +245,11 @@ void detection_tracking_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandl
 		elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
 		std::cout << "SOFTWARE detection_tracking Processing time : " << elapsed_time.data << std::endl;
 		rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
-		
-	}	 // end while
 	*/
 
 	run = false;
-	//delete main_node;
+	delete main_node;
+	//main_node->~Main();
 	ROS_INFO("[THREAD][STOPPED]");
 }
 
