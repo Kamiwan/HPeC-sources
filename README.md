@@ -127,6 +127,7 @@ Replace the path of *image_transport* lib by yours in the CMakeLists.txt of foll
 * generic_task_wrapper
 * rosnode_model
 * harris_detector
+* detection_tracking
 
 in the include directories
 ```bash 
