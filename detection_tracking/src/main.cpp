@@ -126,13 +126,11 @@ void Main::process()
           tld->writeToFile(modelExportFile.c_str());
         }
 
-        //semaphore.unlock();
+        semaphore.unlock();
     }
 
-  void Main::process2(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, ros::Rate rate)
+  void Main::hpec_process(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, ros::Rate rate)
   {
-
-    pthread_cleanup_push(cleanup_handler,this);
 
     if(autoFaceDetection && !face_cascade.load(face_cascade_path))
     {
@@ -141,33 +139,26 @@ void Main::process()
     }
     while (workerHandle_ptr->ok())
     {   
-      ROS_INFO("BOUCLE CALCUL?? %d", state);
       ros::CallbackQueue queue;
 	    workerHandle_ptr->setCallbackQueue(&queue);
     	queue.callAvailable();
       //EM, This call checks if a something from a topic has been received 
 		  // and run callback functions if yes.
-
         switch (state)
         {
             case INIT:
-                ROS_INFO("DEBUT INIT");
-                //EM, Add a test in the case the camera topic is not activated
+                //EM, Add a test to wait the first image callback
                 if(get_first_image)
                 {
-                  ROS_INFO("IMAGE RECEIVED");
                     if(showOutput)
                         sendTrackedObject(0, 0, 0, 0, 0.0);
-                    getLastImageFromBuffer();
-                    ROS_INFO("RECOVER LAST IMAGE");
+                    hpecGetLastImageFromBuffer();
                     tld->detectorCascade->imgWidth = gray.cols;
                     tld->detectorCascade->imgHeight = gray.rows;
                     tld->detectorCascade->imgWidthStep = gray.step;
 
                     state = TRACKER_INIT;
-                    ROS_INFO("TRACKER INIT ?????");
                 }
-                ROS_INFO("DEBUT INIT");
                 break;
             case TRACKER_INIT:
                 if(loadModel && !modelImportFile.empty())
@@ -204,18 +195,19 @@ void Main::process()
                 //EM, Add a test in the case the camera topic is not activated
                 if(img_buffer_ptr->image.rows != 0 && img_buffer_ptr->image.rows != 0)
                 {
+                  time_t start = clock();
                   ros::Time tic = ros::Time::now();
 
-                  getLastImageFromBuffer();
+                  hpecGetLastImageFromBuffer();
 
                   tld->processImage(img);
 
                   ros::Duration toc = (ros::Time::now() - tic);
                   float fps = 1.0/toc.toSec();
-
                   std_msgs::Float32 msg_fps;
                   msg_fps.data = fps;
                   pub2.publish(msg_fps);
+
                   if(showOutput)
                   {
                     if(tld->currBB != NULL)
@@ -227,6 +219,10 @@ void Main::process()
                       sendTrackedObject(1, 1, 1, 1, 0.0);
                     }
                   }
+                  time_t ends = clock();
+                  std_msgs::Float32 elapsed_time;
+                  elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
+			            std::cout << "SOFTWARE TLD processing time : " << elapsed_time.data << std::endl;
                   ROS_INFO("Detection and Tracking done!");
                 }
                 break;
@@ -237,35 +233,25 @@ void Main::process()
                   default:
                 break;
                 }
-          ROS_INFO("SLEEP TIME");
-          rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
-        }
+        rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
+      }
 
-        if(exportModelAfterRun)
-        {
-          tld->writeToFile(modelExportFile.c_str());
-        }
-
-        printf("We are at POPING TIME\n");
-        pthread_cleanup_pop(1);
-        printf("POP DONE\n");
-        //semaphore.unlock();
-        printf("PROCESS UNLOCK DONE\n");
-    }
+      if(exportModelAfterRun)
+      {
+        tld->writeToFile(modelExportFile.c_str());
+      }
+  }
 
 
     void Main::imageReceivedCB(const sensor_msgs::ImageConstPtr & msg)
     {
       bool empty = false;
-      //mutex.lock();
+      mutex.lock();
 
       if(img_buffer_ptr.get() == 0)
       {
         empty = true;
       }
-
-      printf("CALLBACK ENTRANCE\n");
-      get_first_image = true;
 
       try
       {
@@ -285,9 +271,30 @@ void Main::process()
 
       if(empty)
       {
-        //semaphore.unlock();
+        semaphore.unlock();
       }
-      //mutex.unlock();
+      mutex.unlock();
+    }
+
+    void Main::hpecImageReceivedCB(const sensor_msgs::ImageConstPtr & msg)
+    {
+      get_first_image = true;
+
+      try
+      {
+        if (enc::isColor(msg->encoding))
+          img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::RGB8);
+        else
+        {
+          img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::MONO8);
+          cv::cvtColor(img_buffer_ptr->image, img_buffer_ptr->image, CV_GRAY2BGR);
+        }
+      }
+      catch (cv_bridge::Exception& e)
+      {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+      }
     }
 
     void Main::targetReceivedCB(const tld_msgs::TargetConstPtr & msg)
@@ -361,18 +368,13 @@ void Main::process()
 
     bool Main::newImageReceived()
     {
-      //semaphore.lock();
+      semaphore.lock();
       return true;
     }
 
     void Main::getLastImageFromBuffer()
     {
-      //mutex.lock();
-      if(!img_buffer_ptr)
-          ROS_INFO("HEADER BUFFER VIDE NORMAL QUE CA PLANTE!");
-
-      if(!img_buffer_ptr)
-          ROS_INFO("PTR IMAGE VIDE NORMAL QUE CA PLANTE!");
+      mutex.lock();
 
       img_header = img_buffer_ptr->header;
       img = img_buffer_ptr->image;
@@ -380,7 +382,17 @@ void Main::process()
       cv::cvtColor(img, gray, CV_BGR2GRAY);
 
       img_buffer_ptr.reset();
-      //mutex.unlock();
+      mutex.unlock();
+    }
+
+    void Main::hpecGetLastImageFromBuffer()
+    {
+      img_header = img_buffer_ptr->header;
+      img = img_buffer_ptr->image;
+
+      cv::cvtColor(img, gray, CV_BGR2GRAY);
+
+      img_buffer_ptr.reset();
     }
 
     void Main::clearBackground()
@@ -457,6 +469,15 @@ void Main::process()
     }
 
 
+    /*************************************************** 
+     *  EM, Attempt to use pthread with mutexes by using
+     *  pthread cleanup and push in hpec_process()
+     * 
+     * 	static void cleanup_handler(void *arg); (in main.hpp)
+     * 
+     *  pthread_cleanup_push(cleanup_handler,this);
+     *  pthread_cleanup_pop(1);
+     * 
 		void Main::cleanup_handler(void *arg)
 		{
     	printf("Called clean-up handlers\n");
@@ -472,4 +493,5 @@ void Main::process()
 
       //delete my_main;
 		}
+    ***************************************************/
 

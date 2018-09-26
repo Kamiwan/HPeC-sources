@@ -82,32 +82,48 @@ class Main
 			np.param("height", target_bb.height, 100);
 			np.param("correctBB", correctBB, false);
 
+			np.param("use_hpec_process", use_hpec_process, true);
+
 			pub1 = n.advertise<tld_msgs::BoundingBox>(
                     "tld_tracked_object", 1000, true);
 			pub2 = n.advertise<std_msgs::Float32>(
                     "tld_fps", 1000, true);
-			sub1 = n.subscribe(
+			if(use_hpec_process)
+			{
+				sub1 = n.subscribe(
+                    "image", 1000, &Main::hpecImageReceivedCB, this);
+			} else
+			{
+				sub1 = n.subscribe(
                     "image", 1000, &Main::imageReceivedCB, this);
+			}
 			sub2 = n.subscribe(
                     "bounding_box", 1000, &Main::targetReceivedCB, this);
 			sub3 = n.subscribe(
                     "cmds", 1000, &Main::cmdReceivedCB, this);
 
-			//semaphore.lock();
+			if(!use_hpec_process)
+				semaphore.lock();
 		}
 
 		~Main()
 		{
 			delete tld;
-			//mutex.unlock();
-			//semaphore.unlock();
-			printf("\n **** DESTRUCTOR DONE! ****\n");
+			ROS_INFO("**** DESTRUCTOR DONE! ****");
 		}
 
 		void process();
-		void process2(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, ros::Rate rate);
 
-		static void cleanup_handler(void *arg);
+		/*!
+        * \brief This function executes opentld detection and tracking
+		* Author : EM 
+		* 
+ 		* @param workerHandle_ptr allow the function to get ROS 
+ 		* master events, to handle topics for example
+		* @param rate transmit the ideal application frequency
+        */
+		void hpec_process(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, ros::Rate rate);
+
 
 	private:
 		tld::TLD * tld; 
@@ -118,7 +134,9 @@ class Main
 		std::string modelImportFile;
 		std::string modelExportFile;
 
+		//EM, booleans to adapt the code for hpec project
 		bool get_first_image;
+		bool use_hpec_process;
 
 		enum
 		{
@@ -136,8 +154,8 @@ class Main
 		cv::Mat img;
 		cv_bridge::CvImagePtr img_buffer_ptr;
 		cv::Mat gray;
-		//boost::interprocess::interprocess_mutex mutex;
-		//boost::interprocess::interprocess_mutex semaphore;
+		boost::interprocess::interprocess_mutex mutex;
+		boost::interprocess::interprocess_mutex semaphore;
 		ros::NodeHandle n;
 		ros::Publisher pub1;
 		ros::Publisher pub2;
@@ -153,11 +171,13 @@ class Main
         */
 		bool newImageReceived();
 		void getLastImageFromBuffer();
+		void hpecGetLastImageFromBuffer(); //EM, Adaptation for hpec project
 
         /*!
         * \brief ROS image callback.
         */
 		void imageReceivedCB(const sensor_msgs::ImageConstPtr & msg);
+		void hpecImageReceivedCB(const sensor_msgs::ImageConstPtr & msg); //EM, Adaptation for hpec project
 
         /*!
         * \brief ROS target callback.

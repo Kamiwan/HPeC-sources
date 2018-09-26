@@ -205,10 +205,6 @@ void detection_tracking_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandl
 	image_transport::ImageTransport it(*workerHandle_ptr);
 	image_transport::Subscriber cam_sub = it.subscribe(TLD_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
-
-	/**********************************************************************
-	* EM, Insert here Topic Publication and Subscription
-	**********************************************************************/
 	
 	//EM, App parameters reading
 	//Node activation rate is mandatory
@@ -220,36 +216,12 @@ void detection_tracking_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandl
 	}
 	ros::Rate rate(rate_double);
 
-	//ros::AsyncSpinner spinner(1);
 	Main * main_node = new Main();
 
-	/* Set up the structure to specify the action */
-	
-	action.sa_handler = termination_handler;
-	sigemptyset(&action.sa_mask);
-	action.sa_flags = 0;
-	sigaction(SIGINT, &action, NULL);
-	
-
-	main_node->process2(workerHandle_ptr, rate);
-
-	/*
-	//EM, Start app execution time
-		start = clock();
-
-		std::cout << "Hello World!" << std::endl;
-
-		//EM, Compute execution time
-		ends = clock();
-
-		elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
-		std::cout << "SOFTWARE detection_tracking Processing time : " << elapsed_time.data << std::endl;
-		rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
-	*/
+	main_node->hpec_process(workerHandle_ptr, rate);
 
 	run = false;
 	delete main_node;
-	//main_node->~Main();
 	ROS_INFO("[THREAD][STOPPED]");
 }
 
