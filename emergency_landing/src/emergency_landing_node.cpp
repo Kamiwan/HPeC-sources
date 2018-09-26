@@ -37,6 +37,7 @@ extern "C" {
 #define SDRAM_SPAN (0x04000000)
 #define HW_REGS_SPAN (0x00020000)
 #define HWREG_BASE (0xff200000)
+#define DDR_FPGA_CMA_BASE_ADDR 0xC0000000
 
 //EM, 11/04/18, Hardware version preparation
 #define DMA_READ_CSR_BASEADDR 0xFF200000
@@ -175,7 +176,8 @@ int acquire()
 	fclose(cma_dev_file);
 
 	// get virtual addr that maps to the sdram region (through HPS-FPGA non-lightweight bridge)
-	virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), MAP_SHARED, fd, cma_base_addr);
+	virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), 
+							MAP_SHARED, fd, DDR_FPGA_CMA_BASE_ADDR); //EM, replace by cma_base_addr
 	if (virtual_base_sdram == MAP_FAILED)
 	{
 		printf("ERROR: mmap() failed...\n");
@@ -198,10 +200,10 @@ int acquire()
 	
 	// EM, HW version update, Configure DMAs to the correct addresses
 	// Set the HPS Memory start address
-	descriptor_read.read_addr = cma_base_addr;
-	descriptor_read.write_addr = cma_base_addr;
-	descriptor_write.read_addr = cma_base_addr+0x2000000;
-	descriptor_write.write_addr = cma_base_addr+0x2000000;
+	descriptor_read.read_addr = DDR_FPGA_CMA_BASE_ADDR; //EM, replace by cma_base_addr 
+	descriptor_read.write_addr = DDR_FPGA_CMA_BASE_ADDR;
+	descriptor_write.read_addr = DDR_FPGA_CMA_BASE_ADDR+0x2000000;
+	descriptor_write.write_addr = DDR_FPGA_CMA_BASE_ADDR+0x2000000;
 	// We are using packetized streams so set length to max
 	descriptor_read.length = 640*480*sizeof(unsigned int);
 	descriptor_write.length = 640*480*sizeof(unsigned char);
