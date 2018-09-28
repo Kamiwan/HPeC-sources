@@ -1,13 +1,10 @@
 /*************************************************************************************
- * File   : stabilisation_imu.cpp, file to create easily ros nodes for HPeC
+ * File   : stabilisation_imu_node.cpp, 
  * Copyright (C) 2018 Lab-STICC Laboratory
  * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
  *
- * This model allows the user to create an application ros node that 
- * the adaptation manager can handle in the HPeC project.
- * 
- * This model must be used by copying the folder, then rename the package and files
- * according to your needs.
+ * Perform picture stabilisation using IUM data.
+ * Can be executed in SW or HW
  * 
  * You can test this program:
  * 	1. run on a terminal "roscore" to get a ROS master
@@ -15,6 +12,7 @@
  *  3. on another terminal, run the command 
  *     "rostopic pub -1 /stabilisation_imu_mgt_topic std_msgs/Int32 "0" or "1" or "2""
  *************************************************************************************/
+
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <boost/thread.hpp>
@@ -41,17 +39,11 @@ extern "C" {
 
 #include "sensor_msgs/Imu.h"
 #include <tf/transform_datatypes.h>
+#include "stabilisation_imu_node.h"
 
-//Erwan Moréac, 05/03/18 : Setup #define
-#define HIL				 //Code modifications for Hardware In the Loop
 
-/************************************************************************
- * EM, Insert here:
- * 	- Defines for the app
- *  - Topic names to subscribe or publish
-**********************************************************************/
 
-#define SL_INPUT_TOPIC "/iris/camera2/image_raw" //example of Topic name def
+#define STAB_IMU_INPUT_TOPIC "/iris/camera2/image_raw" //example of Topic name def
 
 /*******************************************
  * EM, Sample code for image topic
@@ -70,6 +62,11 @@ PPM_IMG img_ibuf_color;
  * to really use PPM_IMG struct!
 *******************************************/
 
+cv::Mat * picture;
+double roll, pitch, yaw;
+double prev_roll, prev_pitch, prev_yaw;
+bool first_time_imu;
+
 
 time_t start, ends;
 time_t imcpy_start,imcpy_end;
@@ -84,14 +81,6 @@ boost::shared_ptr<boost::thread> worker_thread;
 boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
 boost::shared_ptr<ros::Publisher> search_land_pub;
 
-/************************************************************************
- * EM, Insert here global variables if needed
-**********************************************************************/
-
-
-void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
-void image_callback(const sensor_msgs::Image::ConstPtr &image_cam);
-void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
 
 
 long elapse_time_u(struct timeval *end, struct timeval *start)
@@ -124,36 +113,28 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 {
 	ROS_INFO("[THREAD][RUNNING][HW]: stabilisation_imu HARDWARE VERSION \r\n");
 
+	//EM, initalize imu boolean
+	first_time_imu = true;
+
 	run = true;
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
 
-	//EM 22/02/18, Topic Subscribtion (Input) 
-	//I let the gps and camera subscriptions and callbacks as an example of ROS topic subscription
-	//Erase them if you do not need it.
 	image_transport::ImageTransport it(*workerHandle_ptr);
-	image_transport::Subscriber cam_sub = it.subscribe(SL_INPUT_TOPIC, 1, image_callback);
+	image_transport::Subscriber cam_sub = it.subscribe(STAB_IMU_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 
 	ros::Subscriber imu_sub = workerHandle_ptr->subscribe<sensor_msgs::Imu>("mavros/imu/data", 1000, imu_callback);
 
-	/**********************************************************************
-	* EM, Insert here Topic Publication and Subscription
-	**********************************************************************/
-	
 	//EM, App parameters reading
 	// /!\ Node activation rate is mandatory, add it in parameters folder
 	double rate_double;
 	if (!workerHandle_ptr->getParam("/node_activation_rates/stabilisation_imu", rate_double))
 	{
-		ROS_INFO("Could not read stabilisation_imu activation rate. Setting 1 Hz");
-		rate_double = 1;
+		ROS_INFO("Could not read stabilisation_imu activation rate. Setting 10 Hz");
+		rate_double = 10;
 	}
 	ros::Rate rate(rate_double);
-
-	/**********************************************************************
-	* EM, Insert here other parameters loading
-	**********************************************************************/
 
 	/* EM, create acquire function for Hardware version
 	if (acquire() != 0) 
@@ -161,28 +142,44 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 		ROS_INFO("Could not INIT HARDWARE");
 	}*/
 
+	bool first_time_rtz = false;
+	double theta, x, y, last_theta, last_x, last_y;
+	cv::Mat rtz_picture;
+
 	std_msgs::Float32 elapsed_time;
 	while (workerHandle_ptr->ok()) //Main processing loop
 	{
-		//EM, This call checks if a somethubg from a topic has been received 
+		//EM, This call checks if a something from a topic has been received 
 		//	  and run callback functions if yes.
 		queue.callAvailable();
 
 		//EM, Start app execution time
 		start = clock();
 
-
-		/**********************************************************************
-		 * EM, Insert here some application functions
-		**********************************************************************/
 		std::cout << "HARD Hello World!" << std::endl;
 
+		get_rtz_param_from_ins_values(*picture, yaw, pitch,
+                                    roll, prev_yaw, prev_pitch,
+                                    prev_roll, &theta, &x, &y);
 
+		rtz_picture = rotozoom_ins(*picture, first_time_rtz,
+                        			theta, x, y,
+									last_theta, last_x, last_y);
+
+		if (!first_time_rtz)
+			first_time_rtz = true;
+
+		last_theta = theta;
+		last_x = x; 
+		last_y = y;
 
 		//EM, Compute execution time
 		ends = clock();
 		elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
 		std::cout << "HARDWARE stabilisation_imu Processing time : " << elapsed_time.data << std::endl;
+
+		cv::imshow("after", rtz_picture);
+		cv::waitKey(30); 
 
 		rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
 		
@@ -211,7 +208,7 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 	//I let the gps and camera subscriptions and callbacks as an example of ROS topic subscription
 	//Erase them if you do not need it.
 	image_transport::ImageTransport it(*workerHandle_ptr);
-	image_transport::Subscriber cam_sub = it.subscribe(SL_INPUT_TOPIC, 1, image_callback);
+	image_transport::Subscriber cam_sub = it.subscribe(STAB_IMU_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 
 	/**********************************************************************
@@ -236,7 +233,7 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 	std_msgs::Float32 elapsed_time;
 	while (workerHandle_ptr->ok()) //Main processing loop
 	{
-		//EM, This call checks if a somethubg from a topic has been received 
+		//EM, This call checks if a something from a topic has been received 
 		//	  and run callback functions if yes.
 		queue.callAvailable();
 
@@ -390,21 +387,39 @@ int main(int argc, char **argv)
 *******************************************************************/
 void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 {
-    printf("\nSeq: [%d]", imu_msg->header.seq);
-    printf("\nOrientation-> x: [%f], y: [%f], z: [%f], w: [%f]",
-			 imu_msg->orientation.x, imu_msg->orientation.y, 
-			 imu_msg->orientation.z, imu_msg->orientation.w);
+   	double quatx= imu_msg->orientation.x;
+   	double quaty= imu_msg->orientation.y;
+   	double quatz= imu_msg->orientation.z;
+   	double quatw= imu_msg->orientation.w;
 
-   double quatx= imu_msg->orientation.x;
-   double quaty= imu_msg->orientation.y;
-   double quatz= imu_msg->orientation.z;
-   double quatw= imu_msg->orientation.w;
+	double tmp_roll, tmp_pitch, tmp_yaw;
 
-    tf::Quaternion q(quatx, quaty, quatz, quatw);
-    tf::Matrix3x3 m(q);
-    double roll, pitch, yaw;
-    m.getRPY(roll, pitch, yaw);
+   	tf::Quaternion q(quatx, quaty, quatz, quatw);
+   	tf::Matrix3x3 m(q);
+   	m.getRPY(tmp_roll, tmp_pitch, tmp_yaw);
 
+	if(first_time_imu)	
+	{
+		prev_roll = tmp_roll;
+		prev_pitch = tmp_pitch;
+		prev_yaw = tmp_yaw;
+
+		roll = tmp_roll;
+		pitch = tmp_pitch;
+		yaw = tmp_yaw;
+
+		first_time_imu = false;
+	} else {
+		prev_roll = roll;
+		prev_pitch = pitch;
+		prev_yaw = yaw;
+
+		roll = tmp_roll;
+		pitch = tmp_pitch;
+		yaw = tmp_yaw;
+	}
+	
+	printf("\nSeq: [%d]", imu_msg->header.seq);
     printf("\nRoll: [%f],Pitch: [%f],Yaw: [%f]",roll,pitch,yaw);
     return ;
 
@@ -417,7 +432,6 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
  * 
  * Callback function to get GPS position
  * Here, only altitude is used but there are other data on position
- * (i) Sample code, you can erase if useless
 *******************************************************************/
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 {
@@ -430,18 +444,9 @@ void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
  * @param image_cam, image received from a camera by a topic
  * 
  * Callback function to get camera raw image
- * (i) Sample code, you can erase if useless
- * (i) Use img_ibuf_color global variable then in the app function
- * /!\ In HIL soft, 
- * 	   FREE img_ibuf_color AT THE END OF EACH app function!
 *******************************************************************/
 void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 {
-	// Erwan Moréac 22/02/18, Image size update
-	img_ibuf_color.h = image_cam->height;
-	img_ibuf_color.w = image_cam->width;
-	dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", img_ibuf_color.w, img_ibuf_color.h);
-
 	// Erwan Moréac 22/02/18, use of cv_bridge to get the opencv::Mat of the picture
 	try
 	{
@@ -459,31 +464,25 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 		} else { //Software version
 			#ifdef HIL //mandatory malloc to save image from a remote computer
 				imcpy_start = clock();
-				img_ibuf_color.img = (unsigned char *)malloc(3*img_ibuf_color.w * img_ibuf_color.h * sizeof(unsigned char));
+				picture = new cv::Mat(image_DATA->image);
 				
-				//Use of uint32_t to copy data 4x faster instead of copying byte by byte
-				// /!\ The image size in bytes MUST BE a multiple of 32
-				uint32_t * ptrRes;
-				uint32_t * ptrIn;
-				ptrIn  = (uint32_t *)image_DATA->image.data;
-				ptrRes = (uint32_t *)img_ibuf_color.img;
-				int image_size=img_ibuf_color.w*img_ibuf_color.h;
-				int int_img_size=(image_size*3)>>2; //int_img_size = image_size * 3 bytes (BGR) / 4 bytes (int)
-
-				for(int i=0;i<int_img_size;i++)
-					ptrRes[i] = ptrIn[i];
 				imcpy_end = clock();
 
 				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
+				std::cout << "SOFTWARE HIL Image COPY time : " << elapsed_time.data << std::endl;
+				dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
 
 			#else //Zero-copy transfer
 				imcpy_start = clock();
-				img_ibuf_color.img = image_DATA->image.data;
+				picture->data = image_DATA->image.data;
+				picture->cols = image_DATA->cols;
+				picture->rows = image_DATA->rows;
+	
 				imcpy_end = clock();
 
 				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
 				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
+				dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture.cols, picture.rows);
 			#endif
 		}
 
@@ -494,3 +493,84 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 		ROS_INFO("Could not convert from '%s' to 'bgr'.", image_cam->encoding.c_str());
 	}
 }
+
+
+void get_rtz_param_from_ins_values(const cv::Mat&  pic, double yawData, double pitchData,
+                                    double rollData, double initialYaw, double initialPitch,
+                                    double initialRoll, double * theta, double * x, double * y)
+{
+	// Model Parameters
+	const double Y_OFFSET     = 0;
+	const double THETA_OFFSET = 0;
+	const double X_OFFSET     = 0;
+
+	const double  THETA_COEF  = 1;
+	const double  X_COEF      = 1;
+	const double  Y_COEF      = 1;
+	
+	*x 		= (yawData - initialYaw) * (pic.cols / HFOV);
+	*y		= (pitchData - initialPitch) * (pic.rows / VFOV) + Y_OFFSET;
+  	*theta	= THETA_COEF * (rollData - initialRoll) - THETA_OFFSET;
+	*theta	= -(*theta);
+}
+
+
+cv::Mat rotozoom_ins(const cv::Mat & pic, bool first_time,
+                        const double theta, const double x, const double y,
+						const double last_theta, const double last_x, const double last_y)
+{
+	double x_cumul, y_cumul, theta_cumul;
+	if (FILTERING) 
+	{
+		double delta_x_limit = 180 * (pic.cols / HFOV);
+		if (first_time)
+		{
+			x_cumul		= x;
+			y_cumul		= y;
+			theta_cumul	= theta;	
+		} else {
+			double delta_theta = theta - last_theta;
+			if (delta_theta > M_PI) 
+				delta_theta = delta_theta - 2*M_PI;
+			if (delta_theta < -M_PI) 
+				delta_theta = delta_theta + 2*M_PI;
+			theta_cumul = LEARN_RATE * ( theta_cumul + delta_theta);
+
+			double delta_x = x - last_x;
+			if (delta_x > delta_x_limit) 
+				delta_x = delta_x - 2*delta_x_limit;
+			if (delta_x < -delta_x_limit)
+				delta_x = delta_x + 2*delta_x_limit;
+			x_cumul = LEARN_RATE * ( x_cumul + delta_x);
+
+			double delta_y = y - last_y;
+			y_cumul = LEARN_RATE * (y_cumul + delta_y);
+			
+			std::cout << "delta theta=" << delta_theta << " x=" << delta_x << " y=" << delta_y << std::endl;
+		} // end first_time
+	} // end filtering
+
+	cv::Mat T(2, 3, CV_64FC1); // use CV_64FC1 to get double data type
+
+	T.at<double>(0,0) = cos(theta_cumul);
+    T.at<double>(0,1) = -sin(theta_cumul);
+    T.at<double>(1,0) = sin(theta_cumul);
+    T.at<double>(1,1) = cos(theta_cumul);
+
+    T.at<double>(0,2) = x_cumul;
+    T.at<double>(1,2) = y_cumul;
+
+	cv::Mat rtz_picture; 
+	cv::warpAffine(pic, rtz_picture, T, pic.size());
+	
+	return rtz_picture;
+}// end rotozoom_ins
+
+
+	/*T.at<double>(2,0) = 0;
+	T.at<double>(2,1) = 0;
+	T.at<double>(2,2) = 1;*/
+
+
+
+

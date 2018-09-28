@@ -147,7 +147,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(stabilisation_imu_node
-			src/stabilisation_imu.cpp
+			src/stabilisation_imu_node.cpp
       src/debug.c	
 )
 
