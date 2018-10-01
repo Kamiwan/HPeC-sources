@@ -21,6 +21,7 @@
 #define FILTERING true
 #define HFOV 60
 #define VFOV 45
+#define REFRESH_RTZ_PARAM 20 //EM, Number of pictures before update of theta, x and y
 
 long elapse_time_u(struct timeval *end, struct timeval *start);
 long time_micros(struct timeval *end, struct timeval *start);

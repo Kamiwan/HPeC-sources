@@ -66,6 +66,7 @@ cv::Mat * picture;
 double roll, pitch, yaw;
 double prev_roll, prev_pitch, prev_yaw;
 bool first_time_imu;
+bool img_acquired;
 
 
 time_t start, ends;
@@ -113,9 +114,6 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 {
 	ROS_INFO("[THREAD][RUNNING][HW]: stabilisation_imu HARDWARE VERSION \r\n");
 
-	//EM, initalize imu boolean
-	first_time_imu = true;
-
 	run = true;
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
@@ -123,7 +121,6 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 	image_transport::ImageTransport it(*workerHandle_ptr);
 	image_transport::Subscriber cam_sub = it.subscribe(STAB_IMU_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
-
 	ros::Subscriber imu_sub = workerHandle_ptr->subscribe<sensor_msgs::Imu>("mavros/imu/data", 1000, imu_callback);
 
 	//EM, App parameters reading
@@ -142,44 +139,13 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 		ROS_INFO("Could not INIT HARDWARE");
 	}*/
 
-	bool first_time_rtz = false;
-	double theta, x, y, last_theta, last_x, last_y;
-	cv::Mat rtz_picture;
-
-	std_msgs::Float32 elapsed_time;
 	while (workerHandle_ptr->ok()) //Main processing loop
 	{
 		//EM, This call checks if a something from a topic has been received 
 		//	  and run callback functions if yes.
 		queue.callAvailable();
 
-		//EM, Start app execution time
-		start = clock();
-
-		std::cout << "HARD Hello World!" << std::endl;
-
-		get_rtz_param_from_ins_values(*picture, yaw, pitch,
-                                    roll, prev_yaw, prev_pitch,
-                                    prev_roll, &theta, &x, &y);
-
-		rtz_picture = rotozoom_ins(*picture, first_time_rtz,
-                        			theta, x, y,
-									last_theta, last_x, last_y);
-
-		if (!first_time_rtz)
-			first_time_rtz = true;
-
-		last_theta = theta;
-		last_x = x; 
-		last_y = y;
-
-		//EM, Compute execution time
-		ends = clock();
-		elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
-		std::cout << "HARDWARE stabilisation_imu Processing time : " << elapsed_time.data << std::endl;
-
-		cv::imshow("after", rtz_picture);
-		cv::waitKey(30); 
+		ROS_INFO("HARDWARE STAB_IMU!");
 
 		rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
 		
@@ -200,35 +166,33 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 {
 	ROS_INFO("[THREAD][RUNNING][SW]: stabilisation_imu SOFTWARE VERSION \r\n");
 
+	//EM, initalize booleans for imu and image
+	first_time_imu = true;
+	img_acquired = false;
+
 	run = true;
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
 
-	//EM 22/02/18, Topic Subscribtion (Input) 
-	//I let the gps and camera subscriptions and callbacks as an example of ROS topic subscription
-	//Erase them if you do not need it.
 	image_transport::ImageTransport it(*workerHandle_ptr);
 	image_transport::Subscriber cam_sub = it.subscribe(STAB_IMU_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
+	ros::Subscriber imu_sub = workerHandle_ptr->subscribe<sensor_msgs::Imu>("mavros/imu/data", 1000, imu_callback);
 
-	/**********************************************************************
-	* EM, Insert here Topic Publication and Subscription
-	**********************************************************************/
-	
 	//EM, App parameters reading
-	//Node activation rate is mandatory
+	// /!\ Node activation rate is mandatory, add it in parameters folder
 	double rate_double;
 	if (!workerHandle_ptr->getParam("/node_activation_rates/stabilisation_imu", rate_double))
 	{
-		ROS_INFO("Could not read stabilisation_imu activation rate. Setting 1 Hz");
-		rate_double = 1;
+		ROS_INFO("Could not read stabilisation_imu activation rate. Setting 10 Hz");
+		rate_double = 10;
 	}
 	ros::Rate rate(rate_double);
 
-	/**********************************************************************
-	* EM, Insert here Other parameters loading
-	**********************************************************************/
-
+	bool first_time_rtz = true;
+	double theta, x, y, last_theta, last_x, last_y;
+	cv::Mat rtz_picture;
+	int count = 0;
 
 	std_msgs::Float32 elapsed_time;
 	while (workerHandle_ptr->ok()) //Main processing loop
@@ -237,25 +201,51 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 		//	  and run callback functions if yes.
 		queue.callAvailable();
 
-		//EM, Start app execution time
-		start = clock();
+		if(!first_time_imu && img_acquired)
+		{
+			//EM, Start app execution time
+			start = clock();
 
+			
+			get_rtz_param_from_ins_values(*picture, yaw, pitch,
+										roll, prev_yaw, prev_pitch,
+										prev_roll, &theta, &x, &y);
 
-		/**********************************************************************
-		 * EM, Insert here some application functions
-		**********************************************************************/
-		std::cout << "Hello World!" << std::endl;
+			rtz_picture = rotozoom_ins(*picture, first_time_rtz,
+										theta, x, y,
+										last_theta, last_x, last_y);
 
+			if (first_time_rtz)
+				first_time_rtz = false;
 
+			if(count>REFRESH_RTZ_PARAM)
+			{
+				last_theta = theta;
+				last_x = x; 
+				last_y = y;
+				count = 0;
+			} else {
+				count++;
+			}
 
-		//EM, Compute execution time
-		ends = clock();
+			//EM, Compute execution time
+			ends = clock();
+			elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "SOFTWARE stabilisation_imu Processing time : " << elapsed_time.data << std::endl;
 
-		elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
-		std::cout << "SOFTWARE stabilisation_imu Processing time : " << elapsed_time.data << std::endl;
+			cv::imshow("before", rtz_picture);
+			cv::waitKey(10); 
+
+			#ifdef HIL
+				if(img_acquired)
+				{
+					delete picture; 	//Free memory of the allocated current picture
+					img_acquired = false;
+				}
+			#endif
+		}
 		rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
-		
-	}	 // end while
+	}
 	run = false;
 	ROS_INFO("[THREAD][STOPPED]");
 }
@@ -404,25 +394,19 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 		prev_pitch = tmp_pitch;
 		prev_yaw = tmp_yaw;
 
-		roll = tmp_roll;
-		pitch = tmp_pitch;
-		yaw = tmp_yaw;
-
 		first_time_imu = false;
 	} else {
 		prev_roll = roll;
 		prev_pitch = pitch;
 		prev_yaw = yaw;
-
-		roll = tmp_roll;
-		pitch = tmp_pitch;
-		yaw = tmp_yaw;
 	}
+
+	roll = tmp_roll;
+	pitch = tmp_pitch;
+	yaw = tmp_yaw;
 	
 	printf("\nSeq: [%d]", imu_msg->header.seq);
     printf("\nRoll: [%f],Pitch: [%f],Yaw: [%f]",roll,pitch,yaw);
-    return ;
-
 }
 
 /*******************************************************************
@@ -452,7 +436,8 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 	{
 		cv_bridge::CvImagePtr image_DATA = cv_bridge::toCvCopy(image_cam, "bgr8");
 		std_msgs::Float32 elapsed_time;
-		
+		img_acquired = true;
+
 		if(hardware==1) //Hardware version
 		{
 			/**********************************************************************
@@ -474,15 +459,12 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 
 			#else //Zero-copy transfer
 				imcpy_start = clock();
-				picture->data = image_DATA->image.data;
-				picture->cols = image_DATA->cols;
-				picture->rows = image_DATA->rows;
+				picture = &image_DATA->image;
 	
 				imcpy_end = clock();
 
 				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
 				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
-				dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture.cols, picture.rows);
 			#endif
 		}
 
