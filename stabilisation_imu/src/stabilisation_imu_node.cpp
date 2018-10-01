@@ -42,9 +42,6 @@ extern "C" {
 #include "stabilisation_imu_node.h"
 
 
-
-#define STAB_IMU_INPUT_TOPIC "/iris/camera2/image_raw" //example of Topic name def
-
 /*******************************************
  * EM, Sample code for image topic
 *******************************************/
@@ -174,10 +171,14 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
 
+	//TOPICS SUBSCRIPTION
 	image_transport::ImageTransport it(*workerHandle_ptr);
 	image_transport::Subscriber cam_sub = it.subscribe(STAB_IMU_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 	ros::Subscriber imu_sub = workerHandle_ptr->subscribe<sensor_msgs::Imu>("mavros/imu/data", 1000, imu_callback);
+	//TOPICS ADVERTISING
+	image_transport::Publisher img_stab_pub = it.advertise(STAB_IMU_OUTPUT_TOPIC, 1);
+	sensor_msgs::ImagePtr msg;
 
 	//EM, App parameters reading
 	// /!\ Node activation rate is mandatory, add it in parameters folder
@@ -206,7 +207,7 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 			//EM, Start app execution time
 			start = clock();
 
-			
+			ROS_INFO("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
 			get_rtz_param_from_ins_values(*picture, yaw, pitch,
 										roll, prev_yaw, prev_pitch,
 										prev_roll, &theta, &x, &y);
@@ -233,8 +234,9 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 			elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
 			std::cout << "SOFTWARE stabilisation_imu Processing time : " << elapsed_time.data << std::endl;
 
-			cv::imshow("before", rtz_picture);
-			cv::waitKey(10); 
+			msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", rtz_picture).toImageMsg();
+			cv::waitKey(30);
+			img_stab_pub.publish(msg);
 
 			#ifdef HIL
 				if(img_acquired)
@@ -362,6 +364,12 @@ int main(int argc, char **argv)
 
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
 
+	
+	#ifdef HIL
+	#else
+		picture = new cv::Mat(); //EM, Must be done only once
+	#endif
+
 	ROS_INFO("[TASK WRAPPER][RUNNING]");
 	ros::spin();
 }
@@ -459,10 +467,10 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 
 			#else //Zero-copy transfer
 				imcpy_start = clock();
-				picture = &image_DATA->image;
-	
+				*picture = image_DATA->image;
 				imcpy_end = clock();
-
+				
+				ROS_INFO("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
 				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
 				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
 			#endif

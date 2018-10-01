@@ -15,7 +15,10 @@
 #include <math.h>
 
 //Erwan Moréac, 05/03/18 
-#define HIL	 //Code modifications for Hardware In the Loop
+//#define HIL	 //Code modifications for Hardware In the Loop
+
+#define STAB_IMU_INPUT_TOPIC "/iris/camera2/image_raw"
+#define STAB_IMU_OUTPUT_TOPIC "/stab_imu/image" 
 
 #define LEARN_RATE 0.95
 #define FILTERING true
