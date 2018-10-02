@@ -26,7 +26,6 @@
 #define VFOV 45
 #define REFRESH_RTZ_PARAM 20 //EM, Number of pictures before update of theta, x and y
 
-
 /*!
 * \brief ROS callback functions
 * Author : Soguy 
@@ -65,7 +64,6 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 void get_rtz_param_from_ins_values(const cv::Mat & pic, double yawData, double pitchData,
                                     double rollData, double initialYaw, double initialPitch,
                                     double initialRoll, double * theta, double * x, double * y);
-
 cv::Mat  rotozoom_ins(const cv::Mat & pic, bool first_time,
                         const double theta, const double x, const double y,
 						const double last_theta, const double last_x, const double last_y);
