@@ -42,23 +42,9 @@ extern "C" {
 #include "stabilisation_imu_node.h"
 
 
-/*******************************************
- * EM, Sample code for image topic
-*******************************************/
-/* color format image : pixmap */
-typedef struct{
-    int w;
-    int h;
-    unsigned char * img;
-} PPM_IMG;
-
-PPM_IMG img_ibuf_color;
-/*******************************************
- * EM, Sample code for image topic
- * /!\	USE image.h 
- * to really use PPM_IMG struct!
-*******************************************/
-
+/***********************************************
+ * EM, Global Variables  
+************************************************/
 cv::Mat * picture;
 double roll, pitch, yaw;
 double prev_roll, prev_pitch, prev_yaw;
@@ -469,7 +455,7 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 				imcpy_start = clock();
 				*picture = image_DATA->image;
 				imcpy_end = clock();
-				
+
 				ROS_INFO("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
 				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
 				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
@@ -540,7 +526,7 @@ cv::Mat rotozoom_ins(const cv::Mat & pic, bool first_time,
 		} // end first_time
 	} // end filtering
 
-	cv::Mat T(2, 3, CV_64FC1); // use CV_64FC1 to get double data type
+	cv::Mat T(2, 3, CV_64FC1); //EM, use CV_64FC1 to get double data type
 
 	T.at<double>(0,0) = cos(theta_cumul);
     T.at<double>(0,1) = -sin(theta_cumul);
@@ -555,12 +541,5 @@ cv::Mat rotozoom_ins(const cv::Mat & pic, bool first_time,
 	
 	return rtz_picture;
 }// end rotozoom_ins
-
-
-	/*T.at<double>(2,0) = 0;
-	T.at<double>(2,1) = 0;
-	T.at<double>(2,2) = 1;*/
-
-
 
 

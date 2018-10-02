@@ -26,14 +26,42 @@
 #define VFOV 45
 #define REFRESH_RTZ_PARAM 20 //EM, Number of pictures before update of theta, x and y
 
+
+/*!
+* \brief ROS callback functions
+* Author : Soguy 
+*/
 long elapse_time_u(struct timeval *end, struct timeval *start);
 long time_micros(struct timeval *end, struct timeval *start);
 
+
+/*!
+* \brief ROS callback functions
+* Author : EM 
+*/
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
 void image_callback(const sensor_msgs::Image::ConstPtr &image_cam);
 void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
+void managing_controller_request(const std_msgs::Int32::ConstPtr &value);
+
+/*!
+* \brief Stops the current pThread launched
+* Author : Soguy, EM 
+*/
+void stop();
+
+/*!
+* \brief Functions used with pThread to execute the app in SW or HW
+* Author : EM 
+*/
+void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr);
+void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr);
 
 
+/*!
+* \brief This group of functions perform the SW imu stabilization
+* Author : EM 
+*/
 void get_rtz_param_from_ins_values(const cv::Mat & pic, double yawData, double pitchData,
                                     double rollData, double initialYaw, double initialPitch,
                                     double initialRoll, double * theta, double * x, double * y);
@@ -41,3 +69,4 @@ void get_rtz_param_from_ins_values(const cv::Mat & pic, double yawData, double p
 cv::Mat  rotozoom_ins(const cv::Mat & pic, bool first_time,
                         const double theta, const double x, const double y,
 						const double last_theta, const double last_x, const double last_y);
+
