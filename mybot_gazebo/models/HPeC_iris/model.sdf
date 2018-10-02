@@ -576,7 +576,7 @@
     <sensor name='camera1_sensor' type='camera'>
       <update_rate>30.0</update_rate>
       <camera name='head'>
-        <horizontal_fov>1.3962634</horizontal_fov>
+        <horizontal_fov>1.0472</horizontal_fov>
         <image>
           <width>640</width>
           <height>480</height>
@@ -646,7 +646,7 @@
     <sensor name='camera2_sensor' type='camera'>
       <update_rate>30.0</update_rate>
       <camera name='head'>
-        <horizontal_fov>1.3962634</horizontal_fov>
+        <horizontal_fov>1.0472</horizontal_fov>
         <image>
           <width>640</width>
           <height>480</height>

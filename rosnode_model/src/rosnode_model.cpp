@@ -39,6 +39,8 @@ extern "C" {
 #include "std_msgs/Float32.h"
 #include "std_msgs/String.h"
 
+#include "sensor_msgs/Imu.h"
+#include <tf/transform_datatypes.h>
 
 //Erwan Moréac, 05/03/18 : Setup #define
 #define HIL				 //Code modifications for Hardware In the Loop
@@ -89,6 +91,8 @@ boost::shared_ptr<ros::Publisher> search_land_pub;
 
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
 void image_callback(const sensor_msgs::Image::ConstPtr &image_cam);
+void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
+
 
 long elapse_time_u(struct timeval *end, struct timeval *start)
 {
@@ -132,6 +136,8 @@ void appname_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	image_transport::ImageTransport it(*workerHandle_ptr);
 	image_transport::Subscriber cam_sub = it.subscribe(SL_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
+
+	ros::Subscriber imu_sub = workerHandle_ptr->subscribe<sensor_msgs::Imu>("mavros/imu/data", 1000, imu_callback);
 
 	/**********************************************************************
 	* EM, Insert here Topic Publication and Subscription
@@ -378,6 +384,36 @@ int main(int argc, char **argv)
 }
 
 
+
+/*******************************************************************
+ * imu_callback
+ * Author : EM 
+ * @param imu_msg, UAV GPS position from topic listened
+ * 
+ * Callback function to get IMU data
+*******************************************************************/
+void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
+{
+    printf("\nSeq: [%d]", imu_msg->header.seq);
+    printf("\nOrientation-> x: [%f], y: [%f], z: [%f], w: [%f]",
+			 imu_msg->orientation.x, imu_msg->orientation.y, 
+			 imu_msg->orientation.z, imu_msg->orientation.w);
+
+   double quatx= imu_msg->orientation.x;
+   double quaty= imu_msg->orientation.y;
+   double quatz= imu_msg->orientation.z;
+   double quatw= imu_msg->orientation.w;
+
+    tf::Quaternion q(quatx, quaty, quatz, quatw);
+    tf::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+
+    printf("\nRoll: [%f],Pitch: [%f],Yaw: [%f]",roll,pitch,yaw);
+    return ;
+
+}
+
 /*******************************************************************
  * gps_callback
  * Author : Valentin, EM 
@@ -385,7 +421,7 @@ int main(int argc, char **argv)
  * 
  * Callback function to get GPS position
  * Here, only altitude is used but there are other data on position
- * (?) Sample code, you can erase if useless
+ * (i) Sample code, you can erase if useless
 *******************************************************************/
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 {
@@ -398,8 +434,8 @@ void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
  * @param image_cam, image received from a camera by a topic
  * 
  * Callback function to get camera raw image
- * (?) Sample code, you can erase if useless
- * (?) Use img_ibuf_color global variable then in the app function
+ * (i) Sample code, you can erase if useless
+ * (i) Use img_ibuf_color global variable then in the app function
  * /!\ In HIL soft, 
  * 	   FREE img_ibuf_color AT THE END OF EACH app function!
 *******************************************************************/
