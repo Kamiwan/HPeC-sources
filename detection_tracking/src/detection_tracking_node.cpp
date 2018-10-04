@@ -3,7 +3,8 @@
  * Copyright (C) 2018 Lab-STICC Laboratory
  * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
  *
- *  3. on another terminal, run the command 
+ *  1. Use roslaunch with .launch file to execte this app
+ *  2. on another terminal, run the command 
  *     "rostopic pub -1 /detection_tracking_mgt_topic std_msgs/Int32 "0" or "1" or "2""
  *************************************************************************************/
 #include <ros/ros.h>
@@ -31,42 +32,11 @@ extern "C" {
 #include "std_msgs/Float32.h"
 #include "std_msgs/String.h"
 
-#include "main.hpp"
-
-//Erwan Moréac, 05/03/18 : Setup #define
-#define HIL				 //Code modifications for Hardware In the Loop
-
-/************************************************************************
- * EM, Insert here:
- * 	- Defines for the app
- *  - Topic names to subscribe or publish
-**********************************************************************/
-
-#define TLD_INPUT_TOPIC "/iris/camera2/image_raw" 
-
-/*******************************************
- * EM, Sample code for image topic
-*******************************************/
-/* color format image : pixmap */
-typedef struct{
-    int w;
-    int h;
-    unsigned char * img;
-} PPM_IMG;
-
-PPM_IMG img_ibuf_color;
-/*******************************************
- * EM, Sample code for image topic
- * /!\	USE image.h 
- * to really use PPM_IMG struct!
-*******************************************/
+#include "main.hpp" //EM, HIL definition there
 
 
 time_t start, ends;
-time_t imcpy_start,imcpy_end;
 struct timeval beginning, current, end;
-
-struct sigaction action;
 
 bool run = false;
 int current_ver = 0;
@@ -83,7 +53,6 @@ boost::shared_ptr<ros::Publisher> detect_track_pub;
 
 
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
-void image_callback(const sensor_msgs::Image::ConstPtr &image_cam);
 
 long elapse_time_u(struct timeval *end, struct timeval *start)
 {
@@ -122,11 +91,7 @@ void detection_tracking_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHan
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
 
-	//EM 22/02/18, Topic Subscribtion (Input) 
-	//I let the gps and camera subscriptions and callbacks as an example of ROS topic subscription
-	//Erase them if you do not need them.
-	image_transport::ImageTransport it(*workerHandle_ptr);
-	image_transport::Subscriber cam_sub = it.subscribe(TLD_INPUT_TOPIC, 1, image_callback);
+	//EM 22/02/18, Topic Subscribtion (Input)
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 
 	/**********************************************************************
@@ -200,10 +165,6 @@ void detection_tracking_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandl
 	workerHandle_ptr->setCallbackQueue(&queue);
 
 	//EM 22/02/18, Topic Subscribtion (Input) 
-	//I let the gps and camera subscriptions and callbacks as an example of ROS topic subscription
-	//Erase them if you do not need it.
-	image_transport::ImageTransport it(*workerHandle_ptr);
-	image_transport::Subscriber cam_sub = it.subscribe(TLD_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 	
 	//EM, App parameters reading
@@ -214,11 +175,10 @@ void detection_tracking_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandl
 		ROS_INFO("Could not read detection_tracking activation rate. Setting 1 Hz");
 		rate_double = 1;
 	}
-	ros::Rate rate(rate_double);
 
 	Main * main_node = new Main();
 
-	main_node->hpec_process(workerHandle_ptr, rate);
+	main_node->hpec_process(workerHandle_ptr, rate_double);
 
 	run = false;
 	delete main_node;
@@ -363,77 +323,6 @@ int main(int argc, char **argv)
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 {
 	altitude = position->altitude;
-}
-
-/*******************************************************************
- * image_callback
- * Author : EM 
- * @param image_cam, image received from a camera by a topic
- * 
- * Callback function to get camera raw image
- * (?) Sample code, you can erase if useless
- * (?) Use img_ibuf_color global variable then in the app function
- * /!\ In HIL soft, 
- * 	   FREE img_ibuf_color AT THE END OF EACH app function!
-*******************************************************************/
-void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
-{
-	// Erwan Moréac 22/02/18, Image size update
-	img_ibuf_color.h = image_cam->height;
-	img_ibuf_color.w = image_cam->width;
-	dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", img_ibuf_color.w, img_ibuf_color.h);
-
-	// Erwan Moréac 22/02/18, use of cv_bridge to get the opencv::Mat of the picture
-	try
-	{
-		cv_bridge::CvImagePtr image_DATA = cv_bridge::toCvCopy(image_cam, "bgr8");
-		std_msgs::Float32 elapsed_time;
-		
-		if(hardware==1) //Hardware version
-		{
-			/**********************************************************************
-		 	* EM, Insert here hardware version of image copying 
-			*     It highly depends of the HW configuration
-			*	  a memcpy is mandatory.
-			**********************************************************************/	
-
-		} else { //Software version
-			#ifdef HIL //mandatory malloc to save image from a remote computer
-				imcpy_start = clock();
-				img_ibuf_color.img = (unsigned char *)malloc(3*img_ibuf_color.w * img_ibuf_color.h * sizeof(unsigned char));
-				
-				//Use of uint32_t to copy data 4x faster instead of copying byte by byte
-				// /!\ The image size in bytes MUST BE a multiple of 32
-				uint32_t * ptrRes;
-				uint32_t * ptrIn;
-				ptrIn  = (uint32_t *)image_DATA->image.data;
-				ptrRes = (uint32_t *)img_ibuf_color.img;
-				int image_size=img_ibuf_color.w*img_ibuf_color.h;
-				int int_img_size=(image_size*3)>>2; //int_img_size = image_size * 3 bytes (BGR) / 4 bytes (int)
-
-				for(int i=0;i<int_img_size;i++)
-					ptrRes[i] = ptrIn[i];
-				imcpy_end = clock();
-
-				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
-
-			#else //Zero-copy transfer
-				imcpy_start = clock();
-				img_ibuf_color.img = image_DATA->image.data;
-				imcpy_end = clock();
-
-				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
-			#endif
-		}
-
-		ROS_INFO("NODE MODEL IMAGE RECOVERY SUCCEED");
-	}
-	catch (cv_bridge::Exception &e)
-	{
-		ROS_INFO("Could not convert from '%s' to 'bgr'.", image_cam->encoding.c_str());
-	}
 }
 
 

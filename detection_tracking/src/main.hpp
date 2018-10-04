@@ -56,6 +56,9 @@
 #include <std_msgs/Float32.h>
 #include <string>
 
+#define HIL		//EM, Code modifications for Hardware In the Loop
+#define TLD_INPUT_TOPIC "/iris/camera2/image_raw" 
+
 class Main
 {
 	public:
@@ -65,6 +68,7 @@ class Main
 			state = INIT;
 
 			get_first_image = false;
+			img_acquired = false;
 
 			ros::NodeHandle np("~");
 			np.param("showOutput", showOutput, true);
@@ -105,7 +109,7 @@ class Main
 			if(!use_hpec_process)
 				semaphore.lock();
 		}
-
+		
 		~Main()
 		{
 			delete tld;
@@ -122,7 +126,7 @@ class Main
  		* master events, to handle topics for example
 		* @param rate transmit the ideal application frequency
         */
-		void hpec_process(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, ros::Rate rate);
+		void hpec_process(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, double rate_double);
 
 
 	private:
@@ -134,9 +138,12 @@ class Main
 		std::string modelImportFile;
 		std::string modelExportFile;
 
-		//EM, booleans to adapt the code for hpec project
+		//EM, hpec project attributes
 		bool get_first_image;
 		bool use_hpec_process;
+		bool img_acquired;
+		time_t imcpy_start,imcpy_end;
+		std_msgs::Float32 elapsed_time;
 
 		enum
 		{

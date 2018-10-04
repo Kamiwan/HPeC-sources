@@ -558,7 +558,7 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 			#ifdef HIL //Erwan Moréac, Mandatory free since we have to use malloc
 				if(img_ibuf_color.img != NULL)
 				{
-					free_ppm(img_ibuf_color); //Erwan Moréac 22/02/18, pointer adress is given so zero copy, no free
+					free_ppm(img_ibuf_color); 
 					img_ibuf_color.img = NULL;
 				}
 			#endif
