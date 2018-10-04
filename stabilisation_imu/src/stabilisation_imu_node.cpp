@@ -350,10 +350,9 @@ int main(int argc, char **argv)
 
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
 
-	
 	#ifdef HIL
 	#else
-		picture = new cv::Mat(); //EM, Must be done only once
+		picture = new cv::Mat(); //EM, Must be done only once to allow zero-copy transfer
 	#endif
 
 	ROS_INFO("[TASK WRAPPER][RUNNING]");
@@ -365,7 +364,7 @@ int main(int argc, char **argv)
 /*******************************************************************
  * imu_callback
  * Author : EM 
- * @param imu_msg, UAV GPS position from topic listened
+ * @param imu_msg, 
  * 
  * Callback function to get IMU data
 *******************************************************************/
@@ -399,8 +398,8 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 	pitch = tmp_pitch;
 	yaw = tmp_yaw;
 	
-	printf("\nSeq: [%d]", imu_msg->header.seq);
-    printf("\nRoll: [%f],Pitch: [%f],Yaw: [%f]",roll,pitch,yaw);
+	dbprintf("\nSeq: [%d]", imu_msg->header.seq);
+    dbprintf("\nRoll: [%f],Pitch: [%f],Yaw: [%f]",roll,pitch,yaw);
 }
 
 /*******************************************************************

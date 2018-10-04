@@ -128,6 +128,7 @@ Replace the path of *image_transport* lib by yours in the CMakeLists.txt of foll
 * rosnode_model
 * harris_detector
 * detection_tracking
+* stabilisation_imu
 
 in the include directories
 ```bash 
@@ -224,8 +225,8 @@ $ rostopic pub  -1  /rosnode_model_mgt_topic std_msgs/Int32 "1"
 
 The terminal where the node has been launched should print this kind of output,
 ```
-[ERROR] [1528474077.010573417]: [THREAD][RUNNING][SW]: rosnode_model SOFTWARE VERSION 
-[ERROR] [1528474077.039458231]: Could not read rosnode_model activation rate. Setting 1 Hz
+[INFO] [1528474077.010573417]: [THREAD][RUNNING][SW]: rosnode_model SOFTWARE VERSION 
+[INFO] [1528474077.039458231]: Could not read rosnode_model activation rate. Setting 1 Hz
 Hello World!
 SOFTWARE rosnode_model Processing time : 0.051
 Hello World!

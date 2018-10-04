@@ -344,10 +344,6 @@ int main(int argc, char **argv)
 
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
 
-
-	//Main * main_node = new Main();
-
-
 	ROS_INFO("[TASK WRAPPER][RUNNING] TRACKING ONLINE");
 	ros::spin();
 
