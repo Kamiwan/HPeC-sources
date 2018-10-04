@@ -129,18 +129,23 @@ void Main::process()
         semaphore.unlock();
     }
 
-  void Main::hpec_process(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, ros::Rate rate)
+  void Main::hpec_process(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, double rate_double)
   {
+    ros::CallbackQueue queue;
+	  workerHandle_ptr->setCallbackQueue(&queue);
+    ros::Rate rate(rate_double);
 
     if(autoFaceDetection && !face_cascade.load(face_cascade_path))
     {
         ROS_FATAL("--(!)Error loading cascade detector\n"); 
         return;
     }
+
+    std::cout << "RATE VALUE = " << rate_double << std::endl;  
+
     while (workerHandle_ptr->ok())
-    {   
-      ros::CallbackQueue queue;
-	    workerHandle_ptr->setCallbackQueue(&queue);
+    {  
+      rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
     	queue.callAvailable();
       //EM, This call checks if a something from a topic has been received 
 		  // and run callback functions if yes.
@@ -152,7 +157,11 @@ void Main::process()
                 {
                     if(showOutput)
                         sendTrackedObject(0, 0, 0, 0, 0.0);
-                    hpecGetLastImageFromBuffer();
+
+                    #ifdef HIL //EM, useless if we are in HIL
+                    #else
+                      hpecGetLastImageFromBuffer();
+                    #endif
                     tld->detectorCascade->imgWidth = gray.cols;
                     tld->detectorCascade->imgHeight = gray.rows;
                     tld->detectorCascade->imgWidthStep = gray.step;
@@ -198,7 +207,10 @@ void Main::process()
                   time_t start = clock();
                   ros::Time tic = ros::Time::now();
 
-                  hpecGetLastImageFromBuffer();
+                  #ifdef HIL //EM, useless if we are in HIL
+                  #else
+                    hpecGetLastImageFromBuffer();
+                  #endif
 
                   tld->processImage(img);
 
@@ -223,7 +235,18 @@ void Main::process()
                   std_msgs::Float32 elapsed_time;
                   elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
 			            std::cout << "SOFTWARE TLD processing time : " << elapsed_time.data << std::endl;
+			  	        elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
+				          std::cout << "SOFTWARE HIL Image COPY time : " << elapsed_time.data << std::endl;
                   ROS_INFO("Detection and Tracking done!");
+
+                  /*#ifdef HIL
+                    if(img_acquired)
+                    {
+                      img.release(); 	//EM, Free memory of the allocated current picture
+                      img_acquired = false;
+                    }
+                  #endif
+                  */
                 }
                 break;
                 case STOPPED:
@@ -233,7 +256,6 @@ void Main::process()
                   default:
                 break;
                 }
-        rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
       }
 
       if(exportModelAfterRun)
@@ -276,6 +298,8 @@ void Main::process()
       mutex.unlock();
     }
 
+
+
     void Main::hpecImageReceivedCB(const sensor_msgs::ImageConstPtr & msg)
     {
       get_first_image = true;
@@ -289,6 +313,19 @@ void Main::process()
           img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::MONO8);
           cv::cvtColor(img_buffer_ptr->image, img_buffer_ptr->image, CV_GRAY2BGR);
         }
+
+        #ifdef HIL //mandatory cloning to save image from a remote computer
+            //img_acquired = true; //EM, boolean used to know if a cv::Mat release is needed
+            imcpy_start = clock();
+
+            img_header = img_buffer_ptr->header;
+				    img = img_buffer_ptr->image.clone();
+            cv::cvtColor(img, gray, CV_BGR2GRAY);
+				
+				    imcpy_end = clock();
+        #else //Zero-copy transfer
+              //EM, Nothing to do, it's done in hpecGetLastImageFromBuffer()
+        #endif
       }
       catch (cv_bridge::Exception& e)
       {
@@ -296,6 +333,28 @@ void Main::process()
         return;
       }
     }
+
+    void Main::hpecGetLastImageFromBuffer()
+    {
+
+      imcpy_start = clock();
+
+      img_header = img_buffer_ptr->header;
+      img = img_buffer_ptr->image;
+      cv::cvtColor(img, gray, CV_BGR2GRAY);
+
+      imcpy_end = clock();
+
+			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
+
+      img_buffer_ptr.reset();
+    }
+
+
+
+
+
 
     void Main::targetReceivedCB(const tld_msgs::TargetConstPtr & msg)
     {
@@ -385,15 +444,6 @@ void Main::process()
       mutex.unlock();
     }
 
-    void Main::hpecGetLastImageFromBuffer()
-    {
-      img_header = img_buffer_ptr->header;
-      img = img_buffer_ptr->image;
-
-      cv::cvtColor(img, gray, CV_BGR2GRAY);
-
-      img_buffer_ptr.reset();
-    }
 
     void Main::clearBackground()
     {
@@ -486,9 +536,9 @@ void Main::process()
       my_main = (Main *) arg;
 
       printf("Here we go\n");
-    	//my_main->mutex.unlock();
+    	my_main->mutex.unlock();
       printf("CRASH SEMAPHORE\n");
-			//my_main->semaphore.unlock();
+			my_main->semaphore.unlock();
       printf("CRASH MUTEX\n");
 
       //delete my_main;
