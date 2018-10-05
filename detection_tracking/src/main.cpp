@@ -239,14 +239,15 @@ void Main::process()
 				          std::cout << "SOFTWARE HIL Image COPY time : " << elapsed_time.data << std::endl;
                   ROS_INFO("Detection and Tracking done!");
 
-                  /*#ifdef HIL
+                  #ifdef HIL
                     if(img_acquired)
                     {
-                      img.release(); 	//EM, Free memory of the allocated current picture
+                      delete picture;
+                      //img.release(); 	//EM, Free memory of the allocated current picture
                       img_acquired = false;
                     }
                   #endif
-                  */
+                  
                 }
                 break;
                 case STOPPED:
@@ -304,34 +305,54 @@ void Main::process()
     {
       get_first_image = true;
 
-      try
-      {
-        if (enc::isColor(msg->encoding))
-          img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::RGB8);
-        else
+      #ifdef HIL //mandatory cloning to save image from a remote computer
+        if(!img_acquired) //EM, condition to avoid useless multiple img captures
         {
-          img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::MONO8);
-          cv::cvtColor(img_buffer_ptr->image, img_buffer_ptr->image, CV_GRAY2BGR);
-        }
-
-        #ifdef HIL //mandatory cloning to save image from a remote computer
-            //img_acquired = true; //EM, boolean used to know if a cv::Mat release is needed
+          try
+          {
+            if (enc::isColor(msg->encoding))
+              img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::RGB8);
+            else
+            {
+              img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::MONO8);
+              cv::cvtColor(img_buffer_ptr->image, img_buffer_ptr->image, CV_GRAY2BGR);
+            }
+            img_acquired = true; //EM, boolean used to know if a cv::Mat release is needed
             imcpy_start = clock();
 
             img_header = img_buffer_ptr->header;
-				    img = img_buffer_ptr->image.clone();
+
+            picture = new cv::Mat(img_buffer_ptr->image);
+            img = *picture;
+            //img = img_buffer_ptr->image.clone();
+            //img_buffer_ptr->image.copyTo(img);
             cv::cvtColor(img, gray, CV_BGR2GRAY);
-				
-				    imcpy_end = clock();
+            
+            imcpy_end = clock();
+          }
+          catch (cv_bridge::Exception& e)
+          {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+          }
+        }
         #else //Zero-copy transfer
-              //EM, Nothing to do, it's done in hpecGetLastImageFromBuffer()
+          try
+          {
+            if (enc::isColor(msg->encoding))
+              img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::RGB8);
+            else
+            {
+              img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::MONO8);
+              cv::cvtColor(img_buffer_ptr->image, img_buffer_ptr->image, CV_GRAY2BGR);
+            }
+          }
+          catch (cv_bridge::Exception& e)
+          {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+          }
         #endif
-      }
-      catch (cv_bridge::Exception& e)
-      {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-      }
     }
 
     void Main::hpecGetLastImageFromBuffer()

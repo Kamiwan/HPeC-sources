@@ -144,6 +144,7 @@ class Main
 		bool img_acquired;
 		time_t imcpy_start,imcpy_end;
 		std_msgs::Float32 elapsed_time;
+		cv::Mat * picture;
 
 		enum
 		{
