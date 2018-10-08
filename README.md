@@ -127,6 +127,8 @@ Replace the path of *image_transport* lib by yours in the CMakeLists.txt of foll
 * generic_task_wrapper
 * rosnode_model
 * harris_detector
+* detection_tracking
+* stabilisation_imu
 
 in the include directories
 ```bash 
@@ -199,7 +201,7 @@ First of all, go to your catkin_ws and source it with **$ source ./devel/setup.b
 ```
 $ rosrun rosnode_model rosnode_model_node 
 ```
-If it worked the terminal printed this <span style="color:red">[ERROR] [1528472534.171299944]: [TASK WRAPPER][RUNNING]</span>. This is not an error, we used the ROS ERROR flow for this kind of messages. 
+If it worked the terminal printed this **[INFO] [1528472534.171299944]: [TASK WRAPPER][RUNNING]**.  
 
 In the HPeC project, most of the nodes created can be run in several modes. Indeed, they can be executed in their software version or in the hardware one. Thus, when you launch the node with rosrun, it does nothing until you tell it in which mode start.
 
@@ -223,8 +225,8 @@ $ rostopic pub  -1  /rosnode_model_mgt_topic std_msgs/Int32 "1"
 
 The terminal where the node has been launched should print this kind of output,
 ```
-[ERROR] [1528474077.010573417]: [THREAD][RUNNING][SW]: rosnode_model SOFTWARE VERSION 
-[ERROR] [1528474077.039458231]: Could not read rosnode_model activation rate. Setting 1 Hz
+[INFO] [1528474077.010573417]: [THREAD][RUNNING][SW]: rosnode_model SOFTWARE VERSION 
+[INFO] [1528474077.039458231]: Could not read rosnode_model activation rate. Setting 1 Hz
 Hello World!
 SOFTWARE rosnode_model Processing time : 0.051
 Hello World!
@@ -274,6 +276,17 @@ Now you should see the drone flying in the virtual world created by gazebo. :)
 **/!\ Work in progress**
 
 ### **1. catkin_ws**
+#### *CMake Error,* error: could not find svn for checkout of opentld
+
+You need to install subversion:
+
+```
+$ sudo apt-get install subversion
+```
+Then compile again with 
+```
+$ catkin_make -j 1
+```
 
 ### **2. Gazebo**
 #### Missing libArduPilotPlugin.so ... etc

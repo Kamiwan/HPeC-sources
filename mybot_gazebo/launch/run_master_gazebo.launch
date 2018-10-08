@@ -23,7 +23,6 @@
 	<rosparam command='load' file="$(find parameters)/drone_features.yaml" ns="drone_features"/>
 	<rosparam command="load" file="$(find parameters)/system_state.yaml"  ns="system_state"/>
 	<rosparam command="load" file="$(find parameters)/camera_features.yaml" ns="camera_features" />
-
 </launch>
 
 

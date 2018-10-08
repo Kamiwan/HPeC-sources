@@ -37,6 +37,7 @@ extern "C" {
 #define SDRAM_SPAN (0x04000000)
 #define HW_REGS_SPAN (0x00020000)
 #define HWREG_BASE (0xff200000)
+#define DDR_FPGA_CMA_BASE_ADDR 0xC0000000
 
 //EM, 11/04/18, Hardware version preparation
 #define DMA_READ_CSR_BASEADDR 0xFF200000
@@ -53,7 +54,7 @@ extern "C" {
 #define SL_OUTPUT_AREA_LOCATION_TOPIC "search_output/areas"
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
-//DEGUG only #define WRITE_IMG
+//#define WRITE_IMG //DEGUG only
 
 boost::shared_ptr<ros::Publisher> search_land_pub;
 
@@ -175,7 +176,8 @@ int acquire()
 	fclose(cma_dev_file);
 
 	// get virtual addr that maps to the sdram region (through HPS-FPGA non-lightweight bridge)
-	virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), MAP_SHARED, fd, cma_base_addr);
+	virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), 
+							MAP_SHARED, fd, DDR_FPGA_CMA_BASE_ADDR); //EM, replace by cma_base_addr
 	if (virtual_base_sdram == MAP_FAILED)
 	{
 		printf("ERROR: mmap() failed...\n");
@@ -198,10 +200,10 @@ int acquire()
 	
 	// EM, HW version update, Configure DMAs to the correct addresses
 	// Set the HPS Memory start address
-	descriptor_read.read_addr = cma_base_addr;
-	descriptor_read.write_addr = cma_base_addr;
-	descriptor_write.read_addr = cma_base_addr+0x2000000;
-	descriptor_write.write_addr = cma_base_addr+0x2000000;
+	descriptor_read.read_addr = DDR_FPGA_CMA_BASE_ADDR; //EM, replace by cma_base_addr 
+	descriptor_read.write_addr = DDR_FPGA_CMA_BASE_ADDR;
+	descriptor_write.read_addr = DDR_FPGA_CMA_BASE_ADDR+0x2000000;
+	descriptor_write.write_addr = DDR_FPGA_CMA_BASE_ADDR+0x2000000;
 	// We are using packetized streams so set length to max
 	descriptor_read.length = 640*480*sizeof(unsigned int);
 	descriptor_write.length = 640*480*sizeof(unsigned char);
@@ -234,8 +236,8 @@ void release()
 
 void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 {
-	ROS_ERROR("[THREAD][RUNNING][HW]: Vision Based Autonomous Landing HARDWARE VERSION \r\n");
-	//ROS_ERROR("Rgb2gray, median filter, canny edge detector, morphological closing in hw...\r\n");
+	ROS_INFO("[THREAD][RUNNING][HW]: Vision Based Autonomous Landing HARDWARE VERSION \r\n");
+	//ROS_INFO("Rgb2gray, median filter, canny edge detector, morphological closing in hw...\r\n");
 
 	run = true;
 	ros::CallbackQueue queue;
@@ -252,33 +254,33 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 	double rate_double;
 	if (!workerHandle_ptr->getParam("/node_activation_rates/emergency_landing", rate_double))
 	{
-		//ROS_ERROR("Could not read obstacle detection's activation rate. Setting 1 Hz");
+		//ROS_INFO("Could not read obstacle detection's activation rate. Setting 1 Hz");
 		rate_double = 1;
 	}
 	ros::Rate rate(rate_double);
 
 	if (!workerHandle_ptr->getParam("/drone_features/diameter", diameter))
 	{
-		//ROS_ERROR("Could not read drone's diameter. Setting to 0.6 meters");
+		//ROS_INFO("Could not read drone's diameter. Setting to 0.6 meters");
 		diameter = 0.6;
 	}
 
 	if (!workerHandle_ptr->getParam("/camera_features/camera_angle", camera_angle))
 	{
-		//ROS_ERROR("Could not read camera's angle. Setting to 0.4 radian");
+		//ROS_INFO("Could not read camera's angle. Setting to 0.4 radian");
 		camera_angle = 0.4;
 	}
 
 	if (!workerHandle_ptr->getParam("/camera_features/image_height", image_height))
 	{
-		//ROS_ERROR("Could not read image's height. Setting to 480");
+		//ROS_INFO("Could not read image's height. Setting to 480");
 		image_height = 480;
 	}
 	altitude = 60;
 
 	if (acquire() != 0)
 	{
-		ROS_ERROR("Could not INIT");
+		ROS_INFO("Could not INIT");
 	}
 
 
@@ -398,7 +400,7 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 	release();
 
 	run = false;
-	ROS_ERROR("[THREAD][STOPPED]");
+	ROS_INFO("[THREAD][STOPPED]");
 }
 
 
@@ -406,7 +408,7 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 
 void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 {
-	ROS_ERROR("[THREAD][RUNNING][SW]: Vision Based Autonomous Landing for ppm color images \r\n");
+	ROS_INFO("[THREAD][RUNNING][SW]: Vision Based Autonomous Landing for ppm color images \r\n");
 
 	run = true;
 	ros::CallbackQueue queue;
@@ -424,7 +426,7 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 	ros::Publisher my_msg_pub = workerHandle_ptr->advertise<communication::area_location>("/search_landing/THE_TOPIC_SHOW", 1);
 	communication::area_location area_msg;
 
-	ROS_ERROR("[ENTER IN WHILE WORK_HANDLE]");
+	ROS_INFO("[ENTER IN WHILE WORK_HANDLE]");
 
 	std_msgs::Float32 elapsed_time;
 
@@ -456,7 +458,7 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 
 	altitude = 60;
 
-	ROS_ERROR("[BEGINNING IMAGE PROCESSING]");
+	ROS_INFO("[BEGINNING IMAGE PROCESSING]");
 	while (workerHandle_ptr->ok())
 	{
 		queue.callAvailable();
@@ -503,7 +505,7 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 					write_pgm(img_ibuf_gs, "/home/labsticc/Bureau/search_res/gauss.pgm");
 		#endif
 			#ifdef DEBUG
-				ROS_ERROR("[AFTER GAUSSIAN FILTER]");
+				ROS_INFO("[AFTER GAUSSIAN FILTER]");
 			#endif
 
 			img_ibuf_sp.w = img_ibuf_gs.w;
@@ -516,7 +518,7 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 			sobel(img_ibuf_gs, img_ibuf_sp, img_ibuf_se);
 
 			#ifdef DEBUG
-				ROS_ERROR("[AFTER SOBEL]");
+				ROS_INFO("[AFTER SOBEL]");
 			#endif
 
 #ifdef WRITE_IMG
@@ -556,7 +558,7 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 			#ifdef HIL //Erwan Moréac, Mandatory free since we have to use malloc
 				if(img_ibuf_color.img != NULL)
 				{
-					free_ppm(img_ibuf_color); //Erwan Moréac 22/02/18, pointer adress is given so zero copy, no free
+					free_ppm(img_ibuf_color); 
 					img_ibuf_color.img = NULL;
 				}
 			#endif
@@ -633,7 +635,7 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 		} // end if test Image size
 	}	 // end while
 	run = false;
-	ROS_ERROR("[THREAD][STOPPED]");
+	ROS_INFO("[THREAD][STOPPED]");
 }
 
 void stop()
@@ -820,7 +822,7 @@ int main(int argc, char **argv)
 
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
 
-	ROS_ERROR("[TASK WRAPPER][RUNNING]");
+	ROS_INFO("[TASK WRAPPER][RUNNING]");
 	ros::spin();
 }
 
@@ -890,12 +892,12 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 			#endif
 		}
 
-		ROS_ERROR("IMAGE RECOVERY SUCCEED");
+		ROS_INFO("IMAGE RECOVERY SUCCEED");
 		//std::cout << "ORIGINAL PICTURE : " << image_DATA->image << std::endl;
 		//std::cout << "PICTURE PIXELS : " << img_ibuf_color.img << std::endl;
 	}
 	catch (cv_bridge::Exception &e)
 	{
-		ROS_ERROR("Could not convert from '%s' to 'bgr'.", image_cam->encoding.c_str());
+		ROS_INFO("Could not convert from '%s' to 'bgr'.", image_cam->encoding.c_str());
 	}
 }
