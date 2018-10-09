@@ -1,122 +1,4 @@
-#include <ros/ros.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <image_transport/image_transport.h>
-#include <vector>
-#include <stdint.h>
-
-#include <opencv2/highgui/highgui.hpp>
-#include <cv_bridge/cv_bridge.h>
-#include <iostream>
-
-extern "C" {
-#include "image.h"
-#include "debug.h"
-}
-
-#include <sensor_msgs/NavSatFix.h>
-#include <sensor_msgs/image_encodings.h>
-
-#include <ros/callback_queue.h>
-#include <boost/thread.hpp>
-#include "std_msgs/Int32.h"
-#include "std_msgs/Float32.h"
-
-#include "std_msgs/String.h"
-#include <sstream>
-#include "communication/area_location.h"
-#include "sgdma_dispatcher.h"
-#include "sgdma_dispatcher_regs.h"
-
-#define SDRAM_SPAN (0x04000000)
-#define HW_REGS_SPAN (0x00020000)
-#define HWREG_BASE (0xff200000)
-#define DDR_FPGA_CMA_BASE_ADDR 0xC0000000
-
-//EM, 11/04/18, Hardware version preparation
-#define DMA_READ_CSR_BASEADDR 0xFF200000
-#define DMA_READ_DESC_BASEADDR 0xFF201000
-#define DMA_WRITE_CSR_BASEADDR 0xFF202000
-#define DMA_WRITE_DESC_BASEADDR 0xFF203000
-
-//Erwan Moréac, 05/03/18 : Setup #define
-#define HIL				 //Code modifications for Hardware In the Loop
-#define AREA_MIN 400	 //TODO : create a function to make it dependent of the UAV height and FOV
-#define AREA_MAX 2073601 //This value exceeds the area of an HD picture 1920 x 1080 in pixels
-#define SL_INPUT_TOPIC "/iris/camera2/image_raw"
-#define SL_OUTPUT_IMAGE_TOPIC "search_output/image"
-#define SL_OUTPUT_AREA_LOCATION_TOPIC "search_output/areas"
-
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-//#define WRITE_IMG //DEGUG only
-
-boost::shared_ptr<ros::Publisher> search_land_pub;
-
-PPM_IMG img_ibuf_color;
-PGM_IMG img_ibuf_g;
-PGM_IMG img_ibuf_ceh;
-PGM_IMG img_ibuf_me1;
-PGM_IMG img_ibuf_me;
-PGM_IMG img_ibuf_bw;
-PGM_IMG img_ibuf_ccl;
-PGM_IMG img_ibuf_mop;
-PGM_IMG img_ibuf_mop2;
-PGM_IMG img_ibuf_mop3;
-PGM_IMG img_ibuf_ero;
-PGM_IMG img_ibuf_gs;
-PGM_IMG img_ibuf_sp;
-PGM_IMG img_ibuf_se;
-PGM_IMG img_ibuf_ms;
-int nb_labels;
-COMPONENT *ccl;
-int count = 0;
-
-int hardware = 0;
-int fd;
-
-FILE *cma_dev_file;
-char cma_addr_string[10];
-
-time_t start, ends,t1;
-time_t imcpy_start,imcpy_end;
-struct timeval beginning, current, end;
-
-unsigned int cma_base_addr;
-void *virtual_base_sdram;
-
-volatile unsigned int *mem_to_stream_dma_buffer = NULL;
-volatile unsigned char *stream_to_mem_dma_buffer = NULL;
-
-// Create  Dispatcher
-tcSGDMADispatcher     dispatcher_read;
-tcSGDMADispatcher     dispatcher_write;
-// Create  descriptor
-tsSGDMADescriptor descriptor_read;
-tsSGDMADescriptor descriptor_write;
-
-struct pixel *data;
-unsigned char *header;
-
-double diameter;
-double altitude;
-double camera_angle;
-double image_height;
-
-void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
-
-void image_callback(const sensor_msgs::Image::ConstPtr &image_cam);
-
-bool run = false;
-int current_ver = 0;
-boost::shared_ptr<boost::thread> worker_thread;
-boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
-
+#include "emergency_landing_node.h"
 
 long elapse_time_u(struct timeval *end, struct timeval *start)
 {
@@ -176,8 +58,17 @@ int acquire()
 	fclose(cma_dev_file);
 
 	// get virtual addr that maps to the sdram region (through HPS-FPGA non-lightweight bridge)
-	virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), 
+	if(USE_DDR_FPGA)
+	{
+		virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), 
 							MAP_SHARED, fd, DDR_FPGA_CMA_BASE_ADDR); //EM, replace by cma_base_addr
+	}
+	else
+	{
+		virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), 
+							MAP_SHARED, fd, cma_base_addr); 
+	}
+
 	if (virtual_base_sdram == MAP_FAILED)
 	{
 		printf("ERROR: mmap() failed...\n");
@@ -187,6 +78,9 @@ int acquire()
 
 	mem_to_stream_dma_buffer = (volatile unsigned int *)(virtual_base_sdram);
 	stream_to_mem_dma_buffer = (volatile unsigned char *)(virtual_base_sdram + 0x2000000);
+
+	virtual_reconfig_ctrl = mmap(NULL, 4096, (PROT_READ | PROT_WRITE), 
+							MAP_SHARED, fd, LW_HPS2FPGA_AXI_MASTER+0x00080000); //EM, replace by cma_base_addr
 
 	// Create  Dispatcher
 	dispatcher_read.init(DMA_READ_CSR_BASEADDR, DMA_READ_DESC_BASEADDR, 0);
@@ -200,10 +94,21 @@ int acquire()
 	
 	// EM, HW version update, Configure DMAs to the correct addresses
 	// Set the HPS Memory start address
-	descriptor_read.read_addr = DDR_FPGA_CMA_BASE_ADDR; //EM, replace by cma_base_addr 
-	descriptor_read.write_addr = DDR_FPGA_CMA_BASE_ADDR;
-	descriptor_write.read_addr = DDR_FPGA_CMA_BASE_ADDR+0x2000000;
-	descriptor_write.write_addr = DDR_FPGA_CMA_BASE_ADDR+0x2000000;
+	if(USE_DDR_FPGA)
+	{
+		descriptor_read.read_addr 	= DDR_FPGA_CMA_BASE_ADDR;
+		descriptor_read.write_addr 	= DDR_FPGA_CMA_BASE_ADDR;
+		descriptor_write.read_addr 	= DDR_FPGA_CMA_BASE_ADDR+0x2000000;
+		descriptor_write.write_addr	= DDR_FPGA_CMA_BASE_ADDR+0x2000000;
+	}
+	else
+	{
+		descriptor_read.read_addr	= cma_base_addr; 
+		descriptor_read.write_addr 	= cma_base_addr;
+		descriptor_write.read_addr 	= cma_base_addr+0x2000000;
+		descriptor_write.write_addr = cma_base_addr+0x2000000;
+	}
+
 	// We are using packetized streams so set length to max
 	descriptor_read.length = 640*480*sizeof(unsigned int);
 	descriptor_write.length = 640*480*sizeof(unsigned char);
@@ -227,6 +132,10 @@ int acquire()
 void release()
 {
 	if (munmap(virtual_base_sdram, SDRAM_SPAN) != 0)
+	{
+		ROS_ERROR("ERROR: munmap() failed...\n");
+	}
+	if (munmap(virtual_reconfig_ctrl, 4096) != 0)
 	{
 		ROS_ERROR("ERROR: munmap() failed...\n");
 	}
@@ -901,3 +810,79 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 		ROS_INFO("Could not convert from '%s' to 'bgr'.", image_cam->encoding.c_str());
 	}
 }
+
+
+
+int load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int offset_addr)
+{
+    FILE* file = fopen(bitstream_path.c_str(), "rb");
+    if(file == NULL)
+    {
+        printf("ERROR: could not open %s file\n",bitstream_path.c_str());
+		exit (1);
+    }
+
+    int fileSize = fsize(file);
+
+    void *bridge_map;
+    bridge_map = mmap(NULL, fileSize, PROT_WRITE, MAP_SHARED, fd_mem, mem_str_adrss+offset_addr);
+    if (bridge_map == MAP_FAILED)
+	{
+		printf("ERROR: mmap() failed...\n");
+		exit (1);
+	}
+
+    int buffer_size = fileSize>>2 + 1;
+    int *buffer = (int *)malloc(buffer_size);
+    size_t test = fread(buffer, buffer_size, sizeof(int),file);
+
+    memcpy(bridge_map, buffer, (size_t)buffer_size);
+
+    fclose(file);
+    free(buffer);
+
+	if (munmap(bridge_map, fileSize) != 0)
+	{
+		ROS_ERROR("ERROR: munmap() failed...\n");
+	}
+
+    return 0;
+}
+
+
+int fsize(FILE *fp){
+    int prev=ftell(fp);
+    fseek(fp, 0L, SEEK_END);
+    int sz=ftell(fp);
+    fseek(fp,prev,SEEK_SET); //go back to where we were
+    return sz;
+}
+
+/* start trigger module */
+void start_reconfiguration(int bitstream_address, int region_id)
+{
+   printf("I received the reconf order\n");
+   int param_address;
+   int start_done_word[2] = {769 ,0};
+   //start_done_word = start_done_word + start_selector*256;
+
+   start_done_word[1] = start_done_word[0] + region_id*16;
+   start_done_word[0] = bitstream_address;
+   //int *pointer_param= &start_done_word;
+
+	memcpy(virtual_reconfig_ctrl,start_done_word,sizeof(start_done_word));
+}
+
+int reconfiguration_done()
+{
+   int *pointer_param= (int*)virtual_reconfig_ctrl;
+   int value;
+   
+   if ((*pointer_param & 0x40000000) == 2)
+         value=1;
+   else
+         value=0;
+
+   return value;
+}
+
