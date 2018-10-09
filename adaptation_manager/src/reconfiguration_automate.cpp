@@ -483,6 +483,9 @@ Step_in entree0(std::vector< std::string> C3){
 	std::cout<<"track :"<<e.tracking.qos<<std::endl;
    return e;
 }
+
+
+
 //************initialiser sortie automate // appartient au step fantome //a effacer apres
  Step_out sortie(){
 	 Step_out s;

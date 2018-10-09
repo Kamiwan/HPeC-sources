@@ -44,11 +44,46 @@ string verify1[3][7]={{"0","0","0"},{"1","2","3"}};
 /****** END GLOBAL VARIABLES ********/
 
 
+
+void Task_in::raz_timing_qos()
+{
+	texec	= 0;
+    qos		= 0;
+}
+
+void Task_in::raz_all()
+{
+ req		= 0; // 1 : activation, 0 : arrêt
+
+ texec		= 0; // texec , [mintexec, maxtexec]
+ mintexec	= 0;
+ maxtexec	= 0;
+
+ qos		= 0; //qos , [minqos, maxqos]
+ minqos 	= 0;
+ maxqos 	= 0;
+
+ priority	= 0;
+}
+
+
 void Step_in::init()
 {
+	contrast_img.raz_all();
+	motion_estim_imu.raz_all();
+	motion_estim_img.raz_all();
+	search_landing.raz_all();
+	obstacle_avoidance.raz_all();
+	t_landing.raz_all();
+	rotoz_s.raz_all();
+	rotoz_b.raz_all();
+	replanning.raz_all();
+	detection.raz_all();
+	tracking.raz_all();
 
-	// Do nothing
-
+	h1.av =	1;	//EM, Everything is available at the beginning
+	h2.av =	1;
+	h3.av =	1;
 }
 
 //***************

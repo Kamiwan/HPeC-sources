@@ -66,6 +66,7 @@ struct Task_in
 	int priority; //priorite de tache  
 
 	void raz_timing_qos();
+	void raz_all();
 
 };
 
