@@ -79,8 +79,8 @@ int acquire()
 	mem_to_stream_dma_buffer = (volatile unsigned int *)(virtual_base_sdram);
 	stream_to_mem_dma_buffer = (volatile unsigned char *)(virtual_base_sdram + 0x2000000);
 
-	virtual_reconfig_ctrl = mmap(NULL, 4096, (PROT_READ | PROT_WRITE), 
-							MAP_SHARED, fd, LW_HPS2FPGA_AXI_MASTER+0x00080000); //EM, replace by cma_base_addr
+	//virtual_reconfig_ctrl = mmap(NULL, 4096, (PROT_READ | PROT_WRITE), 
+	//						MAP_SHARED, fd, LW_HPS2FPGA_AXI_MASTER+0x00080000); //EM, replace by cma_base_addr
 
 	// Create  Dispatcher
 	dispatcher_read.init(DMA_READ_CSR_BASEADDR, DMA_READ_DESC_BASEADDR, 0);
@@ -135,10 +135,10 @@ void release()
 	{
 		ROS_ERROR("ERROR: munmap() failed...\n");
 	}
-	if (munmap(virtual_reconfig_ctrl, 4096) != 0)
+	/*if (munmap(virtual_reconfig_ctrl, 4096) != 0)
 	{
 		ROS_ERROR("ERROR: munmap() failed...\n");
-	}
+	}*/
     close( fd );
 }
 
@@ -813,76 +813,5 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 
 
 
-int load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int offset_addr)
-{
-    FILE* file = fopen(bitstream_path.c_str(), "rb");
-    if(file == NULL)
-    {
-        printf("ERROR: could not open %s file\n",bitstream_path.c_str());
-		exit (1);
-    }
 
-    int fileSize = fsize(file);
-
-    void *bridge_map;
-    bridge_map = mmap(NULL, fileSize, PROT_WRITE, MAP_SHARED, fd_mem, mem_str_adrss+offset_addr);
-    if (bridge_map == MAP_FAILED)
-	{
-		printf("ERROR: mmap() failed...\n");
-		exit (1);
-	}
-
-    int buffer_size = fileSize>>2 + 1;
-    int *buffer = (int *)malloc(buffer_size);
-    size_t test = fread(buffer, buffer_size, sizeof(int),file);
-
-    memcpy(bridge_map, buffer, (size_t)buffer_size);
-
-    fclose(file);
-    free(buffer);
-
-	if (munmap(bridge_map, fileSize) != 0)
-	{
-		ROS_ERROR("ERROR: munmap() failed...\n");
-	}
-
-    return 0;
-}
-
-
-int fsize(FILE *fp){
-    int prev=ftell(fp);
-    fseek(fp, 0L, SEEK_END);
-    int sz=ftell(fp);
-    fseek(fp,prev,SEEK_SET); //go back to where we were
-    return sz;
-}
-
-/* start trigger module */
-void start_reconfiguration(int bitstream_address, int region_id)
-{
-   printf("I received the reconf order\n");
-   int param_address;
-   int start_done_word[2] = {769 ,0};
-   //start_done_word = start_done_word + start_selector*256;
-
-   start_done_word[1] = start_done_word[0] + region_id*16;
-   start_done_word[0] = bitstream_address;
-   //int *pointer_param= &start_done_word;
-
-	memcpy(virtual_reconfig_ctrl,start_done_word,sizeof(start_done_word));
-}
-
-int reconfiguration_done()
-{
-   int *pointer_param= (int*)virtual_reconfig_ctrl;
-   int value;
-   
-   if ((*pointer_param & 0x40000000) == 2)
-         value=1;
-   else
-         value=0;
-
-   return value;
-}
 

@@ -120,7 +120,6 @@ boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
 
 long elapse_time_u(struct timeval *end, struct timeval *start);
 long time_micros(struct timeval *end, struct timeval *start);
-int fsize(FILE *fp);
 
 // source ppm color image 24bits RGB (packed)
 // The video IP cores used for edge detection require the RGB 24 bits of each pixel to be
@@ -138,9 +137,4 @@ void stop();
 
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
 void image_callback(const sensor_msgs::Image::ConstPtr &image_cam);
-
-int load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int offset_addr);
-void start_reconfiguration(int bitstream_address, int region_id);
-int reconfiguration_done();
-
 

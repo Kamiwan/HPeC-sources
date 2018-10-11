@@ -43,16 +43,27 @@ extern "C" {
 #include "sensor_msgs/Imu.h"
 #include <tf/transform_datatypes.h>
 
-//Erwan Moréac, 05/03/18 : Setup #define
-#define HIL				 //Code modifications for Hardware In the Loop
+#include <fcntl.h>    /* For O_RDWR */
+#include <unistd.h>   /* For open(), creat() */
+#include <sys/mman.h>
 
 /************************************************************************
  * EM, Insert here:
  * 	- Defines for the app
  *  - Topic names to subscribe or publish
 **********************************************************************/
+#define HIL     //Code modifications for Hardware In the Loop
 
-#define SL_INPUT_TOPIC "/iris/camera2/image_raw" //example of Topic name def
+//EM, defines for FPGA DPR tests
+#define LW_HPS2FPGA_AXI_MASTER  0xFF200000
+#define HPS2FPGA_AXI_MASTER     0xC0000000
+#define HARD_DDR3_CONTROLLER    0x00000000
+#define PAGE_SIZE               16384
+#define PERSONNA_1              0
+#define PERSONNA_2              8028160
+#define DDR_PERSONNA_SPAN       0x800000
+
+#define NM_INPUT_TOPIC "/iris/camera2/image_raw" //example of Topic name def
 
 /*******************************************
  * EM, Sample code for image topic
@@ -71,7 +82,6 @@ PPM_IMG img_ibuf_color;
  * to really use PPM_IMG struct!
 *******************************************/
 
-
 time_t start, ends;
 time_t imcpy_start,imcpy_end;
 struct timeval beginning, current, end;
@@ -83,7 +93,10 @@ double altitude;
 
 boost::shared_ptr<boost::thread> worker_thread;
 boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
-boost::shared_ptr<ros::Publisher> search_land_pub;
+boost::shared_ptr<ros::Publisher> node_model_pub;
+
+void *virtual_reconfig_ctrl;
+int fd;
 
 /************************************************************************
  * EM, Insert here global variables if needed
@@ -91,16 +104,23 @@ boost::shared_ptr<ros::Publisher> search_land_pub;
 
 long elapse_time_u(struct timeval *end, struct timeval *start);
 long time_micros(struct timeval *end, struct timeval *start);
-
+long  fsize(FILE *fp);
 
 void appname_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr);
 void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr);
 
-
 void managing_controller_request(const std_msgs::Int32::ConstPtr &value);
 void stop();
-
 
 void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
 void image_callback(const sensor_msgs::Image::ConstPtr &image_cam);
+
+//EM, Functions for FPGA DPR tests
+void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr);
+int  init_FPGA_reconfiguration();
+void release();
+
+int  load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int offset_addr);
+void start_reconfiguration(int bitstream_address, int region_id);
+int  reconfiguration_done();

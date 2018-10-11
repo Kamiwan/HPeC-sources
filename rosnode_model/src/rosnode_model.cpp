@@ -56,7 +56,7 @@ void appname_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	//I let the gps and camera subscriptions and callbacks as an example of ROS topic subscription
 	//Erase them if you do not need it.
 	image_transport::ImageTransport it(*workerHandle_ptr);
-	image_transport::Subscriber cam_sub = it.subscribe(SL_INPUT_TOPIC, 1, image_callback);
+	image_transport::Subscriber cam_sub = it.subscribe(NM_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 
 	ros::Subscriber imu_sub = workerHandle_ptr->subscribe<sensor_msgs::Imu>("mavros/imu/data", 1000, imu_callback);
@@ -137,7 +137,7 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	//I let the gps and camera subscriptions and callbacks as an example of ROS topic subscription
 	//Erase them if you do not need it.
 	image_transport::ImageTransport it(*workerHandle_ptr);
-	image_transport::Subscriber cam_sub = it.subscribe(SL_INPUT_TOPIC, 1, image_callback);
+	image_transport::Subscriber cam_sub = it.subscribe(NM_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 
 	/**********************************************************************
@@ -271,6 +271,14 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		worker_thread = boost::make_shared<boost::thread>(&appname_hwsw, workerHandle_ptr);
 		break;
 
+	case 3: //starting FPGA RECONFIGURATION TEST
+		dbprintf("wrapper_ver %.0f %d\n", ((double)time_micros(&current, &beginning)), value->data);
+		stop();
+		hardware = 0;
+		workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
+		worker_thread = boost::make_shared<boost::thread>(&test_reconfiguration, workerHandle_ptr);
+		break;
+
 	default:
 		break;
 	}
@@ -295,14 +303,21 @@ int main(int argc, char **argv)
 	ros::Subscriber mgt_topic;
 	mgt_topic = nh.subscribe("rosnode_model_mgt_topic", 1, managing_controller_request);
 
-	search_land_pub = boost::make_shared<ros::Publisher>(
+	node_model_pub = boost::make_shared<ros::Publisher>(
 	nh.advertise<std_msgs::Float32>("/rosnode_model_notification_topic", 1));
 	gettimeofday(&current, NULL);
 
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
 
+
+	init_FPGA_reconfiguration(); //EM, TEST for reconfiguration
+
+
 	ROS_INFO("[TASK WRAPPER][RUNNING]");
 	ros::spin();
+
+	ROS_INFO("[TASK WRAPPER][RELEASE INCOMING!]");
+	release(); //EM, called at the end to release memory reserved for FPGA DPR
 }
 
 
@@ -420,3 +435,143 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 		ROS_INFO("Could not convert from '%s' to 'bgr'.", image_cam->encoding.c_str());
 	}
 }
+
+
+int load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int offset_addr)
+{
+    FILE* file = fopen(bitstream_path.c_str(), "rb");
+    if(file == NULL)
+    {
+        printf("ERROR: could not open %s file\n",bitstream_path.c_str());
+		exit (1);
+    }
+
+    long fileSize = fsize(file);
+	printf("\n FileSize=%ld",fileSize);
+
+    void *bridge_map;
+    bridge_map = mmap(NULL, DDR_PERSONNA_SPAN, PROT_WRITE, MAP_SHARED, fd_mem, mem_str_adrss+offset_addr);
+    if (bridge_map == MAP_FAILED)
+	{
+		printf("ERROR: mmap() failed...\n");
+		exit (1);
+	}
+
+    long buffer_size = fileSize>>2;
+    char *buffer = (char *)malloc(fileSize + 1);
+    size_t test = fread(buffer, 1,fileSize,file);
+	printf("\n nb read=%ld\n",test);
+	printf("\n Buffer_size=%ld\n",buffer_size);
+	
+    memcpy(bridge_map, buffer, fileSize);
+
+	printf("\n FileSize=%x\n",fileSize);
+	for(int i=0; i<5;i++)
+		printf("%x ",buffer[i]);
+
+	printf("\n");
+
+	int *buff = (int *)buffer;
+	for(int i=(buffer_size-1); i>(buffer_size-40);i--)
+		printf("addr:%x value=%x \n",i,buff[i]);
+	printf("\n");
+    fclose(file);
+    free(buffer);
+
+	if (munmap(bridge_map, DDR_PERSONNA_SPAN) != 0)
+	{
+		ROS_ERROR("ERROR: munmap() failed...\n");
+	}
+
+	printf("\n BITSTREAM LOADING COMPLETE!");
+    return 0;
+}
+
+
+long fsize(FILE *fp){
+    fseek(fp, 0L, SEEK_END);
+    long sz=ftell(fp);
+    fseek(fp,0,SEEK_SET); //go back to where we were
+    return sz;
+}
+
+/* start trigger module */
+void start_reconfiguration(int bitstream_address, int region_id)
+{
+   printf("I received the reconf order\n");
+   int param_address,i;
+   int start_done_word[2] = {769 ,0};
+   //start_done_word = start_done_word + start_selector*256;
+
+   start_done_word[1] = start_done_word[0] + region_id*16;
+   start_done_word[0] = bitstream_address;
+   //int *pointer_param= &start_done_word;
+
+   char * tmp = (char *)virtual_reconfig_ctrl;
+   char * tmp2 = (char *)start_done_word;
+   
+   for (i=0;i<8;i++)
+    *(tmp+i) = *(tmp2+i);
+   
+	//memcpy(virtual_reconfig_ctrl,start_done_word,8);
+}
+
+int reconfiguration_done()
+{
+   int *pointer_param= (int*)virtual_reconfig_ctrl;
+   int value;
+   
+   if ((*pointer_param & 0x40000000) == 2)
+         value=1;
+   else
+         value=0;
+
+	printf("Pointer param = %x",*pointer_param);
+   return value;
+}
+
+
+void release()
+{
+	if (munmap(virtual_reconfig_ctrl, 4096) != 0)
+	{
+		ROS_ERROR("ERROR: munmap() failed...\n");
+	}
+    close( fd );
+}
+
+
+int init_FPGA_reconfiguration()
+{
+	//init hardware
+	// Open /dev/mem
+	if ((fd = open("/dev/mem", (O_RDWR | O_SYNC))) == -1)
+	{
+		dbprintf("ERROR: could not open \"/dev/mem\"...\n");
+		exit (1);
+	}
+
+	virtual_reconfig_ctrl = mmap(NULL, 4096, (PROT_READ | PROT_WRITE), 
+							MAP_SHARED, fd, LW_HPS2FPGA_AXI_MASTER+0x00080000); 
+
+	/* write partial bitstream file in DDR memory */
+    int initconf_state=load_bitstream("/home/ubuntu/personna/personna_1.rbf", 
+                            		fd, 
+                            		PERSONNA_1,
+                            		HPS2FPGA_AXI_MASTER+HARD_DDR3_CONTROLLER);
+	return 0;
+}
+
+
+void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
+{
+    /* start the detector */
+    start_reconfiguration(PERSONNA_1, 2);      
+ 
+    /* check the detection computation is done */
+	//reconfiguration_done();
+    while(reconfiguration_done()==0); 
+	ROS_INFO("RECONFIGURATION COMPLETE!");
+}
+
+
