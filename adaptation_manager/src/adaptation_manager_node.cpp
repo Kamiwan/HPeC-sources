@@ -45,46 +45,6 @@ string verify1[3][7]={{"0","0","0"},{"1","2","3"}};
 
 
 
-void Task_in::raz_timing_qos()
-{
-	texec	= 0;
-    qos		= 0;
-}
-
-void Task_in::raz_all()
-{
- req		= 0; // 1 : activation, 0 : arrêt
-
- texec		= 0; // texec , [mintexec, maxtexec]
- mintexec	= 0;
- maxtexec	= 0;
-
- qos		= 0; //qos , [minqos, maxqos]
- minqos 	= 0;
- maxqos 	= 0;
-
- priority	= 0;
-}
-
-
-void Step_in::init()
-{
-	contrast_img.raz_all();
-	motion_estim_imu.raz_all();
-	motion_estim_img.raz_all();
-	search_landing.raz_all();
-	obstacle_avoidance.raz_all();
-	t_landing.raz_all();
-	rotoz_s.raz_all();
-	rotoz_b.raz_all();
-	replanning.raz_all();
-	detection.raz_all();
-	tracking.raz_all();
-
-	h1.av =	1;	//EM, Everything is available at the beginning
-	h2.av =	1;
-	h3.av =	1;
-}
 
 //***************
 void achievable_tab(Step_out s){
@@ -154,11 +114,11 @@ void publish_to_MM(int a,Step_out s)
 	{
         ROS_INFO("[CHARGEMENT][BITSTREAM][SCHEDULING] , Achievable : [%d]", a);
 	}else{
-        ROS_ERROR("[ALTERTE][MISSION_MANAGER]");
+        ROS_INFO("[ALTERTE][MISSION_MANAGER]");
         msg1.data =1;      
         achievable_pub->publish(msg1);   
         loop_rate.sleep();   	
-		ROS_ERROR("LISTE DES TACHES NN REALISABLES ENVOYEE, Total_Achievable : [%d]", a);
+		ROS_INFO("LISTE DES TACHES NN REALISABLES ENVOYEE, Total_Achievable : [%d]", a);
 		ROS_INFO("[CHARGEMENT][BITSTREAM][DERNIERE_SORTIE_AUTOMATE]");
 	}
 }
@@ -285,7 +245,7 @@ void activate_desactivate_task(string t[][7],int i,std_msgs::Int32 msg){
 void mapping(vector< vector<string> > M){
       int nb=6; int t1=0, t2=0;
    string static_tab[nb][7]; string as[4][7]; string as2[4][7]; string as3[4][7]; std_msgs::Int32 msg;
-   vector <string> map =readfile1(PATH_MAP_TAB);
+   vector <string> map = readfile1(PATH_MAP_TAB);
  
     /*string** static_tab = (string**)malloc(7*sizeof(string*)); //allocation des colonnes
 	for(i=0;i<9;i++)
@@ -556,7 +516,7 @@ void mapping(vector< vector<string> > M){
 	//**********
     }
 	} 
-    ROS_ERROR("STATIC_TAB_AFFICHAGE...");
+    ROS_INFO("STATIC_TAB_AFFICHAGE...");
 		  for(int i(0);i < nb; ++i) { 
 	for(int j(0); j < 6; ++j) { 
     cout << static_tab[i][j] << "       "; 
@@ -761,7 +721,7 @@ void mapping(vector< vector<string> > M){
           } 
           cout << endl; 
         } }
-    ROS_ERROR("STATIC_TAB_COMPLETE..");
+    ROS_INFO("STATIC_TAB_COMPLETE..");
 	 for(int i(0);i < nb; ++i) { 
 	for(int j(0); j < 6; ++j) { 
     cout << static_tab[i][j] << "       "; 
@@ -810,9 +770,10 @@ void comparer(vector<string> timing_data, vector<string> C3, Step_in e)
 
 //***************************
 void notify_Callback(const std_msgs::Int32::ConstPtr& msg){
-  	ROS_ERROR("[RECU][MISSION_M][CHANGEMENT D'INTERVALLES DANS TABLE C3..] \n");
-  	ROS_ERROR("%d", msg->data);
-  	float texe; vector<string> C3;
+  	ROS_INFO("[RECU][MISSION_M][CHANGEMENT D'INTERVALLES DANS TABLE C3..] \n");
+  	ROS_INFO("%d", msg->data);
+  	float texe; 
+	vector<string> C3;
   	C3 = readfile1(PATH_TABLE_C3);
   	Step_in e= entree1(C3); 
   	do1(e);
@@ -936,10 +897,14 @@ int main (int argc, char ** argv)
 	Step_out s;
 	Step_in* in;
 
-	ROS_ERROR("[ADAPTATION MANAGER] [RUNNING] \n");
+	ROS_INFO("[ADAPTATION MANAGER] [RUNNING] \n");
 	C3 = readfile1(PATH_TABLE_C3);
 	e0 = entree0(C3); // texe,qos observé =0; 1ere utilisation du step()
 
+	vector<Task_in> test = read_C3(PATH_TABLE_C3);
+
+
+	/*
 	do1(e0); 
 
 	ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
@@ -958,6 +923,133 @@ int main (int argc, char ** argv)
 		}
 		loop_rate.sleep();
 	}
+	*/
+}
 
+
+
+
+
+void Task_in::raz_timing_qos()
+{
+	texec	= 0;
+    qos		= 0;
+}
+
+
+
+void Task_in::raz_all()
+{
+ req		= 0; // 1 : activation, 0 : arrêt
+
+ texec		= 0; // texec , [mintexec, maxtexec]
+ mintexec	= 0;
+ maxtexec	= 0;
+
+ qos		= 0; //qos , [minqos, maxqos]
+ minqos 	= 0;
+ maxqos 	= 0;
+
+ priority	= 0;
+}
+
+void Task_in::print(){
+	std::cout << "req = " << req << std::endl;
+	std::cout << "texec = " << texec << std::endl;
+	std::cout << "mintexec = " << mintexec << std::endl;
+	std::cout << "maxtexec = " << maxtexec << std::endl;
+	std::cout << "qos = " << qos << std::endl;
+	std::cout << "minqos = " << minqos << std::endl;
+	std::cout << "maxqos = " << maxqos << std::endl;
+	std::cout << "priority = " << priority << std::endl;
+}
+
+
+Task_in& Task_in::operator=( Task_in const& rhs )
+{
+	// Check for self-assignment!
+    if (this == &rhs)
+    	return *this;        
+
+	req			= rhs.req; 		// 1 : activation, 0 : stop
+
+	texec		= rhs.texec; 	// texec , [mintexec, maxtexec]
+	mintexec	= rhs.mintexec;
+	maxtexec	= rhs.maxtexec;
+
+	qos			= rhs.qos; 		//qos , [minqos, maxqos]
+	minqos 		= rhs.minqos;
+	maxqos 		= rhs.maxqos;
+
+	priority	= rhs.priority;
+	return *this;
+}
+
+
+vector<Task_in> read_C3(const char* path)
+{
+    std::string 	line;
+	vector<string> 	file_content;
+	vector<Task_in> res;
+	std::ifstream 	fichier(path); 
+
+    if ( fichier ) 
+    { 
+        while ( std::getline( fichier, line) ) 
+        { 
+			file_content.push_back(line);
+        }
+	}
+	else
+    {
+        std::cout << "ERROR: Cannot read input file." << std::endl;
+		exit(1);
+    }  
+
+	Task_in tmp;
+	for(int i=0; i<file_content.size(); i+=9)
+	{
+		//EM, The first string every 9 rows is the Task name, ex: [0],[9]...
+		tmp.req			= stoi(file_content[i+1]);
+		tmp.texec		= stoi(file_content[i+2]);
+		tmp.mintexec	= stoi(file_content[i+3]);
+		tmp.maxtexec	= stoi(file_content[i+4]);
+		tmp.qos			= stoi(file_content[i+5]);
+		tmp.minqos 		= stoi(file_content[i+6]);
+		tmp.maxqos 		= stoi(file_content[i+7]);
+		tmp.priority	= stoi(file_content[i+8]);
+
+		res.push_back(tmp);
+	}
+   
+   	cout << "There are "<< file_content.size() << " lines in the file" << endl;
+	cout << "There are "<< res.size() << " Taskes" << endl;
+   	for (size_t i = 0; i < res.size(); i++)
+	{
+       	cout << "Task " << i << " : " <<  endl;
+		res[i].print();
+	}
+
+	fichier.close();
+	return res;
+}
+
+void Step_in::init()
+{
+	contrast_img.raz_all();
+	motion_estim_imu.raz_all();
+	motion_estim_img.raz_all();
+	search_landing.raz_all();
+	obstacle_avoidance.raz_all();
+	t_landing.raz_all();
+	rotoz_s.raz_all();
+	rotoz_b.raz_all();
+	replanning.raz_all();
+	detection.raz_all();
+	tracking.raz_all();
+
+	h1.av =	1;	//EM, Everything is available at the beginning
+	h2.av =	1;
+	h3.av =	1;
 }
 

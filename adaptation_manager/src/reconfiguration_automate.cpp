@@ -5,7 +5,7 @@ Step_out doStep (Step_in e){
     Step_out s; 
     std::cout << "[TRAITEMENT][ENTREES][AUTOMATE]...."<<std::endl;
     std::cout << "..................................."<<std::endl;
-    std::cout<< "[PRISE DES DECISIONS PAR AUTOMATE......]"<< std::endl;
+    std::cout << "[PRISE DES DECISIONS PAR AUTOMATE......]"<< std::endl;
     std::cout << "[SORTIE][AUTOMATE]..." <<std::endl;
     s= sortie();
     return s;

@@ -59,18 +59,18 @@ double cpuload ( ){
 vector<string> readfile1(const char* path){
     std::ifstream fichier(path); 
     vector<string> lignes;
-   	int i(0); 
+    int i(0); 
    	string temp;
     if ( fichier ) 
     { 
         while ( std::getline( fichier, temp) ) 
         { 
-		 lignes.push_back(temp);
+		lignes.push_back(temp);
         }
 	}
 	else
     {
-      cout << "ERREUR: Impossible d'ouvrir le fichier en lecture." << endl;
+        cout << "ERREUR: Impossible d'ouvrir le fichier en lecture." << endl;
     }  
 	fichier.close();
    
@@ -81,3 +81,12 @@ vector<string> readfile1(const char* path){
 	return lignes;
 }
 
+inline bool isInteger(const std::string & s)
+{
+   if(s.empty() || ((!isdigit(s[0])) && (s[0] != '-') && (s[0] != '+'))) return false ;
+
+   char * p ;
+   strtol(s.c_str(), &p, 10) ;
+
+   return (*p == 0) ;
+}

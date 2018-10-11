@@ -47,10 +47,6 @@ extern"C"{
 using namespace std; 
 using namespace cv;
 
-extern struct timeval  beginning, current1, current2, current3, current4, current5;
-extern int time_tk;
-extern int time_notif;
-
 struct Task_in
 {
     int req; // 1 : activation, 0 : arrêt
@@ -65,9 +61,11 @@ struct Task_in
 
 	int priority; //priorite de tache  
 
+	//EM, useful functions to use Task_in easily
 	void raz_timing_qos();
 	void raz_all();
-
+	void print();
+	Task_in& operator=(Task_in const& rhs);
 };
 
 struct Hw_st 
@@ -93,9 +91,8 @@ struct Step_in
 	Hw_st h2;
 	Hw_st h3;
 
+	//EM, useful functions to use Step_in easily
 	void init();
-
-
 };
 
 //*********** sortie automate
@@ -129,9 +126,6 @@ struct Step_out
 	Task_out tracking;
 };
 
-
-
-
 std::vector<std::string> readfile1(const char* path);
 
 void achievable_tab(Step_out s);
@@ -145,8 +139,12 @@ void mapping(std::vector< std::vector<std::string> > M);
 void comparer(std::vector<std::string> lignes, std::vector<std::string> C3, Step_in e);
 void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
 
+vector<Task_in> read_C3(const char* path);
 
-
+/*********** Global variables ***********/ 
+extern struct timeval  beginning, current1, current2, current3, current4, current5;
+extern int time_tk;
+extern int time_notif;
 
 #endif
 
