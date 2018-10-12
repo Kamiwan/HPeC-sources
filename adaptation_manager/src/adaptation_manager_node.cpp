@@ -245,7 +245,7 @@ void activate_desactivate_task(string t[][7],int i,std_msgs::Int32 msg){
 void mapping(vector< vector<string> > M){
       int nb=6; int t1=0, t2=0;
    string static_tab[nb][7]; string as[4][7]; string as2[4][7]; string as3[4][7]; std_msgs::Int32 msg;
-   vector <string> map = readfile1(PATH_MAP_TAB);
+   vector <string> map = readfile(PATH_MAP_TAB);
  
     /*string** static_tab = (string**)malloc(7*sizeof(string*)); //allocation des colonnes
 	for(i=0;i<9;i++)
@@ -649,7 +649,7 @@ void mapping(vector< vector<string> > M){
 			i=1; int i3=1,i4=1; bool done1 = false; bool done2= false; bool done3= false; 
 		   if(as[i][0]!=""){
 				do{ 
-					vector<string> done = readfile1(PATH_DONE);
+					vector<string> done = readfile(PATH_DONE);
 					for(int l=0;l<done.size();l++){
 						if(done[l]==as[i][0]){
 							as[i][6]=done[l+1];
@@ -663,7 +663,7 @@ void mapping(vector< vector<string> > M){
 			}
 			if(as2[i3][0]!=""){
 				do{ 
-					vector<string> done = readfile1(PATH_DONE);
+					vector<string> done = readfile(PATH_DONE);
 					for(int l=0;l<done.size();l++){
 						if(done[l]==as2[i3][0]){
 							as2[i3][6]=done[l+1];
@@ -677,7 +677,7 @@ void mapping(vector< vector<string> > M){
 			}
 			if(as3[i4][0]!=""){
 				do{ 
-					vector<string> done = readfile1(PATH_DONE);
+					vector<string> done = readfile(PATH_DONE);
 					for(int l=0;l<done.size();l++){
 						if(done[l]==as3[i4][0]){
 							as3[i4][6]=done[l+1];
@@ -773,9 +773,11 @@ void notify_Callback(const std_msgs::Int32::ConstPtr& msg){
   	ROS_INFO("[RECU][MISSION_M][CHANGEMENT D'INTERVALLES DANS TABLE C3..] \n");
   	ROS_INFO("%d", msg->data);
   	float texe; 
-	vector<string> C3;
-  	C3 = readfile1(PATH_TABLE_C3);
-  	Step_in e= entree1(C3); 
+
+	vector<Task_in> C3 = read_C3(PATH_TABLE_C3);
+  	Step_in e;
+	e.init();
+	e.load_C3(C3); 
   	do1(e);
 }
 
@@ -888,25 +890,23 @@ int main (int argc, char ** argv)
 	//printf("adaptation_manager_ver %.0f %d\n",((double) time_micros(&current1, &beginning)), _res.res);
 	
 	//*****************Ghizlane BOUDABZA
-
-
 	std_msgs::Float32 load;
-	vector<string> time_qos_data, C3;
 
 	Step_in e0,e;
 	Step_out s;
 	Step_in* in;
 
 	ROS_INFO("[ADAPTATION MANAGER] [RUNNING] \n");
-	C3 = readfile1(PATH_TABLE_C3);
-	e0 = entree0(C3); // texe,qos observé =0; 1ere utilisation du step()
 
-	vector<Task_in> test = read_C3(PATH_TABLE_C3);
+	vector<Task_in> C3 = read_C3(PATH_TABLE_C3);
+	e.init();
+	e.load_C3(C3); 
+	e.raz_timing_qos();
 
+	vector<App_timing_qos> time_qos_data;
 
 	/*
 	do1(e0); 
-
 	ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
 	while(ros::ok())
 	{ 
@@ -915,10 +915,10 @@ int main (int argc, char ** argv)
 		load.data = cpuload ( ) ;
 		cpu_pub.publish( load );
 
-		time_qos_data = readfile1(PATH_TIME_QOS); 
+		time_qos_data = read_time_qos(PATH_TIME_QOS);
 		if(time_qos_data.size()!=0)
 		{
-			e = entree(C3,time_qos_data);
+			e.update_timing_qos(time_qos_data);
 			comparer(time_qos_data,C3, e);	
 		}
 		loop_rate.sleep();
@@ -986,25 +986,94 @@ Task_in& Task_in::operator=( Task_in const& rhs )
 }
 
 
+Task_in& Task_in::operator=(App_timing_qos const& rhs)
+{
+	texec		= rhs.texec; 	// texec , [mintexec, maxtexec]
+	qos			= rhs.qos; 		//qos , [minqos, maxqos]
+	return *this;
+}
+
+
+
+void Step_in::init()
+{
+	contrast_img.raz_all();
+	motion_estim_imu.raz_all();
+	motion_estim_img.raz_all();
+	search_landing.raz_all();
+	obstacle_avoidance.raz_all();
+	t_landing.raz_all();
+	rotoz_s.raz_all();
+	rotoz_b.raz_all();
+	replanning.raz_all();
+	detection.raz_all();
+	tracking.raz_all();
+
+	h1.av =	1;	//EM, Everything is available at the beginning
+	h2.av =	1;
+	h3.av =	1;
+}
+
+void Step_in::raz_timing_qos()
+{
+	contrast_img.raz_timing_qos();
+	motion_estim_imu.raz_timing_qos();
+	motion_estim_img.raz_timing_qos();
+	search_landing.raz_timing_qos();
+	obstacle_avoidance.raz_timing_qos();
+	t_landing.raz_timing_qos();
+	rotoz_s.raz_timing_qos();
+	rotoz_b.raz_timing_qos();
+	replanning.raz_timing_qos();
+	detection.raz_timing_qos();
+	tracking.raz_timing_qos();
+}
+
+void Step_in::load_C3(const std::vector<Task_in> C3)
+{
+	if(C3.size() < APPLICATION_NUMBER)
+	{
+		std::cout << "The C3 table provided is too small! C3 size=" << C3.size() << std::endl;
+		return; //EM, to leave a void function
+	}
+	contrast_img 		= C3[0];
+	motion_estim_imu 	= C3[1];
+	motion_estim_img 	= C3[2];
+	search_landing 		= C3[3];
+	obstacle_avoidance 	= C3[4];
+	t_landing 			= C3[5];
+	rotoz_s 			= C3[6];
+	rotoz_b 			= C3[7];
+	replanning 			= C3[8];
+	detection 			= C3[9];
+	tracking 			= C3[10];
+}
+
+void Step_in::update_timing_qos(std::vector<App_timing_qos> time_qos)
+{
+	if(time_qos.size() < APPLICATION_NUMBER)
+	{
+		std::cout << "The time_qos table provided is too small! time_qos size=" << time_qos.size() << std::endl;
+		return; //EM, to leave a void function
+	}
+	contrast_img 		= time_qos[0];
+	motion_estim_imu 	= time_qos[1];
+	motion_estim_img 	= time_qos[2];
+	search_landing 		= time_qos[3];
+	obstacle_avoidance 	= time_qos[4];
+	t_landing 			= time_qos[5];
+	rotoz_s 			= time_qos[6];
+	rotoz_b 			= time_qos[7];
+	replanning 			= time_qos[8];
+	detection 			= time_qos[9];
+	tracking 			= time_qos[10];
+}
+
+
 vector<Task_in> read_C3(const char* path)
 {
-    std::string 	line;
-	vector<string> 	file_content;
 	vector<Task_in> res;
-	std::ifstream 	fichier(path); 
-
-    if ( fichier ) 
-    { 
-        while ( std::getline( fichier, line) ) 
-        { 
-			file_content.push_back(line);
-        }
-	}
-	else
-    {
-        std::cout << "ERROR: Cannot read input file." << std::endl;
-		exit(1);
-    }  
+	vector<string> file_content = readfile(path);
 
 	Task_in tmp;
 	for(int i=0; i<file_content.size(); i+=9)
@@ -1029,27 +1098,38 @@ vector<Task_in> read_C3(const char* path)
        	cout << "Task " << i << " : " <<  endl;
 		res[i].print();
 	}
-
-	fichier.close();
 	return res;
 }
 
-void Step_in::init()
-{
-	contrast_img.raz_all();
-	motion_estim_imu.raz_all();
-	motion_estim_img.raz_all();
-	search_landing.raz_all();
-	obstacle_avoidance.raz_all();
-	t_landing.raz_all();
-	rotoz_s.raz_all();
-	rotoz_b.raz_all();
-	replanning.raz_all();
-	detection.raz_all();
-	tracking.raz_all();
 
-	h1.av =	1;	//EM, Everything is available at the beginning
-	h2.av =	1;
-	h3.av =	1;
+void App_timing_qos::print(){
+	std::cout << "texec = " << texec << std::endl;
+	std::cout << "qos = " << qos << std::endl;
 }
+
+
+vector<App_timing_qos> read_time_qos(const char* path)
+{
+	vector<App_timing_qos> res;
+	vector<string> file_content = readfile(path);
+
+	App_timing_qos tmp;
+	for(int i=0; i<file_content.size(); i+=3)
+	{
+		//EM, The first string every 3 rows is the Task name, ex: [0],[3]...
+		tmp.texec		= stoi(file_content[i+1]);
+		tmp.qos			= stoi(file_content[i+2]);
+		res.push_back(tmp);
+	}
+   
+   	cout << "There are "<< file_content.size() << " lines in the file" << endl;
+	cout << "There are "<< res.size() << " Taskes" << endl;
+   	for (size_t i = 0; i < res.size(); i++)
+	{
+       	cout << "Task " << i << " : " <<  endl;
+		res[i].print();
+	}
+	return res;
+}
+
 

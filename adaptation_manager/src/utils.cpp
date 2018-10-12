@@ -56,7 +56,7 @@ double cpuload ( ){
 }
 
 
-vector<string> readfile1(const char* path){
+vector<string> readfile(const char* path){
     std::ifstream fichier(path); 
     vector<string> lignes;
     int i(0); 

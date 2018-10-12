@@ -44,12 +44,25 @@ extern"C"{
 #define PATH_MAP_TAB 		"./src/parameters/map_tab.txt"
 #define PATH_DONE 			"./src/parameters/done.txt"
 
+#define APPLICATION_NUMBER 11 //EM, the number of apps in C3 table
+
 using namespace std; 
 using namespace cv;
 
+//EM, new struct to allow timing and qos updates
+struct App_timing_qos
+{  
+    int texec; // texec , [mintexec, maxtexec]
+    int qos;   //qos , [minqos, maxqos]
+
+	//EM, useful functions to use Task_in easily
+	void print();
+};
+
+
 struct Task_in
 {
-    int req; // 1 : activation, 0 : arrêt
+    int req; // 1 : activation, 0 : stop
 
     int texec; // texec , [mintexec, maxtexec]
     int mintexec;
@@ -59,13 +72,14 @@ struct Task_in
     int minqos;
     int maxqos;
 
-	int priority; //priorite de tache  
+	int priority; //task priority  
 
 	//EM, useful functions to use Task_in easily
 	void raz_timing_qos();
 	void raz_all();
 	void print();
 	Task_in& operator=(Task_in const& rhs);
+	Task_in& operator=(App_timing_qos const& rhs);
 };
 
 struct Hw_st 
@@ -93,7 +107,11 @@ struct Step_in
 
 	//EM, useful functions to use Step_in easily
 	void init();
+	void raz_timing_qos();
+	void load_C3(const std::vector<Task_in> C3);
+	void update_timing_qos(std::vector<App_timing_qos> time_qos);
 };
+
 
 //*********** sortie automate
 struct Task_out
@@ -126,8 +144,6 @@ struct Step_out
 	Task_out tracking;
 };
 
-std::vector<std::string> readfile1(const char* path);
-
 void achievable_tab(Step_out s);
 
 int verify(Step_out s);
@@ -139,7 +155,9 @@ void mapping(std::vector< std::vector<std::string> > M);
 void comparer(std::vector<std::string> lignes, std::vector<std::string> C3, Step_in e);
 void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
 
-vector<Task_in> read_C3(const char* path);
+
+vector<Task_in> 		read_C3(const char* path);
+vector<App_timing_qos> 	read_time_qos(const char* path);
 
 /*********** Global variables ***********/ 
 extern struct timeval  beginning, current1, current2, current3, current4, current5;
