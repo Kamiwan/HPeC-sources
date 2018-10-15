@@ -55,7 +55,7 @@ struct App_timing_qos
     int texec; // texec , [mintexec, maxtexec]
     int qos;   //qos , [minqos, maxqos]
 
-	//EM, useful functions to use Task_in easily
+	//EM, useful functions to use App_timing_qos easily
 	void print();
 };
 
@@ -152,10 +152,12 @@ std::vector < std::vector<std::string> > scheduler_tab(int n, int m);
 void v(std::string t[][7],int i);
 void activate_desactivate_task(std::string t[][7],int i,std_msgs::Int32 msg);
 void mapping(std::vector< std::vector<std::string> > M);
-void comparer(std::vector<std::string> lignes, std::vector<std::string> C3, Step_in e);
 void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
 
 
+bool compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3, Step_in e);
+
+Step_out fake_output();
 vector<Task_in> 		read_C3(const char* path);
 vector<App_timing_qos> 	read_time_qos(const char* path);
 

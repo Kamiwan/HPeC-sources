@@ -5,11 +5,12 @@
 
 #include "adaptation_manager_node.h"
 
-Step_out doStep (Step_in e);
+Step_out fake_Step (Step_in e);
 void do1( Step_in e);
 std::vector< std::vector<std::string> > initialise_sortie( int n, int m, Step_out s);
 
-Step_out sortie();
+
+
 
 
 #endif
