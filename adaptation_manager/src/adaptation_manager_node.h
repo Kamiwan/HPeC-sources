@@ -44,7 +44,8 @@ extern"C"{
 #define PATH_MAP_TAB 		"./src/parameters/map_tab.txt"
 #define PATH_DONE 			"./src/parameters/done.txt"
 
-#define APPLICATION_NUMBER 11 //EM, the number of apps in C3 table
+#define APPLICATION_NUMBER		 11 	//EM, the number of apps in C3 table
+#define MULTI_APP_THRESHOLD_CODE 140 	//EM, every code above means a bitstream fusion of apps
 
 using namespace std; 
 using namespace cv;
@@ -144,6 +145,21 @@ struct Step_out
 	Task_out tracking;
 };
 
+struct Map_app_out
+{
+	int 	active;
+	int 	version_code;
+	int 	region_id;
+	string	fusion_sequence;
+
+	//EM, useful functions to use Map_app_out easily
+	void init();
+	string set_fusion(Map_app_out const& config_app);
+	Map_app_out& operator=(Task_out const& rhs);
+};
+
+
+
 void achievable_tab(Step_out s);
 
 int verify(Step_out s);
@@ -157,9 +173,11 @@ void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
 
 bool compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3, Step_in e);
 
-Step_out fake_output();
+Step_out 				fake_output();
 vector<Task_in> 		read_C3(const char* path);
 vector<App_timing_qos> 	read_time_qos(const char* path);
+vector<Map_app_out>  	init_output(int n, int m, Step_out const& step_output);
+void					check_sequence(vector<Map_app_out> & map_config_app);
 
 /*********** Global variables ***********/ 
 extern struct timeval  beginning, current1, current2, current3, current4, current5;

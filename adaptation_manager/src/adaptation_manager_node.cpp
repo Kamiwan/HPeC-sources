@@ -1244,8 +1244,89 @@ vector<App_timing_qos> read_time_qos(const char* path)
 	return res;
 }
 
+string Map_app_out::set_fusion(Map_app_out const& config_app)
+{
+	if(config_app.active != 0 && config_app.region_id != 0)
+	{
+		if(config_app.version_code >= MULTI_APP_THRESHOLD_CODE)
+			return "f";
+		else 
+			return "-";
+	}
+	else
+		return "-";
+}
 
- Step_out fake_output(){
+Map_app_out& Map_app_out::operator=(Task_out const& rhs)
+{
+	Map_app_out curr_app_out; //EM, intermediate variable to set fusion_sequence
+	curr_app_out.active			= rhs.act;
+	curr_app_out.version_code	= rhs.code;
+	curr_app_out.region_id		= rhs.code %10;
+
+	active			= rhs.act;
+	version_code	= rhs.code;
+	region_id		= curr_app_out.region_id;
+	fusion_sequence	= set_fusion(curr_app_out); //EM, function needed for this attribute
+	return *this;
+}
+
+void Map_app_out::init()
+{
+	active			= 0;
+	version_code	= 0;
+	region_id		= 0;
+	fusion_sequence	= "";
+}
+
+vector<Map_app_out>	init_output(int n, int m, Step_out const& step_output)
+{
+	//EM, instantiation of the returned structure
+	vector<Map_app_out> res;
+	Map_app_out tmp;
+	tmp.init();
+	for(int i=0; i < APPLICATION_NUMBER; i++)
+		res.push_back(tmp);
+
+	res[0] 	= step_output.contrast_img;
+	res[1] 	= step_output.motion_estim_imu;
+	res[2] 	= step_output.motion_estim_img;
+	res[3] 	= step_output.search_landing;
+	res[4] 	= step_output.obstacle_avoidance;
+	res[5] 	= step_output.t_landing;
+	res[6] 	= step_output.rotoz_s;
+	res[7] 	= step_output.rotoz_b;
+	res[8] 	= step_output.replanning;
+	res[9] 	= step_output.detection;
+	res[10] = step_output.tracking;
+
+	check_sequence(res);
+	return res;
+}
+
+void check_sequence(vector<Map_app_out> & map_config_app)
+{
+	if(map_config_app.size() < APPLICATION_NUMBER)
+	{
+		std::cout << "The map_config_app table provided is too small! map_config_app size=" << map_config_app.size() << std::endl;
+		return; //EM, to leave a void function
+	}
+
+	//EM, check if 2 active apps have the same HW Tile location 
+	//	  => meaning sequence execution
+	for(int i=0; i < (APPLICATION_NUMBER - 1); i++)
+		if(map_config_app[i].active != 0 
+			&& map_config_app[i].version_code < MULTI_APP_THRESHOLD_CODE)
+			for(int j=i+1; j < APPLICATION_NUMBER; j++)
+				if(map_config_app[i].region_id == map_config_app[j].region_id)
+				{
+					map_config_app[i].fusion_sequence = "s";
+					map_config_app[j].fusion_sequence = "s";
+				}
+}
+
+
+Step_out fake_output(){
 	 Step_out s;
 	 
      s.contrast_img.act = 1;
@@ -1294,3 +1375,6 @@ vector<App_timing_qos> read_time_qos(const char* path)
 
 	return s;
 }
+
+
+
