@@ -161,7 +161,8 @@ struct Map_app_out
 
 struct App_scheduler
 {
-	int		app_index; //EM, according to the C3 app order
+	int		app_index; //EM, according to the C3 app order to activate-desactivate taskes
+	int 	active;
 	int 	version_code;
 	int 	region_id;
 	string	fusion_sequence;
@@ -189,19 +190,18 @@ bool verify(Step_out s);
 void publish_to_MM(bool a,Step_out s);
 std::vector < std::vector<std::string> > scheduler_tab(int n, int m);
 void v(std::string t[][7],int i);
-void activate_desactivate_task(std::string t[][7],int i,std_msgs::Int32 msg);
 void mapping(std::vector< std::vector<std::string> > M);
 void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
 
 
-bool compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3, Step_in e);
-
+bool 					compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3, Step_in e);
 int						find_BTS_addr(vector<Bitstream_map> bts_map, int version_code);
 vector<Bitstream_map> 	read_BTS_MAP(const char* path);
 vector<Task_in> 		read_C3(const char* path);
 vector<App_timing_qos> 	read_time_qos(const char* path);
 vector<Map_app_out>  	init_output(Step_out const& step_output);
 vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map);
+void 					activate_desactivate_task(int app_index, std_msgs::Int32 msg);
 void					check_sequence(vector<Map_app_out> & map_config_app);
 void 					mapping2(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map);
 

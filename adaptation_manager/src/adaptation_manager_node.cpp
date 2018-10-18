@@ -154,91 +154,49 @@ void v(string t[][7],int i){
 }
 
 //******************fonction d'activation des taches en sw ou hw: en (-), ou en (s,f,-)
-void activate_desactivate_task(string t[][7],int i,std_msgs::Int32 msg){
+void activate_desactivate_task(int app_index, std_msgs::Int32 msg){
 
-	if(t[i][0]=="ctr_img"){
-		  contrast_img_pub->publish(msg);
-		}
-	else if(t[i][0]=="m_e_imu"){
+	switch (app_index)
+	{
+	case 0:
+		contrast_img_pub->publish(msg);
+		break;
+	case 1:
 		motion_estim_imu_pub->publish(msg);
-		}
-
-	else if(t[i][0]=="m_e_img"){ 
+		break;
+	case 2:
 		motion_estim_img_pub->publish(msg);
-		}
-
-	else if(t[i][0]==" s_land"){
+		break;
+	case 3:
 		search_land_pub->publish(msg);
-		}
-
-	else if(t[i][0]=="rotoz_b"){ 
-		rotoz_b_pub->publish(msg);
-		}
-
-	else if(t[i][0]=="tracking"){  
-		tracking_pub->publish(msg);
-		
-	}
-    else if(t[i][0]==" rotoz_s"){
-		rotoz_s_pub->publish(msg);
-		
-	}
-	else if(t[i][0]=="detection"){ 
-		detection_pub->publish(msg);
-		
-	}
-	else if(t[i][0]=="obt_avoid"){ 
+		break;
+	case 4:
 		obstacle_avoidance_pub->publish(msg);
-		
-	}
-    else if(t[i][0]=="t_landing"){ 
+		break;
+	case 5:
 		t_landing_pub->publish(msg);
-	
-	}
-
-	else if(t[i][0]=="replanning"){ 
+		break;
+	case 6:
+		rotoz_s_pub->publish(msg);
+		break;
+	case 7:
+		rotoz_b_pub->publish(msg);
+		break;
+	case 8:
 		replanning_pub->publish(msg);
-		}
+		break;
+	case 9:
+		detection_pub->publish(msg);
+		break;
+	case 10:
+		tracking_pub->publish(msg);
+		break;
 
-	else if(t[i][0]=="ctr_img&m_e_imu"){ 
-		ctr_img_m_e_imu_pub->publish(msg);
-		}
+	//EM, TODO: put fusion taskes activation if needed
 
-    else if(t[i][0]=="ctr_img&m_e_img"){ 
-		ctr_img_m_e_img_pub->publish(msg);
-		
+	default:
+		break;
 	}
-	else if(t[i][0]=="ctr_img&s_land"){ 
-		ctr_img_s_land_pub->publish(msg);
-		                  }                           
-
-	else if(t[i][0]=="ctr_img&rotoz_s"){ 
-		ctr_img_rotoz_s_pub->publish(msg);
-		}
-
-	else if(t[i][0]=="m_e_img&t_landing"){ 
-		m_e_img_t_landing_pub->publish(msg);
-		}
-
-	else if(t[i][0]=="m_e_img&rotoz_s"){  
-		m_e_img_rotoz_s_pub->publish(msg);
-		}
-
-	else if(t[i][0]=="m_e_img&s_land"){  
-		m_e_img_s_land_pub->publish(msg);
-		}
-
-	else if(t[i][0]=="rotoz_s&t_landing"){ 
-		rotoz_s_t_landing_pub->publish(msg);
-		}
-
-    else if(t[i][0]==" t_landing&s_land"){
-		t_landing_s_land_pub->publish(msg);
-		}
-
-	else if(t[i][0]=="rotoz_s&s_land"){  
-		rotoz_s_s_land_pub->publish(msg);
-			}
 }
 
 
@@ -623,7 +581,7 @@ void mapping(vector<vector<string>> M)
 				{
 					t1 = 0;
 					msg.data = 0;
-					activate_desactivate_task(verify1, i1, msg); //desactiver la tache en cours d'exec dans la tuile demandé pour la nv config
+					//activate_desactivate_task(verify1, i1, msg); //desactiver la tache en cours d'exec dans la tuile demandé pour la nv config
 				}
 			}
 			if (t1 == 0)
@@ -640,7 +598,7 @@ void mapping(vector<vector<string>> M)
 					*/
 				static_tab[i][4] = loaded;
 				v(static_tab, i);							   //sauvegarder le dernier etat configuré dans la region reconfigurable (non_tache, region_id)
-				activate_desactivate_task(static_tab, i, msg); //activer la tache
+				//activate_desactivate_task(static_tab, i, msg); //activer la tache
 			}
 		}
 	}
@@ -665,7 +623,7 @@ void mapping(vector<vector<string>> M)
 					t2 = 0;
 					B.push_back(t2);
 					msg.data = 0;
-					activate_desactivate_task(verify1, i2, msg); //desactiver la tache en cours d'exec dans la tuile demandé pour la nv config au cas d'une nouvelle seq s
+					//activate_desactivate_task(verify1, i2, msg); //desactiver la tache en cours d'exec dans la tuile demandé pour la nv config au cas d'une nouvelle seq s
 				}
 			}
 			for (int i = 0; i < B.size(); i++)
@@ -689,7 +647,7 @@ void mapping(vector<vector<string>> M)
 					*/
 					as[i][4] = loaded;
 					v(as, i);
-					activate_desactivate_task(as, i, msg); //activer la tache
+					//activate_desactivate_task(as, i, msg); //activer la tache
 				}
 				//fin test as
 
@@ -708,7 +666,7 @@ void mapping(vector<vector<string>> M)
 					*/
 					as2[i3][4] = loaded;
 					v(as2, i3);
-					activate_desactivate_task(as2, i3, msg); //activer la tache
+					//activate_desactivate_task(as2, i3, msg); //activer la tache
 				}
 				//fin test as2
 
@@ -727,7 +685,7 @@ void mapping(vector<vector<string>> M)
 					*/
 					as3[i4][4] = loaded;
 					v(as3, i4);
-					activate_desactivate_task(as3, i4, msg); //activer la tache
+					//activate_desactivate_task(as3, i4, msg); //activer la tache
 				}
 				//fin test as3
 
@@ -800,7 +758,7 @@ void mapping(vector<vector<string>> M)
 		if (static_tab[i][5] == "0")
 		{
 			msg.data = 1;
-			activate_desactivate_task(static_tab, i, msg); //activer en sw
+			//activate_desactivate_task(static_tab, i, msg); //activer en sw
 		}
 	}
 	//affichage des taches en s
@@ -1022,6 +980,8 @@ int main (int argc, char ** argv)
 	if(!first_step)
 		prev_app_output_config = app_output_config;
 	app_output_config = init_output(s); //conversion sortie step -> table 
+
+	mapping2(app_output_config, bts_map);
 	
 	s = fake_output2();
 	if(!first_step)
@@ -1354,6 +1314,7 @@ void Bitstream_map::print()
 void App_scheduler::print()
 {
 	std::cout 	<< "app_index = " << app_index << std::endl
+				<< "active = " << active << std::endl
 				<< "version_code = " << version_code << std::endl
 				<< "region_id = " << region_id << std::endl
 				<< "fusion_sequence = " << fusion_sequence << std::endl
@@ -1397,6 +1358,7 @@ int find_BTS_addr(vector<Bitstream_map> bts_map, int version_code)
 
 App_scheduler& App_scheduler::operator=(Map_app_out const& rhs)
 {
+	active			= rhs.active;
 	version_code 	= rhs.version_code;
 	region_id 		= rhs.region_id;
 	fusion_sequence = rhs.fusion_sequence;
@@ -1407,9 +1369,37 @@ void mapping2(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> c
 {
 	vector<App_scheduler> scheduler_array = create_scheduler_tab(map_config_app, bitstream_map);
 	
+	cout << endl;
+	std_msgs::Int32 msg;
+	for(size_t i = 0; i < scheduler_array.size(); i++)
+	{
+		if(scheduler_array[i].active == 0) //Disable taskes
+		{
+			msg.data = 0; 
+			activate_desactivate_task(scheduler_array[i].app_index, msg);	
+			cout << "\033[1;31m Disable Task no: \033[0m" << scheduler_array[i].app_index << endl;
+		}
+
+		if(scheduler_array[i].region_id == 0 && scheduler_array[i].active == 1) //Enable SW taskes
+		{
+			msg.data = 1; 
+			activate_desactivate_task(scheduler_array[i].app_index, msg);
+			cout << "\033[1;32m Enable SW version of Task no: \033[0m" << scheduler_array[i].app_index << endl;
+		}
+
+		if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 1
+			&& scheduler_array[i].fusion_sequence != "f" && scheduler_array[i].fusion_sequence != "s") //Enable non 'f' non 's' HW taskes
+		{
+			//EM, TODO: LOAD bitstream in FPGA!!! 
+			//	need to check if something is running in the Tile
+			msg.data = 2; 
+			activate_desactivate_task(scheduler_array[i].app_index, msg);
+			cout << "\033[1;36m Enable HW version of Task no: \033[0m" << scheduler_array[i].app_index << endl;
+		}
+	}
+	cout << endl;
 
 
-	
 }
 
 
@@ -1417,7 +1407,7 @@ vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config
 {
 	vector<App_scheduler> res;
 	App_scheduler tmp;
-	//EM, we add in the scheduler only applications with a different state from previous doStep()
+	//EM, we add in the scheduler only applications with a different configuration from previous doStep()
 	for(int i = 0; i < map_config_app.size(); i++)
 		if( map_config_app[i].active != prev_app_output_config[i].active //EM, different state OR different version_code
 		  || map_config_app[i].version_code != prev_app_output_config[i].version_code)
