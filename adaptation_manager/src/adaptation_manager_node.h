@@ -117,12 +117,12 @@ struct Step_in
 //*********** sortie automate
 struct Task_out
 {  
-    int act; // 1 : active, 0: stop or attente ressource
+    int act; // 1 : active, 0: stop 
     int version; // -1, (SW =>) 0,  (HW/tile =>) 1, 2, 3
 
     int code;
 
-    int achievable; // 0 (NO), 1 :tache realisable (YES)
+    int achievable; // 0 (NO), 1 (YES)
 
     int up_pos;   // 1 si l'automate peut choisir une version plus rapide sinon 0
     int down_pos; // 1 si l'automate peut choisir une version moins rapide sinon 0
@@ -159,11 +159,34 @@ struct Map_app_out
 };
 
 
+struct App_scheduler
+{
+	int		app_index; //EM, according to the C3 app order
+	int 	version_code;
+	int 	region_id;
+	string	fusion_sequence;
+	int		bitstream_addr;
+	bool	loaded;
+	bool	done;
+
+	//EM, useful functions to use App_scheduler easily
+	void print();
+	App_scheduler& operator=(Map_app_out const& rhs);
+};
+
+struct Bitstream_map
+{
+	int 	version_code;
+	int		bitstream_addr;
+
+	//EM, useful functions to use Bitstream_map easily
+	void print();
+};
 
 void achievable_tab(Step_out s);
 
-int verify(Step_out s);
-void publish_to_MM(int a,Step_out s);
+bool verify(Step_out s);
+void publish_to_MM(bool a,Step_out s);
 std::vector < std::vector<std::string> > scheduler_tab(int n, int m);
 void v(std::string t[][7],int i);
 void activate_desactivate_task(std::string t[][7],int i,std_msgs::Int32 msg);
@@ -173,17 +196,22 @@ void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
 
 bool compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3, Step_in e);
 
-Step_out 				fake_output();
+int						find_BTS_addr(vector<Bitstream_map> bts_map, int version_code);
+vector<Bitstream_map> 	read_BTS_MAP(const char* path);
 vector<Task_in> 		read_C3(const char* path);
 vector<App_timing_qos> 	read_time_qos(const char* path);
-vector<Map_app_out>  	init_output(int n, int m, Step_out const& step_output);
+vector<Map_app_out>  	init_output(Step_out const& step_output);
+vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map);
 void					check_sequence(vector<Map_app_out> & map_config_app);
+void 					mapping2(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map);
 
 /*********** Global variables ***********/ 
 extern struct timeval  beginning, current1, current2, current3, current4, current5;
 extern int time_tk;
 extern int time_notif;
-
+extern vector<Map_app_out> prev_app_output_config;
+extern vector<Map_app_out> app_output_config;
+extern bool first_step;
 #endif
 
 

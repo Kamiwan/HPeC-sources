@@ -13,6 +13,9 @@ using namespace cv;
 struct timeval  beginning, current1,  current2, current3, current4, current5;
 int time_tk = 0;
 int time_notif = 0;
+vector<Map_app_out> prev_app_output_config;
+vector<Map_app_out> app_output_config;
+bool first_step = true;
 
 boost::shared_ptr<ros::Publisher> search_land_pub = NULL;
 boost::shared_ptr<ros::Publisher> contrast_img_pub = NULL;
@@ -93,8 +96,8 @@ void achievable_tab(Step_out s){
 
 }
 //******************BOUDABZA Ghizlane; verification de la realisation de toutes les APPs..
-int verify(Step_out s){
-    int a =1; 
+bool verify(Step_out s){
+    bool a = true; 
 	a = a & (s.contrast_img.achievable) & (s.motion_estim_imu.achievable)
 		  & (s.motion_estim_img.achievable)& (s.search_landing.achievable)
 		  & (s.obstacle_avoidance.achievable)& (s.t_landing.achievable)
@@ -104,22 +107,20 @@ int verify(Step_out s){
 }
 
 //********************* Publier l'alerte à Mission Manager
-void publish_to_MM(int a,Step_out s)
+void publish_to_MM(bool a,Step_out s)
 {   
-	ros::Rate loop_rate(0.5); 
 	std_msgs::Int32 msg1;
 	//remplissage de liste des taches nn realisables
    	achievable_tab(s);
    	if(a==1)
 	{
-        ROS_INFO("[CHARGEMENT][BITSTREAM][SCHEDULING] , Achievable : [%d]", a);
+        ROS_INFO("[LOADING][BITSTREAM][SCHEDULING] , Achievable : [%d]", a);
 	}else{
-        ROS_INFO("[ALTERTE][MISSION_MANAGER]");
+        ROS_INFO("[ALERT][MISSION_MANAGER]");
         msg1.data =1;      
         achievable_pub->publish(msg1);   
-        loop_rate.sleep();   	
-		ROS_INFO("LISTE DES TACHES NN REALISABLES ENVOYEE, Total_Achievable : [%d]", a);
-		ROS_INFO("[CHARGEMENT][BITSTREAM][DERNIERE_SORTIE_AUTOMATE]");
+		ROS_INFO("STATE OF Total_Achievable : [%d]", a);
+		ROS_INFO("[LOADING][BITSTREAM][LAST AUTOMATE OUTPUT]");
 	}
 }
 
@@ -605,7 +606,7 @@ void mapping(vector<vector<string>> M)
             perror("Failed to open /dev/mem");
             exit(EXIT_FAILURE);
         }
-		*/
+	*/
 	//charger bts de static table statique :en hw (f,-)
 	for (int i = 1; i < nb; i++)
 	{
@@ -976,7 +977,7 @@ int main (int argc, char ** argv)
 						nh.advertise<std_msgs::Int32>("/achievable_topic", 1000));
 
 	ros::Subscriber notify_from_MM_sub;
-		notify_from_MM_sub= nh.subscribe("/notify_from_MM_topic", 1000, notify_Callback);
+		notify_from_MM_sub = nh.subscribe("/notify_from_MM_topic", 1000, notify_Callback);
 
 	ros::Subscriber mgt_topic;
 		mgt_topic = nh.subscribe("/search_landing_notification_topic", 1, 		
@@ -990,8 +991,6 @@ int main (int argc, char ** argv)
 	int min_thres = 0;
 	int max_thres = 2000;
 	int time_notif = 0 ;
-	/*int r = 0;
-	int e = 0;*/
 
 	//current1 = clock();  
 	gettimeofday (&current1 , NULL);
@@ -1015,10 +1014,24 @@ int main (int argc, char ** argv)
 	e.raz_timing_qos();
 
 	vector<App_timing_qos> time_qos_data;
+	vector<Bitstream_map> bts_map = read_BTS_MAP(PATH_MAP_TAB);
 
+	s = do1(e);
+	bool all_achievable = verify(s);   //VERIFIER la variable Achievable des taches
+	publish_to_MM(all_achievable,s);  //alerter le niveau mission si il existe des taches nn réalisables
+	if(!first_step)
+		prev_app_output_config = app_output_config;
+	app_output_config = init_output(s); //conversion sortie step -> table 
 	
-	do1(e0);
-	/*ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
+	s = fake_output2();
+	if(!first_step)
+		prev_app_output_config = app_output_config;
+	app_output_config = init_output(s); //conversion sortie step -> table 
+
+    mapping2(app_output_config, bts_map);
+
+	/*
+	ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
 	while(ros::ok())
 	{ 
 		ros::spinOnce();
@@ -1037,9 +1050,6 @@ int main (int argc, char ** argv)
 	}
 	*/
 }
-
-
-
 
 
 void Task_in::raz_timing_qos()
@@ -1066,14 +1076,14 @@ void Task_in::raz_all()
 }
 
 void Task_in::print(){
-	std::cout << "req = " << req << std::endl;
-	std::cout << "texec = " << texec << std::endl;
-	std::cout << "mintexec = " << mintexec << std::endl;
-	std::cout << "maxtexec = " << maxtexec << std::endl;
-	std::cout << "qos = " << qos << std::endl;
-	std::cout << "minqos = " << minqos << std::endl;
-	std::cout << "maxqos = " << maxqos << std::endl;
-	std::cout << "priority = " << priority << std::endl;
+	std::cout 	<< "req = " << req << std::endl
+				<< "texec = " << texec << std::endl
+				<< "mintexec = " << mintexec << std::endl
+				<< "maxtexec = " << maxtexec << std::endl
+				<< "qos = " << qos << std::endl
+				<< "minqos = " << minqos << std::endl
+				<< "maxqos = " << maxqos << std::endl
+				<< "priority = " << priority << std::endl;
 }
 
 
@@ -1148,6 +1158,7 @@ void Step_in::load_C3(const std::vector<Task_in> C3)
 		std::cout << "The C3 table provided is too small! C3 size=" << C3.size() << std::endl;
 		return; //EM, to leave a void function
 	}
+	//EM, I know it's dirty, it would have been better with an array of attributes...
 	contrast_img 		= C3[0];
 	motion_estim_imu 	= C3[1];
 	motion_estim_img 	= C3[2];
@@ -1168,6 +1179,7 @@ void Step_in::update_timing_qos(std::vector<App_timing_qos> time_qos)
 		std::cout << "The time_qos table provided is too small! time_qos size=" << time_qos.size() << std::endl;
 		return; //EM, to leave a void function
 	}
+	//EM, I know it's dirty, it would have been better with an array of attributes...
 	contrast_img 		= time_qos[0];
 	motion_estim_imu 	= time_qos[1];
 	motion_estim_img 	= time_qos[2];
@@ -1215,8 +1227,8 @@ vector<Task_in> read_C3(const char* path)
 
 
 void App_timing_qos::print(){
-	std::cout << "texec = " << texec << std::endl;
-	std::cout << "qos = " << qos << std::endl;
+	std::cout 	<< "texec = " << texec << std::endl
+				<< "qos = " << qos << std::endl;
 }
 
 
@@ -1279,7 +1291,7 @@ void Map_app_out::init()
 	fusion_sequence	= "";
 }
 
-vector<Map_app_out>	init_output(int n, int m, Step_out const& step_output)
+vector<Map_app_out>	init_output(Step_out const& step_output)
 {
 	//EM, instantiation of the returned structure
 	vector<Map_app_out> res;
@@ -1288,6 +1300,13 @@ vector<Map_app_out>	init_output(int n, int m, Step_out const& step_output)
 	for(int i=0; i < APPLICATION_NUMBER; i++)
 		res.push_back(tmp);
 
+	if(first_step)
+	{
+		prev_app_output_config = res;
+		first_step = false;
+	}
+
+	//EM, I know it's dirty, it would have been better with an array of attributes...
 	res[0] 	= step_output.contrast_img;
 	res[1] 	= step_output.motion_estim_imu;
 	res[2] 	= step_output.motion_estim_img;
@@ -1326,55 +1345,107 @@ void check_sequence(vector<Map_app_out> & map_config_app)
 }
 
 
-Step_out fake_output(){
-	 Step_out s;
-	 
-     s.contrast_img.act = 1;
-	 s.contrast_img.code = 10; 
-     s.contrast_img.achievable = 1;
-
-     s.motion_estim_imu.act = 0;
-	 s.motion_estim_imu.code = 22; 
-     s.motion_estim_imu.achievable = 1;
-    	
-	 s.motion_estim_img.act = 1;
-	 s.motion_estim_img.code = 182; 
-     s.motion_estim_img.achievable = 1;
-
-	 s.search_landing.act = 1;
-	 s.search_landing.code = 43; 
-     s.search_landing.achievable = 0;
-
-	 s.obstacle_avoidance.act = 0;
-	 s.obstacle_avoidance.code = 50; 
-     s.obstacle_avoidance.achievable = 1;
-
-	 s.t_landing.act = 0;
-	 s.t_landing.code = 182; 
-     s.t_landing.achievable = 1;
-
-	 s.rotoz_s.act = 0;
-	 s.rotoz_s.code = 70; 
-     s.rotoz_s.achievable = 1;
-
-	 s.rotoz_b.act = 0;
-	 s.rotoz_b.code = 81; 
-     s.rotoz_b.achievable = 1;
-
-	 s.replanning.act = 0;
-	 s.replanning.code = 90; 
-     s.replanning.achievable = 1;
-
-	 s.detection.act = 0;
-	 s.detection.code = 121; 
-     s.detection.achievable = 1;
-
-	 s.tracking.act = 0;
-	 s.tracking.code = 131; 
-     s.tracking.achievable = 1;
-
-	return s;
+void Bitstream_map::print()
+{
+	std::cout 	<< "version_code = " << version_code << std::endl
+				<< "bitstream_addr = " << bitstream_addr << std::endl;
 }
+
+void App_scheduler::print()
+{
+	std::cout 	<< "app_index = " << app_index << std::endl
+				<< "version_code = " << version_code << std::endl
+				<< "region_id = " << region_id << std::endl
+				<< "fusion_sequence = " << fusion_sequence << std::endl
+				<< "bitstream_addr = " << bitstream_addr << std::endl
+				<< "loaded = " << loaded << std::endl
+				<< "done = " << done << std::endl;
+}
+
+vector<Bitstream_map> read_BTS_MAP(const char* path)
+{
+	vector<Bitstream_map> res;
+	vector<string> file_content = readfile(path);
+
+	Bitstream_map tmp;
+	for(int i=0; i<file_content.size(); i+=2)
+	{
+		tmp.version_code		= stoi(file_content[i]);
+		tmp.bitstream_addr		= stoi(file_content[i+1]);
+		res.push_back(tmp);
+	}
+   
+   	cout << "There are "<< file_content.size() << " lines in the file" << endl;
+	cout << "There are "<< res.size() << " Bitstreams" << endl;
+   	for (size_t i = 0; i < res.size(); i++)
+	{
+       	cout << "App MAP " << i << " : " <<  endl;
+		res[i].print();
+	}
+	return res;
+}
+
+int find_BTS_addr(vector<Bitstream_map> bts_map, int version_code)
+{
+	for (int i = 0; i < bts_map.size(); i++)
+		if(bts_map[i].version_code == version_code)
+			return bts_map[i].bitstream_addr;
+
+	return -1;
+}
+
+
+App_scheduler& App_scheduler::operator=(Map_app_out const& rhs)
+{
+	version_code 	= rhs.version_code;
+	region_id 		= rhs.region_id;
+	fusion_sequence = rhs.fusion_sequence;
+	return *this;
+}
+
+void mapping2(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map)
+{
+	vector<App_scheduler> scheduler_array = create_scheduler_tab(map_config_app, bitstream_map);
+	
+
+
+	
+}
+
+
+vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map)
+{
+	vector<App_scheduler> res;
+	App_scheduler tmp;
+	//EM, we add in the scheduler only applications with a different state from previous doStep()
+	for(int i = 0; i < map_config_app.size(); i++)
+		if( map_config_app[i].active != prev_app_output_config[i].active //EM, different state OR different version_code
+		  || map_config_app[i].version_code != prev_app_output_config[i].version_code)
+		{
+			tmp.app_index = i;
+			tmp = map_config_app[i];
+			if(map_config_app[i].region_id != 0) //EM, if HW version -> need bitstream addr
+				tmp.bitstream_addr = find_BTS_addr(bitstream_map, map_config_app[i].version_code);
+			else
+				tmp.bitstream_addr = 0;
+			tmp.loaded	= 0;
+			tmp.done 	= 0;
+
+			res.push_back(tmp);
+		}
+
+	cout << "Scheduler array size = " << res.size() << " : " <<  endl;
+	for(int i = 0; i < res.size(); i++)
+	{
+		cout << "Scheduler array [" << i << "] : " <<  endl;
+		res[i].print();
+	}
+	return res;
+}
+
+
+
+
 
 
 

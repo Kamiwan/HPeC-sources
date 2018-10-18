@@ -6,7 +6,8 @@
 #include "adaptation_manager_node.h"
 
 Step_out fake_Step (Step_in e);
-void do1( Step_in e);
-
+Step_out do1( Step_in e);
+Step_out fake_output();
+Step_out fake_output2();
 
 #endif
