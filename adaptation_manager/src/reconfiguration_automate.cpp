@@ -35,7 +35,7 @@ Step_out fake_output(){
      s.motion_estim_img.achievable = 1;
 
 	 s.search_landing.act = 1;
-	 s.search_landing.code = 43; 
+	 s.search_landing.code = 41; 
      s.search_landing.achievable = 0;
 
 	 s.obstacle_avoidance.act = 0;
@@ -54,8 +54,8 @@ Step_out fake_output(){
 	 s.rotoz_b.code = 81; 
      s.rotoz_b.achievable = 1;
 
-	 s.replanning.act = 0;
-	 s.replanning.code = 90; 
+	 s.replanning.act = 1;
+	 s.replanning.code = 93; 
      s.replanning.achievable = 1;
 
 	 s.detection.act = 0;
@@ -84,7 +84,7 @@ Step_out fake_output2(){
 	 s.motion_estim_img.code = 182; 
      s.motion_estim_img.achievable = 1;
 
-	 s.search_landing.act = 1;
+	 s.search_landing.act = 0;
 	 s.search_landing.code = 41; 
      s.search_landing.achievable = 1;
 
@@ -104,8 +104,8 @@ Step_out fake_output2(){
 	 s.rotoz_b.code = 81; 
      s.rotoz_b.achievable = 1;
 
-	 s.replanning.act = 0;
-	 s.replanning.code = 90; 
+	 s.replanning.act = 1;
+	 s.replanning.code = 93; 
      s.replanning.achievable = 1;
 
 	 s.detection.act = 0;

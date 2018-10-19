@@ -67,7 +67,7 @@ vector<Map_app_out>  	init_output(Step_out const& step_output);
 vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map);
 void 					activate_desactivate_task(int app_index, std_msgs::Int32 msg);
 void					check_sequence(vector<Map_app_out> & map_config_app);
-void 					mapping2(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map);
+void 					mapping(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map);
 
 /*********** Global variables ***********/ 
 extern vector<Map_app_out> prev_app_output_config;

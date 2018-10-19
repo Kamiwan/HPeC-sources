@@ -319,14 +319,14 @@ int main (int argc, char ** argv)
 		prev_app_output_config = app_output_config;
 	app_output_config = init_output(s); //conversion sortie step -> table 
 
-	mapping2(app_output_config, bts_map);
+	mapping(app_output_config, bts_map);
 	
 	s = fake_output2();
 	if(!first_step)
 		prev_app_output_config = app_output_config;
 	app_output_config = init_output(s); //conversion sortie step -> table 
 
-    mapping2(app_output_config, bts_map);
+    mapping(app_output_config, bts_map);
 
 	/*
 	ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
@@ -451,9 +451,11 @@ void check_sequence(vector<Map_app_out> & map_config_app)
 	//	  => meaning sequence execution
 	for(int i=0; i < (APPLICATION_NUMBER - 1); i++)
 		if(map_config_app[i].active != 0 
-			&& map_config_app[i].version_code < MULTI_APP_THRESHOLD_CODE)
+			&& map_config_app[i].version_code < MULTI_APP_THRESHOLD_CODE
+			&& map_config_app[i].region_id != 0)
 			for(int j=i+1; j < APPLICATION_NUMBER; j++)
-				if(map_config_app[i].region_id == map_config_app[j].region_id)
+				if(map_config_app[i].region_id == map_config_app[j].region_id
+					&& map_config_app[j].active != 0)
 				{
 					map_config_app[i].fusion_sequence = "s";
 					map_config_app[j].fusion_sequence = "s";
@@ -493,37 +495,57 @@ int find_BTS_addr(vector<Bitstream_map> bts_map, int version_code)
 }
 
 
-void mapping2(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map)
+void mapping(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map)
 {
 	vector<App_scheduler> scheduler_array = create_scheduler_tab(map_config_app, bitstream_map);
 	
-	cout << endl;
 	std_msgs::Int32 msg;
+	//EM, First loop: disable each Task, must be done first to free HW Tiles
+	cout << endl;
 	for(size_t i = 0; i < scheduler_array.size(); i++)
 	{
-		if(scheduler_array[i].active == 0) //Disable taskes
+		if(scheduler_array[i].active == 0 || scheduler_array[i].fusion_sequence == "f") //Disable taskes
 		{
 			msg.data = 0; 
 			activate_desactivate_task(scheduler_array[i].app_index, msg);	
-			cout << "\033[1;31m Disable Task no: \033[0m" << scheduler_array[i].app_index << endl;
+			cout << "\033[1;31m Disable Task no: " << scheduler_array[i].app_index << "\033[0m"  << endl;
 		}
+	}
 
-		if(scheduler_array[i].region_id == 0 && scheduler_array[i].active == 1) //Enable SW taskes
+	//EM, Second loop: activation of every Task except those in sequence "s"
+	for(size_t i = 0; i < scheduler_array.size(); i++)
+	{
+		//Enable SW taskes
+		if(scheduler_array[i].region_id == 0 && scheduler_array[i].active == 1) 
 		{
 			msg.data = 1; 
 			activate_desactivate_task(scheduler_array[i].app_index, msg);
-			cout << "\033[1;32m Enable SW version of Task no: \033[0m" << scheduler_array[i].app_index << endl;
+			cout << "\033[1;32m Enable SW version of Task no: " << scheduler_array[i].app_index << "\033[0m" << endl;
 		}
 
+		//Enable non 'f' non 's' HW taskes
 		if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 1
-			&& scheduler_array[i].fusion_sequence != "f" && scheduler_array[i].fusion_sequence != "s") //Enable non 'f' non 's' HW taskes
+			&& scheduler_array[i].fusion_sequence != "f" && scheduler_array[i].fusion_sequence != "s") 
 		{
 			//EM, TODO: LOAD bitstream in FPGA!!! 
-			//	need to check if something is running in the Tile
 			msg.data = 2; 
 			activate_desactivate_task(scheduler_array[i].app_index, msg);
-			cout << "\033[1;36m Enable HW version of Task no: \033[0m" << scheduler_array[i].app_index << endl;
+			cout << "\033[1;36m Enable HW version of Task no: " << scheduler_array[i].app_index 
+					<< " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
 		}
+
+		//Enable HW taskes in fusion "f"
+		if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 1
+			&& scheduler_array[i].fusion_sequence == "f")
+		{
+			//EM, TODO: LOAD bitstream in FPGA!!! 
+			msg.data = scheduler_array[i].version_code - scheduler_array[i].region_id; 
+			//The 2 fusionned taskes will be activated, only one ROS node can understand the msg.data
+			activate_desactivate_task(scheduler_array[i].app_index, msg);
+			cout << "\033[36m Enable HW FUSION version of Task no: " << scheduler_array[i].app_index 
+					<< " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
+		}
+
 	}
 	cout << endl;
 
