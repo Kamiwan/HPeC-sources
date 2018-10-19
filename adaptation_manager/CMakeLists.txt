@@ -159,6 +159,7 @@ add_executable(adaptation_manager_node
 	src/utils.cpp
 	src/handle_applications.cpp
 	src/reconfig.cpp
+	src/adaptation_manager_struct.cpp
 	src/reconfiguration_automate.cpp
 	src/adaptation_manager_node.cpp	
 )

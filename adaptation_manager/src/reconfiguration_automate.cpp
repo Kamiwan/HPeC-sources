@@ -1,5 +1,13 @@
 #include "reconfiguration_automate.h"
 
+
+//*****************
+Step_out do1( Step_in e){	
+    Step_out fake_results = fake_Step(e);
+	//doStep ( &e, &s);   //l'automate de config auto-adaptatif
+    return fake_results;
+}
+
 //*************** step()
 Step_out fake_Step (Step_in e){  
     Step_out s; 
@@ -10,15 +18,6 @@ Step_out fake_Step (Step_in e){
     s= fake_output();
     return s;
 }
-
-//*****************
-Step_out do1( Step_in e){	
-    Step_out fake_results = fake_Step(e);
-	//doStep ( &e, &s);   //l'automate de config auto-adaptatif
-    return fake_results;
-}
-
-
 
 Step_out fake_output(){
 	 Step_out s;
@@ -43,7 +42,7 @@ Step_out fake_output(){
 	 s.obstacle_avoidance.code = 50; 
      s.obstacle_avoidance.achievable = 1;
 
-	 s.t_landing.act = 0;
+	 s.t_landing.act = 1;
 	 s.t_landing.code = 182; 
      s.t_landing.achievable = 1;
 
@@ -93,7 +92,7 @@ Step_out fake_output2(){
 	 s.obstacle_avoidance.code = 50; 
      s.obstacle_avoidance.achievable = 1;
 
-	 s.t_landing.act = 0;
+	 s.t_landing.act = 1;
 	 s.t_landing.code = 182; 
      s.t_landing.achievable = 1;
 

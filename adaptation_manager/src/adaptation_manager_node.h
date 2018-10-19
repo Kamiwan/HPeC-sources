@@ -38,159 +38,23 @@ extern"C"{
 	//#include "call.h"
 }
 
-#define PATH_TIME_QOS  		"./src/parameters/time_qos_task.txt"
-#define PATH_TABLE_C3  		"./src/parameters/tableC3.txt"
-#define PATH_ACHIEVABLE_TAB "./src/parameters/achievable_tab.txt"
-#define PATH_MAP_TAB 		"./src/parameters/map_tab.txt"
-#define PATH_DONE 			"./src/parameters/done.txt"
+#include "am_defines.h"
+#include "adaptation_manager_struct.h"
 
-#define APPLICATION_NUMBER		 11 	//EM, the number of apps in C3 table
-#define MULTI_APP_THRESHOLD_CODE 140 	//EM, every code above means a bitstream fusion of apps
+#include "utils.h"
+#include "handle_applications.h"
+#include "reconfiguration_automate.h"
+#include "reconfig.h"
 
 using namespace std; 
 using namespace cv;
 
-//EM, new struct to allow timing and qos updates
-struct App_timing_qos
-{  
-    int texec; // texec , [mintexec, maxtexec]
-    int qos;   //qos , [minqos, maxqos]
-
-	//EM, useful functions to use App_timing_qos easily
-	void print();
-};
 
 
-struct Task_in
-{
-    int req; // 1 : activation, 0 : stop
-
-    int texec; // texec , [mintexec, maxtexec]
-    int mintexec;
-    int maxtexec;
-
-    int qos;      //qos , [minqos, maxqos]
-    int minqos;
-    int maxqos;
-
-	int priority; //task priority  
-
-	//EM, useful functions to use Task_in easily
-	void raz_timing_qos();
-	void raz_all();
-	void print();
-	Task_in& operator=(Task_in const& rhs);
-	Task_in& operator=(App_timing_qos const& rhs);
-};
-
-struct Hw_st 
-{
-	int av; // 1 (YES : Available) , 0 (NO)
-};
-
-struct Step_in
-{
-	Task_in contrast_img;
-	Task_in motion_estim_imu;
-	Task_in motion_estim_img;
-	Task_in search_landing; 
-	Task_in obstacle_avoidance;
-	Task_in t_landing;
-	Task_in rotoz_s;
-	Task_in rotoz_b;
-	Task_in replanning;
-	Task_in detection; 
-	Task_in tracking;
-
-	Hw_st h1;
-	Hw_st h2;
-	Hw_st h3;
-
-	//EM, useful functions to use Step_in easily
-	void init();
-	void raz_timing_qos();
-	void load_C3(const std::vector<Task_in> C3);
-	void update_timing_qos(std::vector<App_timing_qos> time_qos);
-};
-
-
-//*********** sortie automate
-struct Task_out
-{  
-    int act; // 1 : active, 0: stop 
-    int version; // -1, (SW =>) 0,  (HW/tile =>) 1, 2, 3
-
-    int code;
-
-    int achievable; // 0 (NO), 1 (YES)
-
-    int up_pos;   // 1 si l'automate peut choisir une version plus rapide sinon 0
-    int down_pos; // 1 si l'automate peut choisir une version moins rapide sinon 0
-    int keep_pos; // 1 si l'automate peut conserver la version courante sinon 0
-    int qos_pos;  // 1 si possible, sinon 0
-};
-
-struct Step_out
-{
-	Task_out contrast_img;
-	Task_out motion_estim_imu;
-	Task_out motion_estim_img;
-	Task_out search_landing; 
-	Task_out obstacle_avoidance;
-	Task_out t_landing;
-	Task_out rotoz_s;
-	Task_out rotoz_b;
-	Task_out replanning;
-	Task_out detection; 
-	Task_out tracking;
-};
-
-struct Map_app_out
-{
-	int 	active;
-	int 	version_code;
-	int 	region_id;
-	string	fusion_sequence;
-
-	//EM, useful functions to use Map_app_out easily
-	void init();
-	string set_fusion(Map_app_out const& config_app);
-	Map_app_out& operator=(Task_out const& rhs);
-};
-
-
-struct App_scheduler
-{
-	int		app_index; //EM, according to the C3 app order to activate-desactivate taskes
-	int 	active;
-	int 	version_code;
-	int 	region_id;
-	string	fusion_sequence;
-	int		bitstream_addr;
-	bool	loaded;
-	bool	done;
-
-	//EM, useful functions to use App_scheduler easily
-	void print();
-	App_scheduler& operator=(Map_app_out const& rhs);
-};
-
-struct Bitstream_map
-{
-	int 	version_code;
-	int		bitstream_addr;
-
-	//EM, useful functions to use Bitstream_map easily
-	void print();
-};
-
-void achievable_tab(Step_out s);
+void achievable_tab(Step_out s); //EM, TODO: CHANGE IT OR DELETE IT
 
 bool verify(Step_out s);
 void publish_to_MM(bool a,Step_out s);
-std::vector < std::vector<std::string> > scheduler_tab(int n, int m);
-void v(std::string t[][7],int i);
-void mapping(std::vector< std::vector<std::string> > M);
 void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
 
 
@@ -206,9 +70,6 @@ void					check_sequence(vector<Map_app_out> & map_config_app);
 void 					mapping2(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map);
 
 /*********** Global variables ***********/ 
-extern struct timeval  beginning, current1, current2, current3, current4, current5;
-extern int time_tk;
-extern int time_notif;
 extern vector<Map_app_out> prev_app_output_config;
 extern vector<Map_app_out> app_output_config;
 extern bool first_step;

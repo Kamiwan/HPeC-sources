@@ -3,14 +3,14 @@
 #include "handle_applications.h"
 
 
-void handle_notification_from_search_landing_wrapper (const std_msgs::Float32::ConstPtr& value)
+/*void handle_notification_from_search_landing_wrapper (const std_msgs::Float32::ConstPtr& value)
 {
 	gettimeofday (&current5 , NULL);
 	time_tk = (int) value -> data;	
 	printf("adaptation_manager_time %.0f %d\n", ((double) time_micros (&current5, &beginning)), time_tk);
 	time_notif = 1 ;
 }
-
+*/
 
 
 //NOT USED FUNCTIONS BELOW

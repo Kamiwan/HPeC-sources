@@ -6,7 +6,7 @@
 #include "adaptation_manager_node.h"
 #include "utils.h"
 
-void handle_notification_from_search_landing_wrapper(const std_msgs::Float32::ConstPtr& value);
+//void handle_notification_from_search_landing_wrapper(const std_msgs::Float32::ConstPtr& value);
 
 //NOT USED FUNCTIONS BELOW
 /*
