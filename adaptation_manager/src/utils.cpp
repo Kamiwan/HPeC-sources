@@ -90,3 +90,25 @@ inline bool isInteger(const std::string & s)
 
    return (*p == 0) ;
 }
+
+
+void write_value_file(const char* path, const std::string& app_name, const int& value)
+{
+    vector<string> input_file_content = readfile(path);
+    ofstream output_file;
+    output_file.open(path);
+    for(size_t i = 0; i < input_file_content.size(); i++)
+    {
+        if(input_file_content[i] == app_name)
+        {
+            output_file << app_name << endl;
+            output_file << value << endl;
+            i++; //EM, increment to NOT overwrite value's line
+        }
+        else
+            output_file << input_file_content[i] << endl;
+    }
+    output_file.close();
+}
+
+

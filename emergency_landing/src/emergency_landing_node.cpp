@@ -650,7 +650,6 @@ void stop()
 		if (run)
 		{
 			pthread_cancel(worker_thread->native_handle());
-
 			if (hardware == 1)
 			{
 				release();
@@ -768,11 +767,8 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 			dbprintf("stop_on_early  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_early);
 			dbprintf("irq  : %d\n",dispatcher_read.GetStatusReg().msBits.irq); 
 		}
-
 		dispatcher_write.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on write DMA
 		dispatcher_read.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on read DMA
-
-
 	}
 
 
@@ -810,14 +806,13 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "emergency_landing_node");
 	ros::NodeHandle nh;
 	
-	//beginning = clock();
 	gettimeofday(&beginning, NULL);
+
 	ros::Subscriber mgt_topic;
 	mgt_topic = nh.subscribe("/search_landing_area_mgt_topic", 1, managing_controller_request);
-
 	search_land_pub = boost::make_shared<ros::Publisher>(
 		nh.advertise<std_msgs::Float32>("/search_landing_notification_topic", 1));
-	//current = clock();
+
 	gettimeofday(&current, NULL);
 
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));

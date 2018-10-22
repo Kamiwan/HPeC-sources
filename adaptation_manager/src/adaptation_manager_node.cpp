@@ -21,17 +21,6 @@ boost::shared_ptr<ros::Publisher> replanning_pub = NULL;
 boost::shared_ptr<ros::Publisher> detection_pub = NULL;
 boost::shared_ptr<ros::Publisher> tracking_pub = NULL;
 
-boost::shared_ptr<ros::Publisher> ctr_img_m_e_imu_pub= NULL;
-boost::shared_ptr<ros::Publisher> ctr_img_m_e_img_pub= NULL;
-boost::shared_ptr<ros::Publisher> ctr_img_s_land_pub= NULL;
-boost::shared_ptr<ros::Publisher> ctr_img_rotoz_s_pub= NULL;
-boost::shared_ptr<ros::Publisher> m_e_img_t_landing_pub= NULL;
-boost::shared_ptr<ros::Publisher> m_e_img_rotoz_s_pub= NULL;
-boost::shared_ptr<ros::Publisher> m_e_img_s_land_pub= NULL;
-boost::shared_ptr<ros::Publisher> rotoz_s_t_landing_pub= NULL;
-boost::shared_ptr<ros::Publisher> t_landing_s_land_pub= NULL;
-boost::shared_ptr<ros::Publisher> rotoz_s_s_land_pub= NULL;
-
 boost::shared_ptr<ros::Publisher> achievable_pub=NULL;
 /****** END GLOBAL VARIABLES ********/
 
@@ -151,9 +140,6 @@ void activate_desactivate_task(int app_index, std_msgs::Int32 msg){
 	case 10:
 		tracking_pub->publish(msg);
 		break;
-
-	//EM, TODO: put fusion taskes activation if needed
-
 	default:
 		break;
 	}
@@ -215,11 +201,7 @@ int main (int argc, char ** argv)
 {   
 	ros::init(argc, argv, "adaptation_manager_node");
 	ros::NodeHandle nh;
-	
-	
-	//search_land_pub;
-	search_land_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/search_landing_area_mgt_topic", 1));
+
  	//contrast_img_pub;
 	contrast_img_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/contrast_img_area_mgt_topic", 1));
@@ -229,6 +211,9 @@ int main (int argc, char ** argv)
  	//motion_estim_img_pub;
 	motion_estim_img_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/motion_estim_img_area_mgt_topic", 1));
+	//search_land_pub;
+	search_land_pub= boost::make_shared<ros::Publisher>( 
+			         nh.advertise<std_msgs::Int32>("/search_landing_area_mgt_topic", 1));
  	//obstacle_avoidance_pub;
 	obstacle_avoidance_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/obstacle_avoidance_area_mgt_topic", 1));
@@ -241,47 +226,15 @@ int main (int argc, char ** argv)
  	//rotoz_b_pub;
 	rotoz_b_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/rotoz_b_area_mgt_topic", 1));
+	//replanning_pub;
+	replanning_pub= boost::make_shared<ros::Publisher>( 
+			         nh.advertise<std_msgs::Int32>("/replanning_area_mgt_topic", 1));   
  	//detection_pub;
 	detection_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/detection_area_mgt_topic", 1));
  	//tracking_pub;
 	tracking_pub= boost::make_shared<ros::Publisher>( 
 			         nh.advertise<std_msgs::Int32>("/tracking_area_mgt_topic", 1));
- 	//replanning_pub;
-	replanning_pub= boost::make_shared<ros::Publisher>( 
-			         nh.advertise<std_msgs::Int32>("/replanning_area_mgt_topic", 1));   
-
- 	//Pour les noeuds ros de fusion					 
- 	//ctr_img&m_e_imu_pub;
- 	ctr_img_m_e_imu_pub= boost::make_shared<ros::Publisher>( 
-				    nh.advertise<std_msgs::Int32>("/ctr_img_m_e_img_area_mgt_topic", 1));
- 	//ctr_img&m_e_img_pub;
- 	ctr_img_m_e_img_pub= boost::make_shared<ros::Publisher>( 
-				    nh.advertise<std_msgs::Int32>("/ctr_img_m_e_img_area_mgt_topic", 1));
- 	//ctr_img&s_land_pub;
- 	ctr_img_s_land_pub= boost::make_shared<ros::Publisher>( 
-				    nh.advertise<std_msgs::Int32>("/ctr_img_s_land_area_mgt_topic", 1));
- 	//ctr_img&rotoz_s_pub;
- 	ctr_img_rotoz_s_pub= boost::make_shared<ros::Publisher>( 
-				    nh.advertise<std_msgs::Int32>("/ctr_img_rotoz_s_area_mgt_topic", 1));
- 	//m_e_img&t_landing_pub;
- 	m_e_img_t_landing_pub= boost::make_shared<ros::Publisher>( 
-				    nh.advertise<std_msgs::Int32>("/m_e_img_t_landing_area_mgt_topic", 1));
- 	//m_e_img&rotoz_s_pub;
- 	m_e_img_rotoz_s_pub= boost::make_shared<ros::Publisher>( 
-				    nh.advertise<std_msgs::Int32>("/m_e_img_rotoz_s_area_mgt_topic", 1));
- 	//m_e_img&s_land_pub;
- 	m_e_img_s_land_pub= boost::make_shared<ros::Publisher>( 
-				    nh.advertise<std_msgs::Int32>("/m_e_img_s_land_area_mgt_topic", 1));
- 	//rotoz_s&t_landing_pub;
- 	rotoz_s_t_landing_pub= boost::make_shared<ros::Publisher>( 
-				    nh.advertise<std_msgs::Int32>("/rotoz_s_t_landing_area_mgt_topic", 1));
- 	//t_landing&s_land_pub;
- 	t_landing_s_land_pub= boost::make_shared<ros::Publisher>( 
-				    nh.advertise<std_msgs::Int32>("/t_landing_s_land_area_mgt_topic", 1));
- 	//rotoz_s&s_land_pub;
- 	rotoz_s_s_land_pub= boost::make_shared<ros::Publisher>( 
-				    nh.advertise<std_msgs::Int32>("/rotoz_s_s_land_area_mgt_topic", 1));	
 
 	//***************************envoie de liste des taches nn realisables
 	achievable_pub= boost::make_shared<ros::Publisher>( 
@@ -312,9 +265,9 @@ int main (int argc, char ** argv)
 	vector<App_timing_qos> time_qos_data;
 	vector<Bitstream_map> bts_map = read_BTS_MAP(PATH_MAP_TAB);
 
+	/*############################## TEST CODE ##############################*/
 	s = do1(e);
-	bool all_achievable = verify(s);   //VERIFIER la variable Achievable des taches
-	publish_to_MM(all_achievable,s);  //alerter le niveau mission si il existe des taches nn réalisables
+	publish_to_MM(verify(s),s);  //alerter le niveau mission si il existe des taches nn réalisables
 	if(!first_step)
 		prev_app_output_config = app_output_config;
 	app_output_config = init_output(s); //conversion sortie step -> table 
@@ -327,6 +280,11 @@ int main (int argc, char ** argv)
 	app_output_config = init_output(s); //conversion sortie step -> table 
 
     mapping(app_output_config, bts_map);
+
+	write_value_file(PATH_RELEASE_HW,"detection",0);
+	write_value_file(PATH_RELEASE_HW,"search_landing",0);
+
+	/*############################## TEST CODE ##############################*/
 
 	/*
 	ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
@@ -501,10 +459,11 @@ void mapping(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> co
 	
 	std_msgs::Int32 msg;
 	//EM, First loop: disable each Task, must be done first to free HW Tiles
+	//Taskes that are going in fusion are disabled to allow the fusion activation 
 	cout << endl;
 	for(size_t i = 0; i < scheduler_array.size(); i++)
 	{
-		if(scheduler_array[i].active == 0 || scheduler_array[i].fusion_sequence == "f") //Disable taskes
+		if(scheduler_array[i].active == 0 || scheduler_array[i].fusion_sequence == "f") 
 		{
 			msg.data = 0; 
 			activate_desactivate_task(scheduler_array[i].app_index, msg);	
@@ -523,10 +482,11 @@ void mapping(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> co
 			cout << "\033[1;32m Enable SW version of Task no: " << scheduler_array[i].app_index << "\033[0m" << endl;
 		}
 
-		//Enable non 'f' non 's' HW taskes
+		//Enable classic HW taskes
 		if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 1
 			&& scheduler_array[i].fusion_sequence != "f" && scheduler_array[i].fusion_sequence != "s") 
 		{
+			//EM, TODO: CHECK if the previous app on the Tile is done! 
 			//EM, TODO: LOAD bitstream in FPGA!!! 
 			msg.data = 2; 
 			activate_desactivate_task(scheduler_array[i].app_index, msg);
@@ -538,18 +498,17 @@ void mapping(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> co
 		if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 1
 			&& scheduler_array[i].fusion_sequence == "f")
 		{
+			//EM, TODO: CHECK if the previous app on the Tile is done
 			//EM, TODO: LOAD bitstream in FPGA!!! 
 			msg.data = scheduler_array[i].version_code - scheduler_array[i].region_id; 
-			//The 2 fusionned taskes will be activated, only one ROS node can understand the msg.data
+			//The 2 fusionned taskes will be activated, only one ROS node can understand the msg.data and launch the fusion
 			activate_desactivate_task(scheduler_array[i].app_index, msg);
 			cout << "\033[36m Enable HW FUSION version of Task no: " << scheduler_array[i].app_index 
 					<< " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
 		}
-
 	}
 	cout << endl;
-
-
+	//EM, TODO: work on sequence HW Taskes "s"
 }
 
 
