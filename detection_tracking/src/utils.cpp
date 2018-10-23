@@ -59,6 +59,7 @@ double cpuload ( ){
 std::vector<std::string> readfile(const char* path){
     std::ifstream fichier(path); 
     std::vector<std::string> lignes;
+    int i(0); 
    	std::string temp;
     if ( fichier ) 
     { 
@@ -110,22 +111,4 @@ void write_value_file(const char* path, const std::string& app_name, const int& 
     output_file.close();
 }
 
-int read_value_file(const char* path, const int& app_name_index)
-{
-    int res = -1;
-    std::ifstream fichier(path); 
-    std::string index_app_name_converter[11] = {"contrast_img", "motion_estim_imu", "motion_estim_img"
-                                            "search_landing", "obstacle_avoidance", "t_landing", 
-                                            "rotoz_s", "rotoz_b", "replanning", "detection",
-                                            "tracking"};
-    std::string temp;
-    while (std::getline( fichier, temp)) 
-	    if(temp == index_app_name_converter[app_name_index])
-        {
-            std::getline( fichier, temp);
-            res = std::stoi(temp);
-            break;
-        }
-    fichier.close();
-    return res;
-}
+

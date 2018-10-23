@@ -140,10 +140,10 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(obstacle_detection_node
 	src/obstacle_detection_node.cpp
-	src/obstacle_detection_class.h
 	src/obstacle_detection_class.cpp
-	src/taf.h
-	src/taf.cpp)
+	src/taf.cpp
+	src/utils.cpp
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

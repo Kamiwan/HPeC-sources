@@ -284,6 +284,10 @@ int main (int argc, char ** argv)
 	write_value_file(PATH_RELEASE_HW,"detection",0);
 	write_value_file(PATH_RELEASE_HW,"search_landing",0);
 
+	cout << "EN ATTENTE DE LA FIN DE L APPLICATION" << endl;
+	while(read_value_file(PATH_RELEASE_HW,3)==0);
+	cout << "ATTENTE TERMINEE!" << endl;
+
 	/*############################## TEST CODE ##############################*/
 
 	/*

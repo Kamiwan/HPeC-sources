@@ -34,6 +34,8 @@ extern "C" {
 #include "sgdma_dispatcher.h"
 #include "sgdma_dispatcher_regs.h"
 
+#include "utils.h"
+
 #define SDRAM_SPAN (0x04000000)
 #define HW_REGS_SPAN (0x00020000)
 #define HWREG_BASE (0xff200000)
@@ -117,24 +119,6 @@ int current_ver = 0;
 boost::shared_ptr<boost::thread> worker_thread;
 boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
 
-
-long elapse_time_u(struct timeval *end, struct timeval *start)
-{
-	long seconds = end->tv_sec - start->tv_sec;
-	long micro_seconds = end->tv_usec - start->tv_usec;
-	if (micro_seconds < 0)
-	{
-		seconds -= 1;
-	}
-	return (seconds * 1000000) + abs(micro_seconds);
-}
-
-long time_micros(struct timeval *end, struct timeval *start)
-{
-	if (end != NULL && start != NULL)
-		return (((double)elapse_time_u(end, start)) / 1000);
-	return -1;
-}
 
 // source ppm color image 24bits RGB (packed)
 // The video IP cores used for edge detection require the RGB 24 bits of each pixel to be
@@ -654,6 +638,8 @@ void stop()
 			{
 				release();
 				hardware = 0;
+				//EM, tells to the Adaptation Manager the Tile is released
+				write_value_file(PATH_RELEASE_HW,"search_landing",1);
 			}
 		}
 	}
@@ -792,6 +778,8 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		dbprintf("wrapper_ver %.0f %d\n", ((double)time_micros(&current, &beginning)), value->data);
 		stop();
 		hardware = 1;
+		//EM, tells to the Adaptation Manager search_landing is using a HW Tile
+		write_value_file(PATH_RELEASE_HW,"search_landing",0);
 		workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
 		worker_thread = boost::make_shared<boost::thread>(&search_landing_area_hwsw, workerHandle_ptr);
 		break;

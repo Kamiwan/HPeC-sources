@@ -21,7 +21,5 @@ inline bool                 isInteger(const std::string & s);
 void                        write_value_file(const char* path, 
                                              const std::string& app_name, 
                                              const int& value);
-int                         read_value_file(const char* path, 
-                                             const int& app_name_index);
 
 #endif

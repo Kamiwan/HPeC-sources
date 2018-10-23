@@ -151,6 +151,7 @@ include_directories(
 add_executable(stabilisation_imu_node
 			src/stabilisation_imu_node.cpp
       src/debug.c	
+      src/utils.cpp
 )
 
 ## Rename C++ executable without prefix
