@@ -1,27 +1,29 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(adaptation_manager)
+project(ipc_node_test)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
-add_definitions(-std=c++11 -lpthread -lrt)
+add_definitions(-std=c++11)
+#add_definitions(-std=c++11 -O3 -mcpu=cortex-a9 -mfloat-abi=hard -ffast-math -mfpu=neon -ftree-vectorize)
+
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  	roscpp
-  	rospy
-  	std_msgs
-  	message_generation
-	cv_bridge
-#  image_transport
+  roscpp
+  std_msgs
+  image_transport
+  cv_bridge
+  message_generation
+  communication REQUIRED
 )
 
-SET(CMAKE_CXX_FLAGS " -I/usr/local/include -I/usr/local/include/opencv")
+find_package(OpenCV REQUIRED)
 set (CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lpthread -lrt")
+
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -53,16 +55,9 @@ find_package(Boost REQUIRED COMPONENTS system)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
-
-# Generate messages in the 'msg' folder
 #add_message_files(
- # FILES
- 
+#   FILES
+#   area_location.msg
 #)
 
 ## Generate services in the 'srv' folder
@@ -80,10 +75,10 @@ find_package(Boost REQUIRED COMPONENTS system)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-#generate_messages(
-#DEPENDENCIES
-#std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -116,8 +111,12 @@ find_package(Boost REQUIRED COMPONENTS system)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES adaptation_manager
-CATKIN_DEPENDS roscpp std_msgs message_runtime
+#  LIBRARIES ipc_node_test
+CATKIN_DEPENDS 
+roscpp 
+std_msgs 
+message_runtime
+communication
 #  DEPENDS system_lib
 )
 
@@ -129,57 +128,49 @@ CATKIN_DEPENDS roscpp std_msgs message_runtime
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-  	${catkin_INCLUDE_DIRS} 
-  	/usr/include/image_transport
-	/usr/local/include
-	/usr/local/include/opencv
+  ${catkin_INCLUDE_DIRS} 
+  /opt/ros/kinetic/include/image_transport
+  #/usr/include/image_transport
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-#add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/adaptation_manager.cpp /usr/lib/arm-linux-gnueabihf/libimage_transport.so
- #)
+#add_library(${PROJECT_NAME}(
+#   src/${PROJECT_NAME}/ipc_node_test.cpp /opt/ros/kinetic/lib/libimage_transport.so
+#)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(ipc_node_test ipc_node_test_generate_messages_cpp)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(adaptation_manager_node
-    src/call.c
-	src/main_controller.c
-	src/main_controller_types.c
-	src/main_types.c
-	src/main.c
-	src/math.c
-	src/initimg.cpp
-	src/utils.cpp
-	src/handle_applications.cpp
-	src/reconfig.cpp
-	src/adaptation_manager_struct.cpp
-	src/reconfiguration_automate.cpp
-	src/adaptation_manager_node.cpp	
+add_executable(ipc_node_test_node
+			src/ipc_node_test.cpp
+      src/debug.c	
 )
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
-## target back to the shorter version for ease of user use
+## target back to the shorter Version for ease of user use
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(ipc_node_test_node ipc_node_test_generate_messages_cpp)
+add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 ## Specify libraries to link a library or executable target against
-target_link_libraries(adaptation_manager_node
-	${catkin_LIBRARIES}
-	${OpenCV_LIBRARIES}
-    /usr/local/lib/
+ target_link_libraries(ipc_node_test_node
+   ${catkin_LIBRARIES}
     /opt/ros/kinetic/lib/libimage_transport.so
-)
+    #/usr/lib/arm-linux-gnueabihf/libimage_transport.so
+   ${OpenCV_LIBRARIES}
+ )
 
 #############
 ## Install ##
@@ -221,7 +212,7 @@ target_link_libraries(adaptation_manager_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_emergency_landing.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_ipc_node_test.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

@@ -281,6 +281,35 @@ int main (int argc, char ** argv)
 
     mapping(app_output_config, bts_map);
 
+	vector<string> test = readfile(PATH_RELEASE_HW);
+	int size = sizeof(test);
+	cout << "SIZEOF simple = " << size << endl;
+	cout << "String vector simple = " << sizeof(std::vector<string>) << endl;
+	cout << "String size = " << test[0].size() << endl;
+	for(size_t i = 0; i < test.size(); i++)	
+		cout << "Size of index" << i << " = " << sizeof(test[i]) << endl;
+	
+	boost::interprocess::shared_memory_object shm_obj(boost::interprocess::open_or_create //open_only / open_or_create / create_only
+  													 ,"shared_memory" 					//name
+  													 ,boost::interprocess::read_write   //read-write mode
+  													 );
+
+	//Set size
+	std::size_t ShmSize = 40;
+    shm_obj.truncate(ShmSize);
+	boost::interprocess::mapped_region 	region( shm_obj	        		//Memory-mappable object
+   											, boost::interprocess::read_write   //Access mode
+											);	
+
+	//Get the address of the region
+	cout <<	"Address of the region = " << region.get_address() << endl;
+	//Get the size of the region
+	cout << "Size of the region = " << region.get_size() << endl;							   
+	//Write all the memory to 1
+    std::memset(region.get_address(), 0, ShmSize);
+
+	//boost::interprocess::shared_memory_object::remove("shared_memory"); //EM, useless, see RAII
+
 	write_value_file(PATH_RELEASE_HW,"detection",0);
 	write_value_file(PATH_RELEASE_HW,"search_landing",0);
 
@@ -333,7 +362,7 @@ vector<Task_in> read_C3(const char* path)
 	}
    
    	cout << "There are "<< file_content.size() << " lines in the file" << endl;
-	cout << "There are "<< res.size() << " Taskes" << endl;
+	cout << "There are "<< res.size() << " tasks" << endl;
    	for (size_t i = 0; i < res.size(); i++)
 	{
        	cout << "Task " << i << " : " <<  endl;
@@ -360,7 +389,7 @@ vector<App_timing_qos> read_time_qos(const char* path)
 	}
    
    	cout << "There are "<< file_content.size() << " lines in the file" << endl;
-	cout << "There are "<< res.size() << " Taskes" << endl;
+	cout << "There are "<< res.size() << " tasks" << endl;
    	for (size_t i = 0; i < res.size(); i++)
 	{
        	cout << "Task " << i << " : " <<  endl;
@@ -463,7 +492,7 @@ void mapping(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> co
 	
 	std_msgs::Int32 msg;
 	//EM, First loop: disable each Task, must be done first to free HW Tiles
-	//Taskes that are going in fusion are disabled to allow the fusion activation 
+	//tasks that are going in fusion are disabled to allow the fusion activation 
 	cout << endl;
 	for(size_t i = 0; i < scheduler_array.size(); i++)
 	{
@@ -478,7 +507,7 @@ void mapping(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> co
 	//EM, Second loop: activation of every Task except those in sequence "s"
 	for(size_t i = 0; i < scheduler_array.size(); i++)
 	{
-		//Enable SW taskes
+		//Enable SW tasks
 		if(scheduler_array[i].region_id == 0 && scheduler_array[i].active == 1) 
 		{
 			msg.data = 1; 
@@ -486,7 +515,7 @@ void mapping(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> co
 			cout << "\033[1;32m Enable SW version of Task no: " << scheduler_array[i].app_index << "\033[0m" << endl;
 		}
 
-		//Enable classic HW taskes
+		//Enable classic HW tasks
 		if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 1
 			&& scheduler_array[i].fusion_sequence != "f" && scheduler_array[i].fusion_sequence != "s") 
 		{
@@ -498,21 +527,21 @@ void mapping(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> co
 					<< " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
 		}
 
-		//Enable HW taskes in fusion "f"
+		//Enable HW tasks in fusion "f"
 		if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 1
 			&& scheduler_array[i].fusion_sequence == "f")
 		{
 			//EM, TODO: CHECK if the previous app on the Tile is done
 			//EM, TODO: LOAD bitstream in FPGA!!! 
 			msg.data = scheduler_array[i].version_code - scheduler_array[i].region_id; 
-			//The 2 fusionned taskes will be activated, only one ROS node can understand the msg.data and launch the fusion
+			//The 2 fusionned tasks will be activated, only one ROS node can understand the msg.data and launch the fusion
 			activate_desactivate_task(scheduler_array[i].app_index, msg);
 			cout << "\033[36m Enable HW FUSION version of Task no: " << scheduler_array[i].app_index 
 					<< " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
 		}
 	}
 	cout << endl;
-	//EM, TODO: work on sequence HW Taskes "s"
+	//EM, TODO: work on sequence HW tasks "s"
 }
 
 

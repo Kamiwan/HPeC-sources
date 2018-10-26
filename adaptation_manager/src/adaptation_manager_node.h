@@ -3,8 +3,6 @@
 #ifndef ADAPTATION_MANAGER_NODE_H
 #define ADAPTATION_MANAGER_NODE_H
 
-#include <ros/ros.h>
-#include <ros/callback_queue.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -13,18 +11,22 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
+
+#include <ros/ros.h>
+#include <ros/callback_queue.h>
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/image_encodings.h>
-#include <boost/thread.hpp>
 #include "std_msgs/Int32.h"
 #include "std_msgs/Float32.h"
-#include <sys/wait.h>
-
 #include <iosfwd>
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <boost/thread.hpp>
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/interprocess/mapped_region.hpp>
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
