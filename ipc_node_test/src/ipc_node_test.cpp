@@ -20,6 +20,9 @@
 #include <boost/thread.hpp>
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
+#include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/interprocess/containers/vector.hpp>
+#include <boost/interprocess/allocators/allocator.hpp>
 
 #include <stdio.h>
 #include <string.h>
@@ -269,13 +272,36 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
      	char *mem = static_cast<char*>(region.get_address());
      	for(std::size_t i = 0; i < region.get_size(); ++i)
 		{
-			std::cout << "Memory index " << i << " *mem++ == 1" << std::endl;	
-     	   	if(*mem++ != 1)
+			//std::cout << "Memory index " << i << " *mem++ == 1" << std::endl;	
+     	   	if(*mem++ != 0)
 			{
 				std::cout << "ERROR " << i << " *mem++ != 1" << std::endl;	
      	    	exit(1);   //Error checking memory
 			}
 		}
+
+		/*############# Vector in shared memory #############*/
+		boost::interprocess::managed_shared_memory segment(boost::interprocess::open_only,"SharedMemVector");  //segment name
+		typedef boost::interprocess::allocator<int, boost::interprocess::managed_shared_memory::segment_manager> ShmemAllocator;
+		//Alias a vector that uses the previous STL-like allocator
+      	typedef std::vector<int, ShmemAllocator> MyVector;
+      	//Find the vector using the c-string name
+      	MyVector *myvector = segment.find<MyVector>("MyVector").first;
+    	int* ptr = myvector->data();
+
+		//Insert data in the vector
+    	for(int i = 0; i < 100; ++i){
+    	   std::cout << "Value of shared memory = " << ptr[i] << std::endl;	
+    	}
+		
+
+
+		/*############# Vector in shared memory #############*/
+
+
+
+
+
 
 		//EM, Compute execution time
 		ends = clock();

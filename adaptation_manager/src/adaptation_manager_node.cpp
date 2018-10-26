@@ -289,14 +289,15 @@ int main (int argc, char ** argv)
 	for(size_t i = 0; i < test.size(); i++)	
 		cout << "Size of index" << i << " = " << sizeof(test[i]) << endl;
 	
-	boost::interprocess::shared_memory_object shm_obj(boost::interprocess::open_or_create //open_only / open_or_create / create_only
+	boost::interprocess::shared_memory_object::remove("shared_memory"); 
+	boost::interprocess::shared_memory_object shm_obj(boost::interprocess::create_only //open_only / open_or_create / create_only
   													 ,"shared_memory" 					//name
   													 ,boost::interprocess::read_write   //read-write mode
   													 );
 
 	//Set size
 	std::size_t ShmSize = 40;
-    shm_obj.truncate(ShmSize);
+    shm_obj.truncate(ShmSize); //EM, truncate ask for the size in Bytes.
 	boost::interprocess::mapped_region 	region( shm_obj	        		//Memory-mappable object
    											, boost::interprocess::read_write   //Access mode
 											);	
@@ -304,14 +305,43 @@ int main (int argc, char ** argv)
 	//Get the address of the region
 	cout <<	"Address of the region = " << region.get_address() << endl;
 	//Get the size of the region
-	cout << "Size of the region = " << region.get_size() << endl;							   
+	cout << "Size of the region = " << region.get_size() << endl;	
+	//Obtain the page size of the system
+	cout << "PAGE SIZE = " << region.get_page_size() << endl;		   
 	//Write all the memory to 1
     std::memset(region.get_address(), 0, ShmSize);
 
-	//boost::interprocess::shared_memory_object::remove("shared_memory"); //EM, useless, see RAII
-
 	write_value_file(PATH_RELEASE_HW,"detection",0);
 	write_value_file(PATH_RELEASE_HW,"search_landing",0);
+
+
+	/*############# Vector in shared memory #############*/
+	boost::interprocess::shared_memory_object::remove("SharedMemVector");
+    boost::interprocess::managed_shared_memory segment(boost::interprocess::create_only 
+        						,"SharedMemVector" //segment name
+        						,65536);           //segment size in bytes 16 PAGES
+
+	//Alias an STL compatible allocator of ints that allocates ints from the managed
+    //shared memory segment.  This allocator will allow to place containers
+    //in managed shared memory segments
+	typedef boost::interprocess::allocator<int, boost::interprocess::managed_shared_memory::segment_manager> ShmemAllocator;
+	//Alias a vector that uses the previous STL-like allocator
+    typedef std::vector<int, ShmemAllocator> MyVector;
+    //Initialize shared memory STL-compatible allocator
+    const ShmemAllocator alloc_inst (segment.get_segment_manager());
+
+    //Construct a shared memory
+    MyVector *myvector = 
+						segment.construct<MyVector>("MyVector") //object name
+                        					       (alloc_inst);//first ctor parameter
+
+    //Insert data in the vector
+    for(int i = 0; i < 100; ++i){
+       myvector->push_back(i);
+    }
+
+	/*############# Vector in shared memory #############*/
+
 
 	cout << "EN ATTENTE DE LA FIN DE L APPLICATION" << endl;
 	while(read_value_file(PATH_RELEASE_HW,3)==0);
