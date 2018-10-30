@@ -251,11 +251,7 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 		//EM, Start app execution time
 		start = clock();
 
-		/**********************************************************************
-		 * EM, Insert here some application functions
-		**********************************************************************/
 		std::cout << "Hello World!" << std::endl;
-
 		//Open already created shared memory object.
       	boost::interprocess::shared_memory_object shm (boost::interprocess::open_only
 														,"shared_memory"
@@ -289,9 +285,24 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
       	MyVector *myvector = segment.find<MyVector>("MyVector").first;
     	int* ptr = myvector->data();
 
+		boost::interprocess::offset_ptr<MyVector> myvector2 = 
+									segment.find<MyVector>("MyVector").first;
+		boost::interprocess::offset_ptr<int> ptr2 = 
+									myvector2->data();
+
+		std::cout << "Offset_ptr get() = " << myvector2.get() << std::endl;
+		std::cout << "Offset_ptr get_offset() = " << std::hex << myvector2.get_offset() << std::dec << std::endl;
+
+		std::cout << "#### ADDR Offset_ptr = " << (size_t)region.get_address() - (size_t)myvector2.get() << " #####" << std::endl;
+
 		//Insert data in the vector
     	for(int i = 0; i < 100; ++i){
-    	   std::cout << "Value of shared memory = " << ptr[i] << std::endl;	
+    	  ptr2[i] = i;
+    	}
+
+		//Read data in the vector
+    	for(int i = 0; i < 100; ++i){
+    	   std::cout << "Value of shared memory = " << ptr2[i] << std::endl;	
     	}
 		
 

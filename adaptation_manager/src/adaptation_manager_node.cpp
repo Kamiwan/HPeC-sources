@@ -297,7 +297,7 @@ int main (int argc, char ** argv)
 
 	//Set size
 	std::size_t ShmSize = 40;
-    shm_obj.truncate(ShmSize); //EM, truncate ask for the size in Bytes.
+    shm_obj.truncate(ShmSize); //EM, truncate asks for the size in Bytes.
 	boost::interprocess::mapped_region 	region( shm_obj	        		//Memory-mappable object
    											, boost::interprocess::read_write   //Access mode
 											);	
@@ -331,14 +331,18 @@ int main (int argc, char ** argv)
     const ShmemAllocator alloc_inst (segment.get_segment_manager());
 
     //Construct a shared memory
-    MyVector *myvector = 
+    boost::interprocess::offset_ptr<MyVector> myvector = 
 						segment.construct<MyVector>("MyVector") //object name
                         					       (alloc_inst);//first ctor parameter
 
+	cout << "Offset_ptr get() = " << myvector.get() << endl;
+	cout << "Offset_ptr get_offset() = " << std::hex << myvector.get_offset() << std::dec << endl;
+
+	cout << "#### ADDR Offset_ptr = " << (size_t)region.get_address() - (size_t)myvector.get() << " #####" << endl;
+
     //Insert data in the vector
-    for(int i = 0; i < 100; ++i){
+    for(int i = 0; i < 100; ++i)
        myvector->push_back(i);
-    }
 
 	/*############# Vector in shared memory #############*/
 
@@ -346,6 +350,13 @@ int main (int argc, char ** argv)
 	cout << "EN ATTENTE DE LA FIN DE L APPLICATION" << endl;
 	while(read_value_file(PATH_RELEASE_HW,3)==0);
 	cout << "ATTENTE TERMINEE!" << endl;
+
+		boost::interprocess::offset_ptr<int> ptr = 
+									myvector->data();
+	
+	for(int j = 0; j < 10000000; j++)
+	    for(int i = 0; i < 100; i++)
+       		ptr[i] = 100 - i;
 
 	/*############################## TEST CODE ##############################*/
 
