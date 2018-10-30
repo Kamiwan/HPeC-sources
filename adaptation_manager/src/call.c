@@ -178,9 +178,9 @@ void doStep ( Step_in* in, Step_out* out)
 	printf("Objective : %d\n", (_res.obj));
 
 	switch (_res.c_img_ver) {
-		case Main__N:	
-	    		(out->contrast_img).code = -1;
-			break;
+		/* case Main__N:	 */
+	    	/* 	(out->contrast_img).code = -1; */
+		/* 	break; */
 		case Main__S:
 	    		(out->contrast_img).code = 10;
 			break;
@@ -198,9 +198,9 @@ void doStep ( Step_in* in, Step_out* out)
 	}
 	/***********************************************************/
 	switch (_res.me_imu_ver) {
-		case Main__N:
-	    		(out->motion_estim_imu).code = 0;
-			break;
+		/* case Main__N: */
+	    	/* 	(out->motion_estim_imu).code = 0; */
+		/* 	break; */
 		case Main__S:
 	    		(out->motion_estim_imu).code = 20;
 			break;
@@ -218,9 +218,9 @@ void doStep ( Step_in* in, Step_out* out)
 	}
 	/***********************************************************/
 	switch (_res.me_img_ver) {
-		case Main__N:
-	    		(out->motion_estim_img).code = 0;
-			break;
+		/* case Main__N: */
+	    	/* 	(out->motion_estim_img).code = 0; */
+		/* 	break; */
 		case Main__S:
 	    		(out->motion_estim_img).code = 30;
 			break;
@@ -238,9 +238,9 @@ void doStep ( Step_in* in, Step_out* out)
 	}
 	/***********************************************************/
 	switch (_res.sl_ver) {
-		case Main__N:
-	    		(out->search_landing).code = 0;
-			break;
+		/* case Main__N: */
+	    	/* 	(out->search_landing).code = 0; */
+		/* 	break; */
 		case Main__S:
 	    		(out->search_landing).code = 40;
 			break;
@@ -259,9 +259,9 @@ void doStep ( Step_in* in, Step_out* out)
 	}
 	/***********************************************************/
 	switch (_res.oa_ver) {
-		case Main__N:
-	    		(out->obstacle_avoidance).code = 0;
-			break;
+		/* case Main__N: */
+	    	/* 	(out->obstacle_avoidance).code = 0; */
+		/* 	break; */
 		case Main__S:
 	    		(out->obstacle_avoidance).code = 50;
 			break;
@@ -281,9 +281,9 @@ void doStep ( Step_in* in, Step_out* out)
 	/***********************************************************/
 	/***********************************************************/
 	switch (_res.tl_ver) {
-		case Main__N:
-	    		(out->t_landing).code = 0;
-			break;
+		/* case Main__N: */
+	    	/* 	(out->t_landing).code = 0; */
+		/* 	break; */
 		case Main__S:
 	    		(out->t_landing).code = 60;
 			break;
@@ -303,9 +303,9 @@ void doStep ( Step_in* in, Step_out* out)
 	/***********************************************************/
 	/***********************************************************/
 	switch (_res.rs_ver) {
-		case Main__N:
-	    		(out->rotoz_s).code = 0;
-			break;
+		/* case Main__N: */
+	    	/* 	(out->rotoz_s).code = 0; */
+		/* 	break; */
 		case Main__S:
 	    		(out->rotoz_s).code = 70;
 			break;
@@ -325,9 +325,9 @@ void doStep ( Step_in* in, Step_out* out)
 	/***********************************************************/
 	/***********************************************************/
 	switch (_res.rb_ver) {
-		case Main__N:
-	    		(out->rotoz_b).code = 0;
-			break;
+		/* case Main__N: */
+	    	/* 	(out->rotoz_b).code = 0; */
+		/* 	break; */
 		case Main__S:
 	    		(out->rotoz_b).code = 0;
 			break;
@@ -347,9 +347,9 @@ void doStep ( Step_in* in, Step_out* out)
 	/***********************************************************/
 	/***********************************************************/
 	switch (_res.rpl_ver) {
-		case Main__N:
-	   		(out->replanning).code = 0;
-			break;
+		/* case Main__N: */
+	   	/* 	(out->replanning).code = 0; */
+		/* 	break; */
 		case Main__S:
 	   		(out->replanning).code = 90;
 			break;
@@ -369,9 +369,9 @@ void doStep ( Step_in* in, Step_out* out)
 	/***********************************************************/
 	/***********************************************************/
 	switch (_res.dt_ver) {
-		case Main__N:
-	    		(out->detection).code  = 0;
-			break;
+		/* case Main__N: */
+	    	/* 	(out->detection).code  = 0; */
+		/* 	break; */
 		case Main__S:
 	    		(out->detection).code  = 120;
 			break;
@@ -391,9 +391,9 @@ void doStep ( Step_in* in, Step_out* out)
 	/***********************************************************/
 	/***********************************************************/
 	switch (_res.trk_ver) {
-		case Main__N:
-	    		(out->tracking).code = 0;
-			break;
+		/* case Main__N: */
+	    	/* 	(out->tracking).code = 0; */
+		/* 	break; */
 		case Main__S:
 	    		(out->tracking).code = 130;
 			break;
@@ -510,37 +510,37 @@ void doStep ( Step_in* in, Step_out* out)
 
 
 
-	    (out->contrast_img).size = _res.c_img_size;
+	    /* (out->contrast_img).size = _res.c_img_size; */
 	    (out->contrast_img).act = _res.c_img_act;
 
-	    (out->motion_estim_imu).size = _res.me_imu_size;
+	    /* (out->motion_estim_imu).size = _res.me_imu_size; */
 	    (out->motion_estim_imu).act = _res.me_imu_act;
 
-	    (out->motion_estim_img).size = _res.me_img_size;
+	    /* (out->motion_estim_img).size = _res.me_img_size; */
 	    (out->motion_estim_img).act = _res.me_img_act;
 
-	    (out->search_landing).size = _res.sl_size;
+	    /* (out->search_landing).size = _res.sl_size; */
 	    (out->search_landing).act = _res.sl_act;
 
-	    (out->obstacle_avoidance).size = _res.oa_size;
+	    /* (out->obstacle_avoidance).size = _res.oa_size; */
 	    (out->obstacle_avoidance).act = _res.oa_act;
 
-	    (out->t_landing).size = _res.tl_size;
+	    /* (out->t_landing).size = _res.tl_size; */
 	    (out->t_landing).act = _res.tl_act;
 
-	    (out->rotoz_s).size = _res.rs_size;
+	    /* (out->rotoz_s).size = _res.rs_size; */
 	    (out->rotoz_s).act= _res.rs_act;
 
-	    (out->rotoz_b).size = _res.rb_size;
+	    /* (out->rotoz_b).size = _res.rb_size; */
 	    (out->rotoz_b).act = _res.rb_act;
 
-	    (out->replanning).size = _res.rpl_size;
+	    /* (out->replanning).size = _res.rpl_size; */
 	    (out->replanning).act= _res.rpl_act;
 
-	    (out->detection).size  = _res.dt_size;
+	    /* (out->detection).size  = _res.dt_size; */
 	    (out->detection).act= _res.dt_act;
 
-	    (out->tracking).size = _res.trk_size;
+	    /* (out->tracking).size = _res.trk_size; */
 	    (out->tracking).act= _res.trk_act;
 
 	/*****/
