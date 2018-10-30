@@ -175,7 +175,7 @@ void doStep ( Step_in* in, Step_out* out)
 	* AFTER STEP
 	***********************************************************/
 
-	printf("Objective : %d\n", (_res.obj));
+	/* printf("Objective : %d\n", (_res.obj)); */
 
 	switch (_res.c_img_ver) {
 		/* case Main__N:	 */
