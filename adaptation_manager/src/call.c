@@ -411,7 +411,7 @@ void doStep ( Step_in* in, Step_out* out)
 			break;
 	}
 
-	if(_res.c_img_ver != Main__N && _res.me_img_ver != Main__N ){
+	if(_res.c_img_act && _res.me_img_act){
 		if(_res.c_img_ver == Main__S &&  _res.me_img_ver == Main__S){
 			(out->contrast_img).code = 140;
 		}else if(_res.c_img_ver == Main__H1 &&  _res.me_img_ver == Main__H1){ //H1
@@ -420,7 +420,7 @@ void doStep ( Step_in* in, Step_out* out)
 			(out->contrast_img).code = 142;
 		}	
 	}
-	if(_res.c_img_ver!= Main__N &&  _res.tl_ver != Main__N){
+	if(_res.c_img_act &&  _res.tl_act){
 		if(_res.c_img_ver == Main__S && _res.tl_ver  == Main__S){
 			(out->contrast_img).code = 150;
 		}else if(_res.c_img_ver == Main__H1 && _res.tl_ver  == Main__H1){ //H1
@@ -429,7 +429,7 @@ void doStep ( Step_in* in, Step_out* out)
 			(out->contrast_img).code = 152;
 		}		
 	}
-	if(_res.c_img_ver!= Main__N && _res.rs_ver != Main__N){
+	if(_res.c_img_act && _res.rs_act){
 		if(_res.c_img_ver == Main__S && _res.rs_ver == Main__S){
 			(out->rotoz_s).code = 160;
 		}else if(_res.c_img_ver == Main__H1 && _res.rs_ver == Main__H1){ //H1
@@ -438,7 +438,7 @@ void doStep ( Step_in* in, Step_out* out)
 			(out->rotoz_s).code = 162;
 		}					
 	}
-	if(_res.c_img_ver != Main__N && _res.sl_ver != Main__N){
+	if(_res.c_img_act && _res.sl_act){
 		if(_res.c_img_ver == Main__S && _res.sl_ver == Main__S){
 			(out->contrast_img).code = 170;
 		}else if(_res.c_img_ver == Main__H1 && _res.sl_ver == Main__H1){ //H1
@@ -447,7 +447,7 @@ void doStep ( Step_in* in, Step_out* out)
 			(out->contrast_img).code = 172;
 		}					
 	}
-	if(_res.me_img_ver != Main__N && _res.tl_ver != Main__N){
+	if(_res.me_img_act && _res.tl_act){
 		if(_res.me_img_ver == Main__S && _res.tl_ver == Main__S){
 			(out->motion_estim_img).code = 180;
 		}else if( _res.me_img_ver == Main__H1 && _res.tl_ver == Main__H1){ //H1
@@ -456,7 +456,7 @@ void doStep ( Step_in* in, Step_out* out)
 			(out->motion_estim_img).code = 182;
 		}
 	}
-	if(_res.me_img_ver != Main__N && _res.rs_ver != Main__N){
+	if(_res.me_img_act && _res.rs_act){
 		if(_res.me_img_ver == Main__S && _res.rs_ver == Main__S){
 			(out->rotoz_s).code = 190;
 		}else if(_res.me_img_ver == Main__H1 && _res.rs_ver == Main__H1){ //H1
@@ -465,7 +465,7 @@ void doStep ( Step_in* in, Step_out* out)
 			(out->rotoz_s).code = 192;
 		}		
 	}
-	if(_res.me_img_ver != Main__N && _res.sl_ver != Main__N){
+	if(_res.me_img_act && _res.sl_act){
 		if(_res.me_img_ver == Main__S && _res.sl_ver == Main__S){
 			(out->motion_estim_img).code = 200;
 		}else if(_res.me_img_ver == Main__H1 && _res.sl_ver == Main__H1){ //H1
@@ -474,7 +474,7 @@ void doStep ( Step_in* in, Step_out* out)
 			(out->motion_estim_img).code = 202;
 		}		
 	}
-	if(_res.rs_ver != Main__N  && _res.tl_ver != Main__N){
+	if(_res.rs_act  && _res.tl_act){
 		if(_res.rs_ver == Main__S && _res.tl_ver == Main__S){
 			(out->rotoz_s).code = 210;
 		}else if(_res.rs_ver == Main__H1 &&  _res.tl_ver  == Main__H1){ //H1
@@ -483,7 +483,7 @@ void doStep ( Step_in* in, Step_out* out)
 			(out->rotoz_s).code = 212;
 		}				
 	}
-	if(_res.tl_ver != Main__N && _res.sl_ver != Main__N ){
+	if(_res.tl_act && _res.sl_act ){
 		if(_res.tl_ver == Main__S && _res.sl_ver == Main__S){
 			(out->t_landing).code = 220;
 		}else if(_res.tl_ver == Main__H1 && _res.sl_ver == Main__H1){ //H1
@@ -492,7 +492,7 @@ void doStep ( Step_in* in, Step_out* out)
 			(out->t_landing).code = 222;
 		}					
 	}
-	if(_res.rs_ver != Main__N && _res.sl_ver != Main__N ){
+	if(_res.rs_act && _res.sl_act){
 		if(_res.rs_ver == Main__S && _res.sl_ver == Main__S){
 			(out->rotoz_s).code = 230;
 		}else if(_res.rs_ver == Main__H1 && _res.sl_ver == Main__H1){ //H1
