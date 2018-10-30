@@ -1,4 +1,4 @@
-/* --- Generated the 30/10/2018 at 0:44 --- */
+/* --- Generated the 30/10/2018 at 9:38 --- */
 /* --- heptagon compiler, version 1.05.00 (compiled sun. oct. 7 16:30:53 CET 2018) --- */
 /* --- Command line: /home/gwen/.opam/4.04.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
 
@@ -131,22 +131,19 @@ typedef struct Main__main_out {
 
 void Main__main_reset(Main__main_mem* self);
 
-void Main__main_step(int prio_t1, int prio_t2, int prio_t3, int prio_t4,
-                     int prio_t5, int prio_t6, int prio_t7, int prio_t8,
-                     int prio_t9, int prio_t10, int prio_t11, int texe1,
-                     int texe2, int texe3, int texe4, int texe5, int texe6,
-                     int texe7, int texe8, int texe9, int texe10, int texe11,
-                     int min1, int min2, int min3, int min4, int min5,
-                     int min6, int min7, int min8, int min9, int min10,
-                     int min11, int max1, int max2, int max3, int max4,
-                     int max5, int max6, int max7, int max8, int max9,
-                     int max10, int max11, int c_img_r, int c_img_e,
-                     int me_imu_r, int me_imu_e, int me_img_r, int me_img_e,
-                     int sl_r, int sl_e, int oa_r, int oa_e, int tl_r,
-                     int tl_e, int rs_r, int rs_e, int rb_r, int rb_e,
-                     int rpl_r, int rpl_e, int dt_r, int dt_e, int trk_r,
-                     int trk_e, int f_1, int rp_1, int f_2, int rp_2,
-                     int f_3, int rp_3, Main__main_out* _out,
+void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
+                     int texe6, int texe7, int texe8, int texe9, int texe10,
+                     int texe11, int min1, int min2, int min3, int min4,
+                     int min5, int min6, int min7, int min8, int min9,
+                     int min10, int min11, int max1, int max2, int max3,
+                     int max4, int max5, int max6, int max7, int max8,
+                     int max9, int max10, int max11, int c_img_r,
+                     int c_img_e, int me_imu_r, int me_imu_e, int me_img_r,
+                     int me_img_e, int sl_r, int sl_e, int oa_r, int oa_e,
+                     int tl_r, int tl_e, int rs_r, int rs_e, int rb_r,
+                     int rb_e, int rpl_r, int rpl_e, int dt_r, int dt_e,
+                     int trk_r, int trk_e, int f_1, int rp_1, int f_2,
+                     int rp_2, int f_3, int rp_3, Main__main_out* _out,
                      Main__main_mem* self);
 
 #endif // MAIN_H
