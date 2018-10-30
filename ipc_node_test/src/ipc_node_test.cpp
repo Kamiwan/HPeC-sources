@@ -17,12 +17,15 @@
  *************************************************************************************/
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
+
 #include <boost/thread.hpp>
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/interprocess/sync/named_mutex.hpp>
+#include <boost/interprocess/sync/scoped_lock.hpp>
 
 #include <stdio.h>
 #include <string.h>
@@ -295,17 +298,21 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 
 		std::cout << "#### ADDR Offset_ptr = " << (size_t)region.get_address() - (size_t)myvector2.get() << " #####" << std::endl;
 
+		boost::interprocess::named_mutex shared_mutex{
+											boost::interprocess::open_only
+											, "mtx"};
+		
+		//boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(shared_mutex);
 		//Insert data in the vector
+		shared_mutex.lock();
     	for(int i = 0; i < 100; ++i){
     	  ptr2[i] = i;
     	}
-
 		//Read data in the vector
     	for(int i = 0; i < 100; ++i){
     	   std::cout << "Value of shared memory = " << ptr2[i] << std::endl;	
     	}
-		
-
+		shared_mutex.unlock();
 
 		/*############# Vector in shared memory #############*/
 

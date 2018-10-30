@@ -345,18 +345,46 @@ int main (int argc, char ** argv)
        myvector->push_back(i);
 
 	/*############# Vector in shared memory #############*/
+	boost::interprocess::offset_ptr<int> ptr = myvector->data();
+
+	boost::interprocess::shared_memory_object::remove("mtx");
+	boost::interprocess::named_mutex shared_mutex{
+											boost::interprocess::open_or_create
+											, "mtx"};
+
+	clock_t start, ends;
+	start = clock();
+
+	read_value_file(PATH_RELEASE_HW,3);
+
+	ends = clock();
+	double res = double(ends - start) * 1000 / CLOCKS_PER_SEC;;
+	std::cout 	<< "READ DATA IN A FILE : " 
+				<< res << std::endl;
+
+	start = clock();
+
+	//boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(shared_mutex);
+	shared_mutex.lock();
+	ptr[3] = 12;
+	shared_mutex.unlock();
+
+	ends = clock();
+	res =  double(ends - start) * 1000 / CLOCKS_PER_SEC;
+	std::cout 	<< "WRITE DATA IN A SHARED MEMORY : " 
+				<< res << std::endl;
 
 
 	cout << "EN ATTENTE DE LA FIN DE L APPLICATION" << endl;
 	while(read_value_file(PATH_RELEASE_HW,3)==0);
 	cout << "ATTENTE TERMINEE!" << endl;
 
-		boost::interprocess::offset_ptr<int> ptr = 
-									myvector->data();
-	
-	for(int j = 0; j < 10000000; j++)
+	//boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(shared_mutex);
+	shared_mutex.lock();
+	for(int j = 0; j < 1000000; j++)
 	    for(int i = 0; i < 100; i++)
        		ptr[i] = 100 - i;
+	shared_mutex.unlock();
 
 	/*############################## TEST CODE ##############################*/
 
