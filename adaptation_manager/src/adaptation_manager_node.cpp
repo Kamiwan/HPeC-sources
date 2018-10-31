@@ -319,7 +319,7 @@ int main (int argc, char ** argv)
 	boost::interprocess::shared_memory_object::remove("SharedMemVector");
     boost::interprocess::managed_shared_memory segment(boost::interprocess::create_only 
         						,"SharedMemVector" //segment name
-        						,65536);           //segment size in bytes 16 PAGES
+        						,65536);           //segment size in bytes, 16 PAGES
 
 	//Alias an STL compatible allocator of ints that allocates ints from the managed
     //shared memory segment.  This allocator will allow to place containers
@@ -338,7 +338,7 @@ int main (int argc, char ** argv)
 	cout << "Offset_ptr get() = " << myvector.get() << endl;
 	cout << "Offset_ptr get_offset() = " << std::hex << myvector.get_offset() << std::dec << endl;
 
-	cout << "#### ADDR Offset_ptr = " << (size_t)region.get_address() - (size_t)myvector.get() << " #####" << endl;
+	cout << "#### ADDR Offset_ptr = " << std::hex << (size_t)region.get_address() - (size_t)myvector.get() << std::dec << " #####" << endl;
 
     //Insert data in the vector
     for(int i = 0; i < 100; ++i)

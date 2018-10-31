@@ -247,7 +247,7 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	std_msgs::Float32 elapsed_time;
 	while (workerHandle_ptr->ok()) //Main processing loop
 	{
-		//EM, This call checks if a somethubg from a topic has been received 
+		//EM, This call checks if something from a topic has been received 
 		//	  and run callback functions if yes.
 		queue.callAvailable();
 
@@ -296,15 +296,16 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 		std::cout << "Offset_ptr get() = " << myvector2.get() << std::endl;
 		std::cout << "Offset_ptr get_offset() = " << std::hex << myvector2.get_offset() << std::dec << std::endl;
 
-		std::cout << "#### ADDR Offset_ptr = " << (size_t)region.get_address() - (size_t)myvector2.get() << " #####" << std::endl;
+		std::cout << "#### ADDR Offset_ptr = " << std::hex <<(size_t)region.get_address() - (size_t)myvector2.get() << std::dec << " #####" << std::endl;
 
 		boost::interprocess::named_mutex shared_mutex{
 											boost::interprocess::open_only
 											, "mtx"};
 		
-		//boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(shared_mutex);
+		{ //EM, Mandatory brackets for scoped_lock
+		boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(shared_mutex);
 		//Insert data in the vector
-		shared_mutex.lock();
+		//shared_mutex.lock();
     	for(int i = 0; i < 100; ++i){
     	  ptr2[i] = i;
     	}
@@ -313,7 +314,8 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
     	for(int i = 0; i < 100; ++i){
     	   std::cout << "Value of shared memory = " << ptr2[i] << std::endl;	
     	}
-		shared_mutex.unlock();
+		//shared_mutex.unlock();
+		}
 
 		/*############# Vector in shared memory #############*/
 
