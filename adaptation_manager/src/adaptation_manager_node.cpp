@@ -379,12 +379,12 @@ int main (int argc, char ** argv)
 	while(read_value_file(PATH_RELEASE_HW,3)==0);
 	cout << "ATTENTE TERMINEE!" << endl;
 
-	//boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(shared_mutex);
-	shared_mutex.lock();
+	{
+	boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(shared_mutex);
 	for(int j = 0; j < 1000000; j++)
 	    for(int i = 0; i < 100; i++)
        		ptr[i] = 100 - i;
-	shared_mutex.unlock();
+	}
 
 	/*############################## TEST CODE ##############################*/
 
