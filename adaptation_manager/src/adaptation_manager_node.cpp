@@ -364,10 +364,12 @@ int main (int argc, char ** argv)
 
 	start = clock();
 
-	//boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(shared_mutex);
-	shared_mutex.lock();
+	{ //EM, Mandatory brackets for scoped_lock
+	boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock2(shared_mutex);
+	//shared_mutex.lock();
 	ptr[3] = 12;
-	shared_mutex.unlock();
+	//shared_mutex.unlock();
+	}
 
 	ends = clock();
 	res =  double(ends - start) * 1000 / CLOCKS_PER_SEC;
@@ -379,12 +381,23 @@ int main (int argc, char ** argv)
 	while(read_value_file(PATH_RELEASE_HW,3)==0);
 	cout << "ATTENTE TERMINEE!" << endl;
 
-	{
+	{ //EM, Mandatory brackets for scoped_lock
 	boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(shared_mutex);
 	for(int j = 0; j < 1000000; j++)
 	    for(int i = 0; i < 100; i++)
        		ptr[i] = 100 - i;
 	}
+
+	cout << "WAITING SHARED DATA CHANGE" << endl;
+	int test_loop = 1;
+	while(test_loop) //EM, loop that waits until the ipc_node writes 0 on the 4th vector element
+	{
+		{ //EM, Mandatory brackets for scoped_lock
+		boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock3(shared_mutex);
+		test_loop = ptr[3];
+		}
+	}
+	cout << "END OF WAIT, SECURED IPC SHARED DATA DONE" << endl;
 
 	/*############################## TEST CODE ##############################*/
 

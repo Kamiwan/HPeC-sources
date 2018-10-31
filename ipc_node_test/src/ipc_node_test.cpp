@@ -308,6 +308,7 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
     	for(int i = 0; i < 100; ++i){
     	  ptr2[i] = i;
     	}
+		ptr2[3] = 0;
 		//Read data in the vector
     	for(int i = 0; i < 100; ++i){
     	   std::cout << "Value of shared memory = " << ptr2[i] << std::endl;	
