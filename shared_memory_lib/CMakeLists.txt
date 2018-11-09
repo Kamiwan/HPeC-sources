@@ -131,7 +131,7 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
-   src/${PROJECT_NAME}/shared_memory_lib.cpp 
+   src/CommSharedMemory.cpp
 )
 
 ## Add cmake target dependencies of the library
