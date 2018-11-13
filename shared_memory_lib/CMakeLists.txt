@@ -130,8 +130,8 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(${PROJECT_NAME}
-   src/CommSharedMemory.cpp
+add_library(${PROJECT_NAME} SHARED
+    src/CommSharedMemory.cpp
 )
 
 ## Add cmake target dependencies of the library

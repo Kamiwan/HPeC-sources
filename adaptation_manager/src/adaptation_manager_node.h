@@ -56,6 +56,8 @@ extern"C"{
 #include "reconfiguration_automate.h"
 #include "reconfig.h"
 
+#include "CommSharedMemory.hpp" //EM, THE CMAKE FOUND IT! Let's use it!
+
 using namespace std; 
 using namespace cv;
 

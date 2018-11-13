@@ -13,8 +13,10 @@ find_package(catkin REQUIRED COMPONENTS
   	std_msgs
   	message_generation
 	cv_bridge
-#  image_transport
 )
+
+
+
 
 SET(CMAKE_CXX_FLAGS " -I/usr/local/include -I/usr/local/include/opencv")
 set (CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lpthread -lrt")
@@ -133,6 +135,7 @@ include_directories(
   	/usr/include/image_transport
 	/usr/local/include
 	/usr/local/include/opencv
+	../shared_memory_lib/src
 )
 
 ## Declare a C++ library
@@ -178,7 +181,8 @@ target_link_libraries(adaptation_manager_node
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
     /usr/local/lib/
-    /opt/ros/kinetic/lib/libimage_transport.so
+	shared_memory_lib
+	#/home/labsticc/Bureau/HW_in_the_Loop/GitHub/HPeC_ws/devel/lib/libshared_memory_lib.so
 )
 
 #############

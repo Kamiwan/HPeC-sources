@@ -376,6 +376,9 @@ int main (int argc, char ** argv)
 	std::cout 	<< "WRITE DATA IN A SHARED MEMORY : " 
 				<< res << std::endl;
 
+	Box maBox(1,2,3);
+	maBox.print();
+
 
 	cout << "EN ATTENTE DE LA FIN DE L APPLICATION" << endl;
 	while(read_value_file(PATH_RELEASE_HW,3)==0);
