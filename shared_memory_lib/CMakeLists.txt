@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   REQUIRED
 )
 
-SET(CMAKE_CXX_FLAGS " -I/usr/local/include -I/usr/local/include/opencv")
+SET(CMAKE_CXX_FLAGS " -I/usr/local/include ")
 set (CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lpthread -lrt")
 
 ## System dependencies are found with CMake's conventions
