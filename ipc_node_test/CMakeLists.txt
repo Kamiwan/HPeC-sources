@@ -130,8 +130,8 @@ communication
 include_directories(
   ${catkin_INCLUDE_DIRS} 
   /opt/ros/kinetic/include/image_transport
-  #/usr/include/image_transport
   ${OpenCV_INCLUDE_DIRS}
+  ../shared_memory_lib/src
 )
 
 ## Declare a C++ library
@@ -168,8 +168,8 @@ add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
  target_link_libraries(ipc_node_test_node
    ${catkin_LIBRARIES}
     /opt/ros/kinetic/lib/libimage_transport.so
-    #/usr/lib/arm-linux-gnueabihf/libimage_transport.so
    ${OpenCV_LIBRARIES}
+   shared_memory_lib
  )
 
 #############

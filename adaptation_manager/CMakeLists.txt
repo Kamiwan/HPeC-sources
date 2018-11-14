@@ -182,7 +182,6 @@ target_link_libraries(adaptation_manager_node
 	${OpenCV_LIBRARIES}
     /usr/local/lib/
 	shared_memory_lib
-	#/home/labsticc/Bureau/HW_in_the_Loop/GitHub/HPeC_ws/devel/lib/libshared_memory_lib.so
 )
 
 #############

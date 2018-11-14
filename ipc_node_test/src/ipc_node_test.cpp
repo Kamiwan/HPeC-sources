@@ -50,6 +50,8 @@ extern "C" {
 #include "sensor_msgs/Imu.h"
 #include <tf/transform_datatypes.h>
 
+#include "CommSharedMemory.hpp" 
+
 //Erwan Moréac, 05/03/18 : Setup #define
 #define HIL				 //Code modifications for Hardware In the Loop
 
@@ -244,6 +246,11 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	* EM, Insert here Other parameters loading
 	**********************************************************************/
 
+	MemoryCoordinator monManageMem("User");
+	//Read data in the vector
+    for(int i = 0; i < 100; ++i)
+       std::cout << "MemoryCoordinator value of element" << i << " = " << monManageMem.C3_table_ptr[i] << std::endl;
+
 	std_msgs::Float32 elapsed_time;
 	while (workerHandle_ptr->ok()) //Main processing loop
 	{
@@ -311,9 +318,10 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
     	}
 		ptr2[3] = 0;
 		//Read data in the vector
-    	for(int i = 0; i < 100; ++i){
+    	/*for(int i = 0; i < 100; ++i){
     	   std::cout << "Value of shared memory = " << ptr2[i] << std::endl;	
-    	}
+    	}*/
+		 std::cout << "Value of shared memory = " << ptr2[50] << std::endl;
 		//shared_mutex.unlock();
 		}
 
