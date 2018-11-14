@@ -55,13 +55,7 @@ MemoryCoordinator::MemoryCoordinator(std::string Role)
         release_hw_Vptr = release_hw_segment.construct<SharedVector>(VECTOR_NAME_RELEASE_SEGMENT)
                                             (alloc_inst_release_hw);//first ctor parameter
         done_Vptr       = done_segment.construct<SharedVector>(VECTOR_NAME_DONE_SEGMENT)
-                                                (alloc_inst_done);//first ctor parameter
-
-        //EM, Must be done ONLY when vectors are full of data   
-        C3_table_ptr     = C3_table_Vptr->data();
-        achievable_ptr   = achievable_Vptr->data();
-        release_hw_ptr   = release_hw_Vptr->data();
-        done_ptr         = done_Vptr->data();                                    
+                                                (alloc_inst_done);//first ctor parameter                                
     }
     else 
     {   if(Role == "User")
@@ -78,7 +72,8 @@ MemoryCoordinator::MemoryCoordinator(std::string Role)
             done_segment = bip::managed_shared_memory(bip::open_only 
                 ,NAME_DONE_SEGMENT //segment name
                    );
-            std::cout << "Mutex step" << std::endl;
+            
+            //std::cout << "Mutex step" << std::endl;
             bip::named_mutex C3_table_mutex{
                             bip::open_only, 
                             MUTEX_NAME_C3_SEGMENT};
@@ -92,20 +87,13 @@ MemoryCoordinator::MemoryCoordinator(std::string Role)
                             bip::open_only, 
                             MUTEX_NAME_DONE_SEGMENT};
 
-            std::cout << "ShAllocator step" << std::endl;                
-            //Initialize shared memory STL-compatible allocator
-            /*const ShmemAllocator alloc_inst_C3_table     (C3_table_segment.get_segment_manager());
-            const ShmemAllocator alloc_inst_achievable   (achievable_segment.get_segment_manager());
-            const ShmemAllocator alloc_inst_release_hw   (release_hw_segment.get_segment_manager());
-            const ShmemAllocator alloc_inst_done         (done_segment.get_segment_manager());*/
-
-            std::cout << "Vector step" << std::endl;
+            //std::cout << "Vector step" << std::endl;
             C3_table_Vptr   = C3_table_segment.find<SharedVector>(VECTOR_NAME_C3_SEGMENT).first;
             achievable_Vptr = achievable_segment.find<SharedVector>(VECTOR_NAME_ACHIEVABLE_SEGMENT).first;
             release_hw_Vptr = release_hw_segment.find<SharedVector>(VECTOR_NAME_RELEASE_SEGMENT).first;
             done_Vptr       = done_segment.find<SharedVector>(VECTOR_NAME_DONE_SEGMENT).first;
 
-            std::cout << "Int Pointer step" << std::endl;
+            //std::cout << "Int Pointer step" << std::endl;
             C3_table_ptr     = C3_table_Vptr->data();
             achievable_ptr   = achievable_Vptr->data();
             release_hw_ptr   = release_hw_Vptr->data();
