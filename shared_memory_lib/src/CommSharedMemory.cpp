@@ -3,6 +3,17 @@
 #include "CommSharedMemory.hpp"
 
 
+
+
+
+
+
+
+
+
+
+
+//EM, TODO: DELETE IT
 void Box::print()
 {
     std::cout << "length    = " << length << std::endl;
