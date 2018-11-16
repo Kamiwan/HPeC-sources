@@ -401,17 +401,25 @@ int main (int argc, char ** argv)
 	std::cout 	<< "WRITE DATA IN A SHARED MEMORY : " 
 				<< res << std::endl;
 
-	/*MemoryCoordinator monManageMem("Admin");
+	MemoryCoordinator monManageMem("Admin");
 	//Insert data in the vector
-    for(int i = 0; i < 100; ++i)
-       monManageMem.C3_table_Vptr->push_back(i);
+	std::vector<int> bidule;
+    for(int i = 0; i < C3.size(); i++)
+	{
+		bidule.push_back(C3[i].req);
+		bidule.push_back(C3[i].texec);
+		bidule.push_back(C3[i].mintexec);
+		bidule.push_back(C3[i].maxtexec);
+		bidule.push_back(C3[i].qos);
+		bidule.push_back(C3[i].minqos);
+		bidule.push_back(C3[i].maxqos);
+		bidule.push_back(C3[i].priority);
+	}
 
-	std::cout << "Pointer value =  " << monManageMem.C3_table_ptr << std::endl;
-	monManageMem.C3_table_ptr = monManageMem.C3_table_Vptr->data();
-	std::cout << "Pointer value =  " << monManageMem.C3_table_ptr << std::endl;
+	monManageMem.Fill_ShMem_C3_table(bidule);
 
 	std::cout << "First try complete " << std::endl;
-
+	/*
 	//Read data in the vector
     for(int i = 0; i < 100; ++i)
        std::cout << "MemoryCoordinator value of element" << i << " = " << monManageMem.C3_table_ptr[i] << std::endl;
@@ -423,30 +431,14 @@ int main (int argc, char ** argv)
 	//Read data in the vector
     for(int i = 0; i < 100; ++i)
 		std::cout << "Reverse try value of element" << i << " = " << monManageMem.C3_table_ptr[i] << std::endl;
-    */   
+    */ 
 
 
 	cout << "EN ATTENTE DE LA FIN DE L APPLICATION" << endl;
 	while(read_value_file(PATH_RELEASE_HW,3)==0);
 	cout << "ATTENTE TERMINEE!" << endl;
 
-	{ //EM, Mandatory brackets for scoped_lock
-	boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(shared_mutex);
-	for(int j = 0; j < 1000000; j++)
-	    for(int i = 0; i < 100; i++)
-       		ptr[i] = 100 - i;
-	}
-
-	cout << "WAITING SHARED DATA CHANGE" << endl;
-	int test_loop = 1;
-	/*while(test_loop) //EM, loop that waits until the ipc_node writes 0 on the 4th vector element
-	{
-		{ //EM, Mandatory brackets for scoped_lock
-		boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock3(shared_mutex);
-		test_loop = ptr[3];
-		}
-	}*/
-	cout << "END OF WAIT, SECURED IPC SHARED DATA DONE" << endl;
+	
 
 	/*############################## TEST CODE ##############################*/
 

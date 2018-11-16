@@ -262,11 +262,15 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	* EM, Insert here Other parameters loading
 	**********************************************************************/
 
-	/*MemoryCoordinator monManageMem("User");
+	MemoryCoordinator monManageMem("User");
 	//Read data in the vector
-    for(int i = 0; i < 100; ++i)
-       std::cout << "MemoryCoordinator value of element" << i << " = " << monManageMem.C3_table_ptr[i] << std::endl;
-	*/
+	std::vector<int> machin;
+    for(int i = 0; i < 11; i++)
+	{
+		machin = monManageMem.C3_table_Read(i);
+		for(int j = 0; j < 8; j++)
+       		std::cout << "App " << i << " value [" << j << "] = " << machin[j] << std::endl;
+	}
 
 	std_msgs::Float32 elapsed_time;
 	while (workerHandle_ptr->ok()) //Main processing loop
