@@ -34,6 +34,7 @@ typedef std::vector<int, ShmemAllocator> SharedVector;
 #define PAGE_SIZE_BYTES      4096
 
 //EM, Indexes of C3 table shared memory
+#define C3_NB_ATTRIBUTES    8
 #define C3_ACTIVE_REQUEST   0
 #define C3_MIN_TEXEC        1
 #define C3_CURRENT_TEXEC    2

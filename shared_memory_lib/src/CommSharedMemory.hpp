@@ -2,6 +2,7 @@
 #define COMM_SHARED_MEMORY_HPP
 
 #include <string>
+#include <vector>
 #include <iostream>
 
 #include "CommShMemConst.hpp"
@@ -149,6 +150,13 @@ class MemoryCoordinator {
                 }
             }
         }
+
+        //EM, Use these functions at least once in order to use the shared memory later
+        //Only the Admin should use these 4 functions
+        void    Fill_ShMem_C3_table(const std::vector<int> &memory);
+        void    Fill_ShMem_achievable(const std::vector<int> &memory);
+        void    Fill_ShMem_release_hw(const std::vector<int> &memory);
+        void    Fill_ShMem_done(const std::vector<int> &memory);
 
         //EM, TODO in last position
         int     C3_table_Read(const int &app_index);
