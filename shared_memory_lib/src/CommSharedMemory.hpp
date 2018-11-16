@@ -162,8 +162,9 @@ class MemoryCoordinator {
         void    done_Write(const int &data, const int &app_index);
 
         void    Update_ExecTime(const int &data, const int &app_index);
-        void    Update_QoS(const int &data, const int &app_index); 
-
+        void    Update_QoS(const int &data, const int &app_index);
+        int     Read_ExecTime(const int &app_index);
+        int     Read_QoS(const int &app_index);
 
     private:
 
