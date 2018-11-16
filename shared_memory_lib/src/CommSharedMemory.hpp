@@ -1,3 +1,28 @@
+/* 
+ * This file is part of the HPeC distribution (https://github.com/Kamiwan/HPeC-sources).
+ * Copyright (c) 2018 Lab-STICC Laboratory.
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
+/*************************************************************************************
+ * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
+ * Created on: November 12, 2018
+ * 
+ * MemoryCoordinator class definition.
+ * Allow HPeC ROS nodes to communicate using shared memory, the fastest communication
+ * Boost InterProcess library used.
+ *************************************************************************************/
+
 #ifndef COMM_SHARED_MEMORY_HPP
 #define COMM_SHARED_MEMORY_HPP
 
@@ -11,42 +36,29 @@ namespace bip = boost::interprocess;
 
 class MemoryCoordinator {
     public:
-        //EM, Segments to create or open access to the shared memory
-        bip::managed_shared_memory C3_table_segment;
-        bip::managed_shared_memory achievable_segment;
-        bip::managed_shared_memory release_hw_segment;
-        bip::managed_shared_memory done_segment;
+        //EM, Use these functions at least once in order to use the shared memory later
+        void    Fill_ShMem_C3_table(const std::vector<int> &memory);
+        void    Fill_ShMem_achievable(const std::vector<int> &memory);
+        void    Fill_ShMem_release_hw(const std::vector<int> &memory);
+        void    Fill_ShMem_done(const std::vector<int> &memory);
 
-        //EM, Offset Pointers to access the shared vector
-        bip::offset_ptr<SharedVector> C3_table_Vptr;
-        bip::offset_ptr<SharedVector> achievable_Vptr;
-        bip::offset_ptr<SharedVector> release_hw_Vptr;
-        bip::offset_ptr<SharedVector> done_Vptr;
+        std::vector<int>    C3_table_Read(int app_index);
+        void                C3_table_Write(const std::vector<int> &data, int app_index);
 
-        //EM, Offset Pointers to USE easily the shared memory
-        //Use them ONLY when vectors are full of data
-        bip::offset_ptr<int> C3_table_ptr;
-        bip::offset_ptr<int> achievable_ptr;
-        bip::offset_ptr<int> release_hw_ptr;
-        bip::offset_ptr<int> done_ptr;
+        int     achievable_Read(int app_index);
+        void    achievable_Write(int data, int app_index);
+        int     release_hw_Read(int app_index);
+        void    release_hw_Write(int data, int app_index);
+        int     done_Read(int app_index);
+        void    done_Write(int data, int app_index);
 
-        //EM, Named mutexes to protect the shared memory access
-        //The default constructor is private, instanciation mandatory...
-        bip::named_mutex C3_table_mutex{
-				    	bip::open_or_create
-				    	, MUTEX_NAME_C3_SEGMENT};
-        bip::named_mutex achievable_mutex{
-						bip::open_or_create
-						, MUTEX_NAME_ACHIEVABLE_SEGMENT};
-        bip::named_mutex release_hw_mutex{
-						bip::open_or_create
-						, MUTEX_NAME_RELEASE_SEGMENT};
-        bip::named_mutex done_mutex{
-						bip::open_or_create
-						, MUTEX_NAME_DONE_SEGMENT};                                    
-                                            
+        void    Update_ExecTime(int data, int app_index);
+        void    Update_QoS(int data, int app_index);
+        int     Read_ExecTime(int app_index);
+        int     Read_QoS(int app_index);
+
         //EM, constructor for the memory "Admin" OR "User"
-        MemoryCoordinator(std::string Role)
+        MemoryCoordinator(const std::string &Role)
         {
             if(Role == "Admin")
             {
@@ -151,31 +163,43 @@ class MemoryCoordinator {
             }
         }
 
-        //EM, Use these functions at least once in order to use the shared memory later
-        //Only the Admin should use these 4 functions
-        void    Fill_ShMem_C3_table(const std::vector<int> &memory);
-        void    Fill_ShMem_achievable(const std::vector<int> &memory);
-        void    Fill_ShMem_release_hw(const std::vector<int> &memory);
-        void    Fill_ShMem_done(const std::vector<int> &memory);
-
-        //EM, TODO in last position
-        int     C3_table_Read(const int &app_index);
-        void    C3_table_Write(const int &data, const int &app_index);
-
-        int     achievable_Read(const int &app_index);
-        void    achievable_Write(const int &data, const int &app_index);
-        int     release_hw_Read(const int &app_index);
-        void    release_hw_Write(const int &data, const int &app_index);
-        int     done_Read(const int &app_index);
-        void    done_Write(const int &data, const int &app_index);
-
-        void    Update_ExecTime(const int &data, const int &app_index);
-        void    Update_QoS(const int &data, const int &app_index);
-        int     Read_ExecTime(const int &app_index);
-        int     Read_QoS(const int &app_index);
-
     private:
+        //EM, Segments to create or open access to the shared memory
+        bip::managed_shared_memory C3_table_segment;
+        bip::managed_shared_memory achievable_segment;
+        bip::managed_shared_memory release_hw_segment;
+        bip::managed_shared_memory done_segment;
 
+        //EM, Offset Pointers to access the shared vector
+        bip::offset_ptr<SharedVector> C3_table_Vptr;
+        bip::offset_ptr<SharedVector> achievable_Vptr;
+        bip::offset_ptr<SharedVector> release_hw_Vptr;
+        bip::offset_ptr<SharedVector> done_Vptr;
+
+        //EM, Offset Pointers to USE easily the shared memory
+        //Use them ONLY when vectors are full of data
+        bip::offset_ptr<int> C3_table_ptr;
+        bip::offset_ptr<int> achievable_ptr;
+        bip::offset_ptr<int> release_hw_ptr;
+        bip::offset_ptr<int> done_ptr;
+
+        //EM, Named mutexes to protect the shared memory access
+        //The default constructor is private, instanciation mandatory...
+        bip::named_mutex C3_table_mutex{
+				    	bip::open_or_create
+				    	, MUTEX_NAME_C3_SEGMENT};
+        bip::named_mutex achievable_mutex{
+						bip::open_or_create
+						, MUTEX_NAME_ACHIEVABLE_SEGMENT};
+        bip::named_mutex release_hw_mutex{
+						bip::open_or_create
+						, MUTEX_NAME_RELEASE_SEGMENT};
+        bip::named_mutex done_mutex{
+						bip::open_or_create
+						, MUTEX_NAME_DONE_SEGMENT}; 
 };
 
 #endif
+
+
+

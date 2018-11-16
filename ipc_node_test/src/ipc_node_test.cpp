@@ -1,3 +1,19 @@
+/* 
+ * This file is part of the HPeC distribution (https://github.com/Kamiwan/HPeC-sources).
+ * Copyright (c) 2018 Lab-STICC Laboratory.
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 /*************************************************************************************
  * File   : ipc_node_test.cpp, file to create easily ros nodes for HPeC
  * Copyright (C) 2018 Lab-STICC Laboratory
@@ -246,10 +262,11 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	* EM, Insert here Other parameters loading
 	**********************************************************************/
 
-	MemoryCoordinator monManageMem("User");
+	/*MemoryCoordinator monManageMem("User");
 	//Read data in the vector
     for(int i = 0; i < 100; ++i)
        std::cout << "MemoryCoordinator value of element" << i << " = " << monManageMem.C3_table_ptr[i] << std::endl;
+	*/
 
 	std_msgs::Float32 elapsed_time;
 	while (workerHandle_ptr->ok()) //Main processing loop
