@@ -34,13 +34,3 @@ void MemoryCoordinator::done_Write(const int &data, const int &app_index)
     done_ptr[app_index] = data;
 }
 
-
-
-
-//EM, TODO: DELETE IT
-void Box::print()
-{
-    std::cout << "length    = " << length << std::endl;
-    std::cout << "breadth   = " << breadth << std::endl;
-    std::cout << "height    = " << height << std::endl;
-}

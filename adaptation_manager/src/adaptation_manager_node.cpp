@@ -376,9 +376,6 @@ int main (int argc, char ** argv)
 	std::cout 	<< "WRITE DATA IN A SHARED MEMORY : " 
 				<< res << std::endl;
 
-	Box maBox(1,2,3);
-	maBox.print();
-
 	MemoryCoordinator monManageMem("Admin");
 	//Insert data in the vector
     for(int i = 0; i < 100; ++i)
