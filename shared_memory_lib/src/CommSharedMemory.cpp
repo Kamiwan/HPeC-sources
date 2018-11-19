@@ -62,7 +62,7 @@ void MemoryCoordinator::Fill_ShMem_done(const std::vector<int> &memory)
 }
 
 
-int  MemoryCoordinator::achievable_Read(int app_index)
+int  MemoryCoordinator::achievable_Read(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(achievable_mutex);
     return achievable_ptr[app_index];
@@ -84,7 +84,7 @@ void MemoryCoordinator::release_hw_Write(int data, int app_index)
     release_hw_ptr[app_index] = data;
 }
 
-int  MemoryCoordinator::done_Read(int app_index)
+int  MemoryCoordinator::done_Read(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(done_mutex);
     return done_ptr[app_index];
@@ -96,7 +96,7 @@ void MemoryCoordinator::done_Write(int data, int app_index)
 }
 
 
-std::vector<int> MemoryCoordinator::C3_table_Read(int app_index)
+std::vector<int> MemoryCoordinator::C3_table_Read(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
     std::vector<int> res;
@@ -122,12 +122,12 @@ void MemoryCoordinator::Update_QoS(int data, int app_index)
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
     C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_QOS] = data;
 }
-int MemoryCoordinator::Read_ExecTime(int app_index)
+int MemoryCoordinator::Read_ExecTime(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
     return C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_TEXEC];
 }
-int MemoryCoordinator::Read_QoS(int app_index)
+int MemoryCoordinator::Read_QoS(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
     return C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_QOS];

@@ -70,9 +70,12 @@ vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config
 											, vector<Bitstream_map> const& bitstream_map);
 void 	activate_desactivate_task(int app_index, std_msgs::Int32 msg);
 void	check_sequence(vector<Map_app_out> & map_config_app);
+void	wait_release(int region_id, vector<Map_app_out> const& prev_map_config_app
+					, MemoryCoordinator	& shared_memory);
 void 	mapping(vector<Map_app_out> const& map_config_app
 				, vector<Map_app_out> const& prev_map_config_app
-				, vector<Bitstream_map> const& bitstream_map);
+				, vector<Bitstream_map> const& bitstream_map
+				, MemoryCoordinator & shared_memory);
 
 /*********** Global variables ***********/ 
 extern vector<Map_app_out> prev_app_output_config;

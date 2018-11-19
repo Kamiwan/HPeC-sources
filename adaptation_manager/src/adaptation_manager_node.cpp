@@ -297,14 +297,21 @@ int main (int argc, char ** argv)
         prev_app_output_config = app_output_config;
     app_output_config = init_output(s); //conversion sortie step -> table 
 
-    mapping(app_output_config, app_output_config, bts_map);
+    MemoryCoordinator monManageMem("Admin");
+    std::vector<int> release_test;
+    for(int i = 0; i < APPLICATION_NUMBER; i++)
+        release_test.push_back(0);
+
+    monManageMem.Fill_ShMem_release_hw(release_test);
+
+    mapping(app_output_config, prev_app_output_config, bts_map, monManageMem);
     
     s = fake_output2();
     if(!first_step)
         prev_app_output_config = app_output_config;
     app_output_config = init_output(s); //conversion sortie step -> table 
 
-    mapping(app_output_config, app_output_config, bts_map);
+    mapping(app_output_config, prev_app_output_config, bts_map, monManageMem);
 
     vector<string> test = readfile(PATH_RELEASE_HW);
     int size = sizeof(test);
@@ -333,7 +340,7 @@ int main (int argc, char ** argv)
     std::cout 	<< "WRITE DATA IN A SHARED MEMORY : " 
                 << res << std::endl;
 
-    MemoryCoordinator monManageMem("Admin");
+    /*################## SHARED MEMORY TESTS BELOW ####################### */
     //Insert data in the vector
     std::vector<int> bidule;
     for(int i = 0; i < C3.size(); i++)
@@ -353,6 +360,7 @@ int main (int argc, char ** argv)
     std::cout << "First try complete " << std::endl;
 
     cout << "EN ATTENTE DE LA FIN DE L APPLICATION" << endl;
+    write_value_file(PATH_RELEASE_HW,"search_landing",0);
     while(read_value_file(PATH_RELEASE_HW,3)==0);
     cout << "ATTENTE TERMINEE!" << endl;
 
@@ -402,12 +410,12 @@ vector<Task_in> read_C3(const char* path)
         res.push_back(tmp);
     }
    
-       cout << "There are "<< file_content.size() << " lines in the file" << endl;
+    cout << "There are "<< file_content.size() << " lines in the file" << endl;
     cout << "There are "<< res.size() << " tasks" << endl;
        for (size_t i = 0; i < res.size(); i++)
     {
-           cout << "Task " << i << " : " <<  endl;
-        res[i].print();
+        //cout << "Task " << i << " : " <<  endl;
+        //res[i].print();
     }
     return res;
 }
@@ -429,12 +437,12 @@ vector<App_timing_qos> read_time_qos(const char* path)
         res.push_back(tmp);
     }
    
-       cout << "There are "<< file_content.size() << " lines in the file" << endl;
+    cout << "There are "<< file_content.size() << " lines in the file" << endl;
     cout << "There are "<< res.size() << " tasks" << endl;
-       for (size_t i = 0; i < res.size(); i++)
+    for (size_t i = 0; i < res.size(); i++)
     {
-           cout << "Task " << i << " : " <<  endl;
-        res[i].print();
+        //cout << "Task " << i << " : " <<  endl;
+        //res[i].print();
     }
     return res;
 }
@@ -511,7 +519,7 @@ vector<Bitstream_map> read_BTS_MAP(const char* path)
     cout << "There are "<< res.size() << " Bitstreams" << endl;
        for (size_t i = 0; i < res.size(); i++)
     {
-           cout << "App MAP " << i << " : " <<  endl;
+        //cout << "App MAP " << i << " : " <<  endl;
         res[i].print();
     }
     return res;
@@ -526,7 +534,10 @@ int find_BTS_addr(vector<Bitstream_map> bts_map, int version_code)
     return -1;
 }
 
-void mapping(vector<Map_app_out> const& map_config_app, vector<Map_app_out> const& prev_map_config_app, vector<Bitstream_map> const& bitstream_map)
+void mapping(vector<Map_app_out> const& map_config_app, 
+            vector<Map_app_out> const& prev_map_config_app, 
+            vector<Bitstream_map> const& bitstream_map, 
+            MemoryCoordinator & shared_memory)
 {
     vector<App_scheduler> scheduler_array = create_scheduler_tab(map_config_app, prev_map_config_app,bitstream_map);
     std_msgs::Int32 msg;
@@ -542,15 +553,14 @@ void mapping(vector<Map_app_out> const& map_config_app, vector<Map_app_out> cons
         cout << "\033[1;31m Disable Task no: " << scheduler_array[i].app_index << "\033[0m"  << endl;
     }
 
-    //EM, Second loop: Ensure that all Tiles that are gonna be configured 
-    //are freed.
+    //EM, Second loop: Ensure that all Tiles that are gonna be configured are freed.
     for(size_t i = 0; i < scheduler_array.size(); i++)
     {
         if(scheduler_array[i].region_id != 0) 
         {
-            cout << "\033[1;31m Wait END of HW Task no: " << scheduler_array[i].app_index << "\033[0m"  << endl;
-            //EM, TODO: CHECK if the previous app on the Tile is done!             
-            cout << "\033[1;31m Wait END of HW Task no: " << scheduler_array[i].app_index << "\033[0m"  << endl;
+            cout << "\033[0;33m Wait END for HW Task no: " << scheduler_array[i].app_index << "\033[0m"  << endl;
+            wait_release(scheduler_array[i].region_id, prev_map_config_app, shared_memory);
+            cout << "\033[1;33m Tile no: " << scheduler_array[i].region_id << " freed !!! \033[0m"  << endl;
         }
     }
 
@@ -593,7 +603,9 @@ void mapping(vector<Map_app_out> const& map_config_app, vector<Map_app_out> cons
 }
 
 
-vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config_app, vector<Map_app_out> const& prev_map_config_app, vector<Bitstream_map> const& bitstream_map)
+vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config_app
+                                            , vector<Map_app_out> const& prev_map_config_app
+                                            , vector<Bitstream_map> const& bitstream_map)
 {
     vector<App_scheduler> res;
     App_scheduler tmp;
@@ -624,6 +636,17 @@ vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config
 }
 
 
+void	wait_release(int region_id, vector<Map_app_out> const& prev_map_config_app
+                    , MemoryCoordinator & shared_memory)
+{
+    for(int app_index = 0; app_index < prev_map_config_app.size(); app_index++)
+        if(prev_map_config_app[app_index].region_id == region_id 
+            && prev_map_config_app[app_index].active == 1)
+            {
+                cout << "Wait THE END of App : " << app_index << endl;
+                //while(!shared_memory.release_hw_Read(app_index));
+            }
+}
 
 
 
