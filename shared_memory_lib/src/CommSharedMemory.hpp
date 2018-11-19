@@ -36,15 +36,21 @@ namespace bip = boost::interprocess;
 
 class MemoryCoordinator {
     public:
-        //EM, Use these functions at least once in order to use the shared memory later
+        /* Fill_ShMem_...
+        Copy a vector of int in the shared memory
+        @param memory the data vector to record
+        /!\ Use these functions at least once with the Admin (see constructor)
+            in order to use the shared memory later
+        */
         void    Fill_ShMem_C3_table(const std::vector<int> &memory);
         void    Fill_ShMem_achievable(const std::vector<int> &memory);
         void    Fill_ShMem_release_hw(const std::vector<int> &memory);
         void    Fill_ShMem_done(const std::vector<int> &memory);
 
-        std::vector<int>    C3_table_Read(int app_index);
-        void                C3_table_Write(const std::vector<int> &data, int app_index);
-
+        /* ..._Read / Write
+        Read or write a single data in the dedicated shared memory
+        @param memory the data vector to record
+        */
         int     achievable_Read(int app_index);
         void    achievable_Write(int data, int app_index);
         int     release_hw_Read(int app_index);
@@ -52,12 +58,19 @@ class MemoryCoordinator {
         int     done_Read(int app_index);
         void    done_Write(int data, int app_index);
 
+        /*C3 contains several parameters per app so Read and Write use an array
+          (vector) instead of a single int
+        */
+        std::vector<int>    C3_table_Read(int app_index);
+        void                C3_table_Write(const std::vector<int> &data, int app_index);
+
+        //Useful single data Read/Write for C3 table 
         void    Update_ExecTime(int data, int app_index);
         void    Update_QoS(int data, int app_index);
         int     Read_ExecTime(int app_index);
         int     Read_QoS(int app_index);
 
-        //EM, constructor for the memory "Admin" OR "User"
+        //Role must be "Admin" OR "User"
         MemoryCoordinator(const std::string &Role)
         {
             if(Role == "Admin")
@@ -164,42 +177,40 @@ class MemoryCoordinator {
         }
 
     private:
-        //EM, Segments to create or open access to the shared memory
+        //Segments to create or open access to the shared memory
         bip::managed_shared_memory C3_table_segment;
         bip::managed_shared_memory achievable_segment;
         bip::managed_shared_memory release_hw_segment;
         bip::managed_shared_memory done_segment;
 
-        //EM, Offset Pointers to access the shared vector
+        //Offset Pointers to access the shared vector
         bip::offset_ptr<SharedVector> C3_table_Vptr;
         bip::offset_ptr<SharedVector> achievable_Vptr;
         bip::offset_ptr<SharedVector> release_hw_Vptr;
         bip::offset_ptr<SharedVector> done_Vptr;
 
-        //EM, Offset Pointers to USE easily the shared memory
+        //Offset Pointers to USE easily the shared memory
         //Use them ONLY when vectors are full of data
         bip::offset_ptr<int> C3_table_ptr;
         bip::offset_ptr<int> achievable_ptr;
         bip::offset_ptr<int> release_hw_ptr;
         bip::offset_ptr<int> done_ptr;
 
-        //EM, Named mutexes to protect the shared memory access
+        //Named mutexes to protect the shared memory access
         //The default constructor is private, instanciation mandatory...
         bip::named_mutex C3_table_mutex{
-				    	bip::open_or_create
-				    	, MUTEX_NAME_C3_SEGMENT};
+                        bip::open_or_create
+                        , MUTEX_NAME_C3_SEGMENT};
         bip::named_mutex achievable_mutex{
-						bip::open_or_create
-						, MUTEX_NAME_ACHIEVABLE_SEGMENT};
+                        bip::open_or_create
+                        , MUTEX_NAME_ACHIEVABLE_SEGMENT};
         bip::named_mutex release_hw_mutex{
-						bip::open_or_create
-						, MUTEX_NAME_RELEASE_SEGMENT};
+                        bip::open_or_create
+                        , MUTEX_NAME_RELEASE_SEGMENT};
         bip::named_mutex done_mutex{
-						bip::open_or_create
-						, MUTEX_NAME_DONE_SEGMENT}; 
+                        bip::open_or_create
+                        , MUTEX_NAME_DONE_SEGMENT}; 
 };
 
 #endif
-
-
 

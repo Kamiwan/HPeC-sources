@@ -5,7 +5,7 @@ motion_estim_imu
 motion_estim_img
 0
 search_landing
-5
+0
 obstacle_avoidance
 0
 t_landing

@@ -283,75 +283,8 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 		start = clock();
 
 		std::cout << "Hello World!" << std::endl;
-		//Open already created shared memory object.
-      	boost::interprocess::shared_memory_object shm (boost::interprocess::open_only
-														,"shared_memory"
-														, boost::interprocess::read_only);
-
-      	//Map the whole shared memory in this process
-     	boost::interprocess::mapped_region region(shm, boost::interprocess::read_only);
-		//Get the address of the region
-		std::cout << "Address of the region = " << region.get_address() << std::endl;
-		//Get the size of the region
-		std::cout << "Size of the region = " << region.get_size() << std::endl;	
-
-     	//Check that memory was initialized to 1
-     	char *mem = static_cast<char*>(region.get_address());
-     	for(std::size_t i = 0; i < region.get_size(); ++i)
-		{
-			//std::cout << "Memory index " << i << " *mem++ == 1" << std::endl;	
-     	   	if(*mem++ != 0)
-			{
-				std::cout << "ERROR " << i << " *mem++ != 1" << std::endl;	
-     	    	exit(1);   //Error checking memory
-			}
-		}
-
-		/*############# Vector in shared memory #############*/
-		boost::interprocess::managed_shared_memory segment(boost::interprocess::open_only,"SharedMemVector");  //segment name
-		typedef boost::interprocess::allocator<int, boost::interprocess::managed_shared_memory::segment_manager> ShmemAllocator;
-		//Alias a vector that uses the previous STL-like allocator
-      	typedef std::vector<int, ShmemAllocator> MyVector;
-      	//Find the vector using the c-string name
-      	MyVector *myvector = segment.find<MyVector>("MyVector").first;
-    	int* ptr = myvector->data();
-
-		boost::interprocess::offset_ptr<MyVector> myvector2 = 
-									segment.find<MyVector>("MyVector").first;
-		boost::interprocess::offset_ptr<int> ptr2 = 
-									myvector2->data();
-
-		std::cout << "Offset_ptr get() = " << myvector2.get() << std::endl;
-		std::cout << "Offset_ptr get_offset() = " << std::hex << myvector2.get_offset() << std::dec << std::endl;
-
-		std::cout << "#### ADDR Offset_ptr = " << std::hex <<(size_t)region.get_address() - (size_t)myvector2.get() << std::dec << " #####" << std::endl;
-
-		boost::interprocess::named_mutex shared_mutex{
-											boost::interprocess::open_only
-											, "mtx"};
 		
-		{ //EM, Mandatory brackets for scoped_lock
-		boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(shared_mutex);
-		//Insert data in the vector
-		//shared_mutex.lock();
-    	for(int i = 0; i < 100; ++i){
-    	  ptr2[i] = i;
-    	}
-		ptr2[3] = 0;
-		//Read data in the vector
-    	/*for(int i = 0; i < 100; ++i){
-    	   std::cout << "Value of shared memory = " << ptr2[i] << std::endl;	
-    	}*/
-		 std::cout << "Value of shared memory = " << ptr2[50] << std::endl;
-		//shared_mutex.unlock();
-		}
-
-		/*############# Vector in shared memory #############*/
-
-
-
-
-
+		
 
 		//EM, Compute execution time
 		ends = clock();

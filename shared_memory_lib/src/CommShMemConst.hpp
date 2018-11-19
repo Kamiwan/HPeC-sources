@@ -18,7 +18,7 @@
  * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
  * Created on: November 12, 2018
  * 
- * Defines and include for MemoryCoordinator class.
+ * Defines and includes for MemoryCoordinator class.
  * Allow HPeC ROS nodes to communicate using shared memory, the fastest communication
  *************************************************************************************/
 
