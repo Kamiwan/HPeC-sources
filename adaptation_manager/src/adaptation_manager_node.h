@@ -27,14 +27,6 @@
 #include <string>
 
 #include <boost/thread.hpp>
-#include <boost/interprocess/shared_memory_object.hpp>
-#include <boost/interprocess/mapped_region.hpp>
-#include <boost/interprocess/managed_shared_memory.hpp>
-#include <boost/interprocess/containers/vector.hpp>
-#include <boost/interprocess/allocators/allocator.hpp>
-#include <boost/interprocess/sync/named_mutex.hpp>
-#include <boost/interprocess/sync/scoped_lock.hpp>
-
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
@@ -56,30 +48,31 @@ extern"C"{
 #include "reconfiguration_automate.h"
 #include "reconfig.h"
 
-#include "CommSharedMemory.hpp" //EM, THE CMAKE FOUND IT! Let's use it!
+#include "CommSharedMemory.hpp" //EM, shared_memory_lib header
 
 using namespace std; 
 using namespace cv;
 
-
-
 void achievable_tab(Step_out s); //EM, TODO: CHANGE IT OR DELETE IT
-
 bool verify(Step_out s);
 void publish_to_MM(bool a,Step_out s);
 void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
 
-
-bool 					compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3, Step_in e);
-int						find_BTS_addr(vector<Bitstream_map> bts_map, int version_code);
+bool 	compare(std::vector<App_timing_qos> time_qos
+				, std::vector<Task_in> C3, Step_in e);
+int		find_BTS_addr(vector<Bitstream_map> bts_map, int version_code);
 vector<Bitstream_map> 	read_BTS_MAP(const char* path);
 vector<Task_in> 		read_C3(const char* path);
 vector<App_timing_qos> 	read_time_qos(const char* path);
 vector<Map_app_out>  	init_output(Step_out const& step_output);
-vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map);
-void 					activate_desactivate_task(int app_index, std_msgs::Int32 msg);
-void					check_sequence(vector<Map_app_out> & map_config_app);
-void 					mapping(vector<Map_app_out> const& map_config_app, vector<Bitstream_map> const& bitstream_map);
+vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config_app
+											, vector<Map_app_out> const& prev_map_config_app
+											, vector<Bitstream_map> const& bitstream_map);
+void 	activate_desactivate_task(int app_index, std_msgs::Int32 msg);
+void	check_sequence(vector<Map_app_out> & map_config_app);
+void 	mapping(vector<Map_app_out> const& map_config_app
+				, vector<Map_app_out> const& prev_map_config_app
+				, vector<Bitstream_map> const& bitstream_map);
 
 /*********** Global variables ***********/ 
 extern vector<Map_app_out> prev_app_output_config;

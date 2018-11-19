@@ -75,7 +75,7 @@ struct Step_in
 //*********** sortie automate
 struct Task_out
 {  
-    int act; // 1 : active, 0: stop 
+    int act; 	 // 1 : active, 0: stop 
     int version; // -1, (SW =>) 0,  (HW/tile =>) 1, 2, 3
 
     int code;

@@ -35,13 +35,6 @@
 #include <ros/callback_queue.h>
 
 #include <boost/thread.hpp>
-#include <boost/interprocess/shared_memory_object.hpp>
-#include <boost/interprocess/mapped_region.hpp>
-#include <boost/interprocess/managed_shared_memory.hpp>
-#include <boost/interprocess/containers/vector.hpp>
-#include <boost/interprocess/allocators/allocator.hpp>
-#include <boost/interprocess/sync/named_mutex.hpp>
-#include <boost/interprocess/sync/scoped_lock.hpp>
 
 #include <stdio.h>
 #include <string.h>
@@ -262,12 +255,12 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	* EM, Insert here Other parameters loading
 	**********************************************************************/
 
-	MemoryCoordinator monManageMem("User");
+	MemoryCoordinator shMemAccess("User");
 	//Read data in the vector
 	std::vector<int> machin;
     for(int i = 0; i < 11; i++)
 	{
-		machin = monManageMem.C3_table_Read(i);
+		machin = shMemAccess.C3_table_Read(i);
 		for(int j = 0; j < 8; j++)
        		std::cout << "App " << i << " value [" << j << "] = " << machin[j] << std::endl;
 	}

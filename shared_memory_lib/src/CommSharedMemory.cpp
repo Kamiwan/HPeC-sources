@@ -30,7 +30,7 @@ void MemoryCoordinator::Fill_ShMem_C3_table(const std::vector<int> &memory)
     for(size_t i = 0; i < memory.size(); i++){
         C3_table_Vptr->push_back(memory[i]);
     }
-    //Enable user friendly offset pointer
+    //Enable user friendly offset pointer for Admin
     C3_table_ptr = C3_table_Vptr->data();
 }
 void MemoryCoordinator::Fill_ShMem_achievable(const std::vector<int> &memory)
@@ -39,7 +39,7 @@ void MemoryCoordinator::Fill_ShMem_achievable(const std::vector<int> &memory)
     for(size_t i = 0; i < memory.size(); i++){
         achievable_Vptr->push_back(memory[i]);
     }
-    //Enable user friendly offset pointer
+    //Enable user friendly offset pointer for Admin
     achievable_ptr = achievable_Vptr->data();
 }
 void MemoryCoordinator::Fill_ShMem_release_hw(const std::vector<int> &memory)
@@ -48,7 +48,7 @@ void MemoryCoordinator::Fill_ShMem_release_hw(const std::vector<int> &memory)
     for(size_t i = 0; i < memory.size(); i++){
         release_hw_Vptr->push_back(memory[i]);
     }
-    //Enable user friendly offset pointer
+    //Enable user friendly offset pointer for Admin
     release_hw_ptr = release_hw_Vptr->data();
 }
 void MemoryCoordinator::Fill_ShMem_done(const std::vector<int> &memory)
@@ -59,22 +59,6 @@ void MemoryCoordinator::Fill_ShMem_done(const std::vector<int> &memory)
     }
     //Enable user friendly offset pointer for Admin
     done_ptr = done_Vptr->data();
-}
-
-
-std::vector<int> MemoryCoordinator::C3_table_Read(int app_index)
-{
-    bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
-    std::vector<int> res;
-    for(int i = 0; i < C3_NB_ATTRIBUTES; i++)
-        res.push_back(C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+i]);
-    return res;
-}
-void MemoryCoordinator::C3_table_Write(const std::vector<int> &data, int app_index)
-{
-    bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
-    for(int i = 0; i < C3_NB_ATTRIBUTES; i++)
-        C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+i] = data[i];
 }
 
 
@@ -109,6 +93,22 @@ void MemoryCoordinator::done_Write(int data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(done_mutex);
     done_ptr[app_index] = data;
+}
+
+
+std::vector<int> MemoryCoordinator::C3_table_Read(int app_index)
+{
+    bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
+    std::vector<int> res;
+    for(int i = 0; i < C3_NB_ATTRIBUTES; i++)
+        res.push_back(C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+i]);
+    return res;
+}
+void MemoryCoordinator::C3_table_Write(const std::vector<int> &data, int app_index)
+{
+    bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
+    for(int i = 0; i < C3_NB_ATTRIBUTES; i++)
+        C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+i] = data[i];
 }
 
 

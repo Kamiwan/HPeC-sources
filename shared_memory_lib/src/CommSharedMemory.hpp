@@ -19,8 +19,13 @@
  * Created on: November 12, 2018
  * 
  * MemoryCoordinator class definition.
- * Allow HPeC ROS nodes to communicate using shared memory, the fastest communication
+ * Allow HPeC ROS nodes to communicate using shared memory, the fastest communication.
  * Boost InterProcess library used.
+ * 
+ * When you use this class to enable IPC, one of your target application must
+ * create an object of this class as an "Admin" with the main constructor.
+ * 
+ * IPC = Inter Process Communication
  *************************************************************************************/
 
 #ifndef COMM_SHARED_MEMORY_HPP
@@ -37,7 +42,7 @@ namespace bip = boost::interprocess;
 class MemoryCoordinator {
     public:
         /* Fill_ShMem_...
-        Copy a vector of int in the shared memory
+        Copy a vector of int in the dedicated shared memory
         @param memory the data vector to record
         /!\ Use these functions at least once with the Admin (see constructor)
             in order to use the shared memory later
@@ -47,9 +52,11 @@ class MemoryCoordinator {
         void    Fill_ShMem_release_hw(const std::vector<int> &memory);
         void    Fill_ShMem_done(const std::vector<int> &memory);
 
-        /* ..._Read / Write
+        /* ..._Read/Write
         Read or write a single data in the dedicated shared memory
-        @param memory the data vector to record
+        @param app_index    the number associated to the app
+        @param data         the data to write (Write)
+        @return             the data stored (Read)
         */
         int     achievable_Read(int app_index);
         void    achievable_Write(int data, int app_index);
@@ -70,7 +77,8 @@ class MemoryCoordinator {
         int     Read_ExecTime(int app_index);
         int     Read_QoS(int app_index);
 
-        //Role must be "Admin" OR "User"
+        //Main Class Constructor
+        //!\ Role must be "Admin" OR "User"
         MemoryCoordinator(const std::string &Role)
         {
             if(Role == "Admin")
