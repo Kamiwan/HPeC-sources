@@ -58,39 +58,84 @@ int  MemoryCoordinator::achievable_Read(int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(achievable_mutex);
     achievable_ptr = achievable_Vptr->data(); //Always update offset_ptr before use it
-    return achievable_ptr[app_index];
+    
+    if(achievable_ptr) //If shared memory contains data, we proceed
+    {
+        return achievable_ptr[app_index];
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to achievable_ptr Shared Vector" << std::endl;
+        return -1;
+    }
 }
 void MemoryCoordinator::achievable_Write(int data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(achievable_mutex);
     achievable_ptr = achievable_Vptr->data(); //Always update offset_ptr before use it
-    achievable_ptr[app_index] = data;
+    
+    if(achievable_ptr) //If shared memory contains data, we proceed
+    {
+        achievable_ptr[app_index] = data;
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to achievable Shared Vector" << std::endl;
+    }
 }
 
 int  MemoryCoordinator::release_hw_Read(int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(release_hw_mutex);
     release_hw_ptr = release_hw_Vptr->data(); //Always update offset_ptr before use it
-    return release_hw_ptr[app_index];
+   
+    if(release_hw_ptr) //If shared memory contains data, we proceed
+    {
+        return release_hw_ptr[app_index];
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to release_hw Shared Vector" << std::endl;
+        return -1;
+    }
 }
 void MemoryCoordinator::release_hw_Write(int data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(release_hw_mutex);
     release_hw_ptr = release_hw_Vptr->data(); //Always update offset_ptr before use it
-    release_hw_ptr[app_index] = data;
+    
+    if(release_hw_ptr) //If shared memory contains data, we proceed
+    {
+        release_hw_ptr[app_index] = data;
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to release_hw Shared Vector" << std::endl;
+    }
 }
 
 int  MemoryCoordinator::done_Read(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(done_mutex);
     done_ptr = done_Vptr->data(); //Always update offset_ptr before use it
-    return done_ptr[app_index];
+    
+    if(done_ptr) //If shared memory contains data, we proceed
+    {
+        return done_ptr[app_index];
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to done Shared Vector" << std::endl;
+        return -1;
+    }
 }
 void MemoryCoordinator::done_Write(int data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(done_mutex);
     done_ptr = done_Vptr->data(); //Always update offset_ptr before use it
-    done_ptr[app_index] = data;
+    
+    if(done_ptr) //If shared memory contains data, we proceed
+    {
+        done_ptr[app_index] = data;
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to done Shared Vector" << std::endl;
+    }
 }
 
 
@@ -99,16 +144,31 @@ std::vector<int> MemoryCoordinator::C3_table_Read(int app_index)
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex); 
     C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
     std::vector<int> res;
-    for(int i = 0; i < C3_NB_ATTRIBUTES; i++)
-        res.push_back(C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+i]);
+
+    if(C3_table_ptr) //If shared memory contains data, we proceed
+    {
+        for(int i = 0; i < C3_NB_ATTRIBUTES; i++)
+            res.push_back(C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+i]);
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to C3_table Shared Vector" << std::endl;
+    }
+
     return res;
 }
 void MemoryCoordinator::C3_table_Write(const std::vector<int> &data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
     C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
-    for(int i = 0; i < C3_NB_ATTRIBUTES; i++)
-        C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+i] = data[i];
+    
+    if(C3_table_ptr) //If shared memory contains data, we proceed
+    {
+        for(int i = 0; i < C3_NB_ATTRIBUTES; i++)
+            C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+i] = data[i];
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to C3_table Shared Vector" << std::endl;
+    }
 }
 
 
@@ -116,25 +176,56 @@ void MemoryCoordinator::Update_ExecTime(int data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
     C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
-    C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_TEXEC] = data;
+
+    if(C3_table_ptr) //If shared memory contains data, we proceed
+    {
+        C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_TEXEC] = data;
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to C3_table Shared Vector" << std::endl;
+    }
 }
 void MemoryCoordinator::Update_QoS(int data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
     C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
-    C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_QOS] = data;
+
+    if(C3_table_ptr) //If shared memory contains data, we proceed
+    {
+        C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_QOS] = data;
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to C3_table Shared Vector" << std::endl;
+    }
 }
 int MemoryCoordinator::Read_ExecTime(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
     C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
-    return C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_TEXEC];
+
+    if(C3_table_ptr) //If shared memory contains data, we proceed
+    {
+        return C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_TEXEC];
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to C3_table Shared Vector" << std::endl;
+        return -1;
+    }
+
 }
 int MemoryCoordinator::Read_QoS(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
     C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
-    return C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_QOS];
+
+    if(C3_table_ptr) //If shared memory contains data, we proceed
+    {
+        return C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_QOS];
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to C3_table Shared Vector" << std::endl;
+        return -1;
+    }
 }
 
 

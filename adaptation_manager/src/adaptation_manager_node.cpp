@@ -321,7 +321,7 @@ int main (int argc, char ** argv)
 
     mapping(app_output_config, prev_app_output_config, bts_map, monManageMem);
     
-    std::cout << "Press a key to continue..." << std::endl;
+    std::cout << "Press Enter to continue..." << std::endl;
     cin.get();
 
     s = fake_output2();
@@ -349,10 +349,16 @@ int main (int argc, char ** argv)
     std::cout 	<< "READ DATA IN A FILE : " 
                 << res << std::endl;
 
+
     start = clock();
+        int foo = monManageMem.release_hw_Read(2);
+    ends = clock();
+    res =  double(ends - start) * 1000 / CLOCKS_PER_SEC;
+    std::cout 	<< "READ DATA IN A SHARED MEMORY : " 
+                << res << std::endl;
 
-    //EM, put ShMem read
-
+    start = clock();
+        monManageMem.release_hw_Write(0,2);
     ends = clock();
     res =  double(ends - start) * 1000 / CLOCKS_PER_SEC;
     std::cout 	<< "WRITE DATA IN A SHARED MEMORY : " 
@@ -362,7 +368,7 @@ int main (int argc, char ** argv)
     //Insert data in the vector
     std::cout << "First try complete " << std::endl;
 
-    std::cout << "Press a key to continue..." << std::endl;
+    std::cout << "Press a Enter to continue..." << std::endl;
     cin.get();
 
     
