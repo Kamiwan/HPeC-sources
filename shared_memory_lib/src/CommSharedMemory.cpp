@@ -26,11 +26,9 @@
 
 void MemoryCoordinator::Fill_ShMem_C3_table(const std::vector<int> &memory)
 {
-    {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);   
     for(size_t i = 0; i < memory.size(); i++){
         C3_table_Vptr->push_back(memory[i]);
-    }
     }
 }
 void MemoryCoordinator::Fill_ShMem_achievable(const std::vector<int> &memory)
@@ -42,11 +40,9 @@ void MemoryCoordinator::Fill_ShMem_achievable(const std::vector<int> &memory)
 }
 void MemoryCoordinator::Fill_ShMem_release_hw(const std::vector<int> &memory)
 {
-    {
     bip::scoped_lock<bip::named_mutex> lock(release_hw_mutex);
     for(size_t i = 0; i < memory.size(); i++){
         release_hw_Vptr->push_back(memory[i]);
-    }
     }
 }
 void MemoryCoordinator::Fill_ShMem_done(const std::vector<int> &memory)
@@ -73,19 +69,15 @@ void MemoryCoordinator::achievable_Write(int data, int app_index)
 
 int  MemoryCoordinator::release_hw_Read(int app_index)
 {
-    {
     bip::scoped_lock<bip::named_mutex> lock(release_hw_mutex);
     release_hw_ptr = release_hw_Vptr->data(); //Always update offset_ptr before use it
     return release_hw_ptr[app_index];
-    }
 }
 void MemoryCoordinator::release_hw_Write(int data, int app_index)
 {
-    {
     bip::scoped_lock<bip::named_mutex> lock(release_hw_mutex);
     release_hw_ptr = release_hw_Vptr->data(); //Always update offset_ptr before use it
     release_hw_ptr[app_index] = data;
-    }
 }
 
 int  MemoryCoordinator::done_Read(int app_index) 
