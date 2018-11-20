@@ -26,12 +26,12 @@
 
 void MemoryCoordinator::Fill_ShMem_C3_table(const std::vector<int> &memory)
 {
+    {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);   
     for(size_t i = 0; i < memory.size(); i++){
         C3_table_Vptr->push_back(memory[i]);
     }
-    //Enable user friendly offset pointer for Admin
-    C3_table_ptr = C3_table_Vptr->data();
+    }
 }
 void MemoryCoordinator::Fill_ShMem_achievable(const std::vector<int> &memory)
 {
@@ -39,17 +39,15 @@ void MemoryCoordinator::Fill_ShMem_achievable(const std::vector<int> &memory)
     for(size_t i = 0; i < memory.size(); i++){
         achievable_Vptr->push_back(memory[i]);
     }
-    //Enable user friendly offset pointer for Admin
-    achievable_ptr = achievable_Vptr->data();
 }
 void MemoryCoordinator::Fill_ShMem_release_hw(const std::vector<int> &memory)
 {
+    {
     bip::scoped_lock<bip::named_mutex> lock(release_hw_mutex);
     for(size_t i = 0; i < memory.size(); i++){
         release_hw_Vptr->push_back(memory[i]);
     }
-    //Enable user friendly offset pointer for Admin
-    release_hw_ptr = release_hw_Vptr->data();
+    }
 }
 void MemoryCoordinator::Fill_ShMem_done(const std::vector<int> &memory)
 {
@@ -57,48 +55,57 @@ void MemoryCoordinator::Fill_ShMem_done(const std::vector<int> &memory)
     for(size_t i = 0; i < memory.size(); i++){
         done_Vptr->push_back(memory[i]);
     }
-    //Enable user friendly offset pointer for Admin
-    done_ptr = done_Vptr->data();
 }
 
 
 int  MemoryCoordinator::achievable_Read(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(achievable_mutex);
+    achievable_ptr = achievable_Vptr->data(); //Always update offset_ptr before use it
     return achievable_ptr[app_index];
 }
 void MemoryCoordinator::achievable_Write(int data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(achievable_mutex);
+    achievable_ptr = achievable_Vptr->data(); //Always update offset_ptr before use it
     achievable_ptr[app_index] = data;
 }
 
 int  MemoryCoordinator::release_hw_Read(int app_index)
 {
+    {
     bip::scoped_lock<bip::named_mutex> lock(release_hw_mutex);
+    release_hw_ptr = release_hw_Vptr->data(); //Always update offset_ptr before use it
     return release_hw_ptr[app_index];
+    }
 }
 void MemoryCoordinator::release_hw_Write(int data, int app_index)
 {
+    {
     bip::scoped_lock<bip::named_mutex> lock(release_hw_mutex);
+    release_hw_ptr = release_hw_Vptr->data(); //Always update offset_ptr before use it
     release_hw_ptr[app_index] = data;
+    }
 }
 
 int  MemoryCoordinator::done_Read(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(done_mutex);
+    done_ptr = done_Vptr->data(); //Always update offset_ptr before use it
     return done_ptr[app_index];
 }
 void MemoryCoordinator::done_Write(int data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(done_mutex);
+    done_ptr = done_Vptr->data(); //Always update offset_ptr before use it
     done_ptr[app_index] = data;
 }
 
 
 std::vector<int> MemoryCoordinator::C3_table_Read(int app_index) 
 {
-    bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
+    bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex); 
+    C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
     std::vector<int> res;
     for(int i = 0; i < C3_NB_ATTRIBUTES; i++)
         res.push_back(C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+i]);
@@ -107,6 +114,7 @@ std::vector<int> MemoryCoordinator::C3_table_Read(int app_index)
 void MemoryCoordinator::C3_table_Write(const std::vector<int> &data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
+    C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
     for(int i = 0; i < C3_NB_ATTRIBUTES; i++)
         C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+i] = data[i];
 }
@@ -115,21 +123,25 @@ void MemoryCoordinator::C3_table_Write(const std::vector<int> &data, int app_ind
 void MemoryCoordinator::Update_ExecTime(int data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
+    C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
     C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_TEXEC] = data;
 }
 void MemoryCoordinator::Update_QoS(int data, int app_index)
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
+    C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
     C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_QOS] = data;
 }
 int MemoryCoordinator::Read_ExecTime(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
+    C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
     return C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_TEXEC];
 }
 int MemoryCoordinator::Read_QoS(int app_index) 
 {
     bip::scoped_lock<bip::named_mutex> lock(C3_table_mutex);
+    C3_table_ptr = C3_table_Vptr->data(); //Always update offset_ptr before use it
     return C3_table_ptr[(app_index*C3_NB_ATTRIBUTES)+C3_CURRENT_QOS];
 }
 

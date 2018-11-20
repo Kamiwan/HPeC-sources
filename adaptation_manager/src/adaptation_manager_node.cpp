@@ -300,12 +300,30 @@ int main (int argc, char ** argv)
     MemoryCoordinator monManageMem("Admin");
     std::vector<int> release_test;
     for(int i = 0; i < APPLICATION_NUMBER; i++)
-        release_test.push_back(0);
+        release_test.push_back(1);
+        std::vector<int> bidule;
+    for(int i = 0; i < C3.size(); i++)
+    {
+        bidule.push_back(C3[i].req);
+        bidule.push_back(C3[i].texec);
+        bidule.push_back(C3[i].mintexec);
+        bidule.push_back(C3[i].maxtexec);
+        bidule.push_back(C3[i].qos);
+        bidule.push_back(C3[i].minqos);
+        bidule.push_back(C3[i].maxqos);
+        bidule.push_back(C3[i].priority);
+    }
 
+    std::cout << "Fill shared C3 " << std::endl;
+    monManageMem.Fill_ShMem_C3_table(bidule);
+    std::cout << "Fill shared release HW " << std::endl;
     monManageMem.Fill_ShMem_release_hw(release_test);
 
     mapping(app_output_config, prev_app_output_config, bts_map, monManageMem);
     
+    std::cout << "Press a key to continue..." << std::endl;
+    cin.get();
+
     s = fake_output2();
     if(!first_step)
         prev_app_output_config = app_output_config;
@@ -342,27 +360,10 @@ int main (int argc, char ** argv)
 
     /*################## SHARED MEMORY TESTS BELOW ####################### */
     //Insert data in the vector
-    std::vector<int> bidule;
-    for(int i = 0; i < C3.size(); i++)
-    {
-        bidule.push_back(C3[i].req);
-        bidule.push_back(C3[i].texec);
-        bidule.push_back(C3[i].mintexec);
-        bidule.push_back(C3[i].maxtexec);
-        bidule.push_back(C3[i].qos);
-        bidule.push_back(C3[i].minqos);
-        bidule.push_back(C3[i].maxqos);
-        bidule.push_back(C3[i].priority);
-    }
-
-    monManageMem.Fill_ShMem_C3_table(bidule);
-
     std::cout << "First try complete " << std::endl;
 
-    cout << "EN ATTENTE DE LA FIN DE L APPLICATION" << endl;
-    write_value_file(PATH_RELEASE_HW,"search_landing",0);
-    while(read_value_file(PATH_RELEASE_HW,3)==0);
-    cout << "ATTENTE TERMINEE!" << endl;
+    std::cout << "Press a key to continue..." << std::endl;
+    cin.get();
 
     
 
@@ -556,11 +557,9 @@ void mapping(vector<Map_app_out> const& map_config_app,
     //EM, Second loop: Ensure that all Tiles that are gonna be configured are freed.
     for(size_t i = 0; i < scheduler_array.size(); i++)
     {
-        if(scheduler_array[i].region_id != 0) 
+        if(scheduler_array[i].region_id != 0 && scheduler_array[i].active ==1) 
         {
-            cout << "\033[0;33m Wait END for HW Task no: " << scheduler_array[i].app_index << "\033[0m"  << endl;
-            wait_release(scheduler_array[i].region_id, prev_map_config_app, shared_memory);
-            cout << "\033[1;33m Tile no: " << scheduler_array[i].region_id << " freed !!! \033[0m"  << endl;
+            wait_release(scheduler_array[i].app_index, scheduler_array[i].region_id, prev_map_config_app, shared_memory);
         }
     }
 
@@ -636,15 +635,17 @@ vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config
 }
 
 
-void	wait_release(int region_id, vector<Map_app_out> const& prev_map_config_app
+void	wait_release(int app, int region_id, vector<Map_app_out> const& prev_map_config_app
                     , MemoryCoordinator & shared_memory)
 {
     for(int app_index = 0; app_index < prev_map_config_app.size(); app_index++)
         if(prev_map_config_app[app_index].region_id == region_id 
             && prev_map_config_app[app_index].active == 1)
             {
-                cout << "Wait THE END of App : " << app_index << endl;
-                //while(!shared_memory.release_hw_Read(app_index));
+                cout << "\033[0;33m Wait END for HW Task no: " << app << "\033[0m"  << endl;
+                cout << "SIGNAL WAIT App : " << app_index << endl;
+                while(!shared_memory.release_hw_Read(app_index));
+                cout << "\033[1;33m Tile no: " << region_id  << " freed !!! \033[0m"  << endl;
             }
 }
 
