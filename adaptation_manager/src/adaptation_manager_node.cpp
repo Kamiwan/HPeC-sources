@@ -227,6 +227,8 @@ int main (int argc, char ** argv)
     ros::init(argc, argv, "adaptation_manager_node");
     ros::NodeHandle nh;
 
+    ROS_INFO("[ADAPTATION MANAGER] [RUNNING] \n");
+
      //contrast_img_pub;
     contrast_img_pub= boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/contrast_img_mgt_topic", 1));
@@ -261,7 +263,6 @@ int main (int argc, char ** argv)
     tracking_pub= boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/tracking_mgt_topic", 1));
 
-    //***************************envoie de liste des taches nn realisables
     achievable_pub= boost::make_shared<ros::Publisher>( 
                         nh.advertise<std_msgs::Int32>("/achievable_topic", 1000));
 
@@ -270,112 +271,35 @@ int main (int argc, char ** argv)
                     
     ros::Publisher cpu_pub;
         cpu_pub = nh.advertise<std_msgs::Float32>("/cpu_load_topic", 1);				    
-    //*********************				  
-
-    
     //*****************Ghizlane BOUDABZA
     std_msgs::Float32 load;
 
-    Step_in e0,e;
-    Step_out s;
-    Step_in* in;
+    //EM, Data structure setup
+    Step_in     automaton_in;
+    Step_out    automaton_out;
+    vector<Task_in>         C3      = read_C3(PATH_TABLE_C3);
+    vector<Bitstream_map>   bts_map = read_BTS_MAP(PATH_MAP_TAB);
+    //EM, Shared Memory setup
+    MemoryCoordinator shMemAccess("Admin");
+    sh_mem_setup(shMemAccess, C3);
 
-    ROS_INFO("[ADAPTATION MANAGER] [RUNNING] \n");
+    //EM, First Step use with start configuration
+    automaton_out = do1(automaton_in); //Call reconfiguration automaton
 
-    vector<Task_in> C3 = read_C3(PATH_TABLE_C3);
-    e.init();
-    e.load_C3(C3); 
-    e.raz_timing_qos();
-
-    vector<App_timing_qos> time_qos_data;
-    vector<Bitstream_map> bts_map = read_BTS_MAP(PATH_MAP_TAB);
-
-    /*############################## TEST CODE ##############################*/
-    s = do1(e);
-    publish_to_MM(verify(s),s);  //alerter le niveau mission si il existe des taches nn réalisables
-    if(!first_step)
-        prev_app_output_config = app_output_config;
-    app_output_config = init_output(s); //conversion sortie step -> table 
-
-    MemoryCoordinator monManageMem("Admin");
-    std::vector<int> release_test;
-    for(int i = 0; i < APPLICATION_NUMBER; i++)
-        release_test.push_back(1);
-        std::vector<int> bidule;
-    for(int i = 0; i < C3.size(); i++)
+    //EM, For the 1st Step, init each attributes of prev_config to 0 
+    Map_app_out empty_map;
+    empty_map.init();
+    for(size_t i = 0; i < APPLICATION_NUMBER; i++)
     {
-        bidule.push_back(C3[i].req);
-        bidule.push_back(C3[i].texec);
-        bidule.push_back(C3[i].mintexec);
-        bidule.push_back(C3[i].maxtexec);
-        bidule.push_back(C3[i].qos);
-        bidule.push_back(C3[i].minqos);
-        bidule.push_back(C3[i].maxqos);
-        bidule.push_back(C3[i].priority);
-    }
+        prev_app_output_config.push_back(empty_map);
+    }        
+    app_output_config = init_output(automaton_out); //convert automaton_out
 
-    std::cout << "Fill shared C3 " << std::endl;
-    monManageMem.Fill_ShMem_C3_table(bidule);
-    std::cout << "Fill shared release HW " << std::endl;
-    monManageMem.Fill_ShMem_release_hw(release_test);
 
-    mapping(app_output_config, prev_app_output_config, bts_map, monManageMem);
+    task_mapping(app_output_config, prev_app_output_config, bts_map, shMemAccess);
     
-    std::cout << "Press Enter to continue..." << std::endl;
-    cin.get();
-
-    s = fake_output2();
-    if(!first_step)
-        prev_app_output_config = app_output_config;
-    app_output_config = init_output(s); //conversion sortie step -> table 
-
-    mapping(app_output_config, prev_app_output_config, bts_map, monManageMem);
-
-    vector<string> test = readfile(PATH_RELEASE_HW);
-    int size = sizeof(test);
-    cout << "SIZEOF simple = " << size << endl;
-    cout << "String vector simple = " << sizeof(std::vector<string>) << endl;
-    cout << "String size = " << test[0].size() << endl;
-    for(size_t i = 0; i < test.size(); i++)	
-        cout << "Size of index" << i << " = " << sizeof(test[i]) << endl;
-    
-    clock_t start, ends;
-    start = clock();
-
-    read_value_file(PATH_RELEASE_HW,3);
-
-    ends = clock();
-    double res = double(ends - start) * 1000 / CLOCKS_PER_SEC;;
-    std::cout 	<< "READ DATA IN A FILE : " 
-                << res << std::endl;
-
-
-    start = clock();
-        int foo = monManageMem.release_hw_Read(2);
-    ends = clock();
-    res =  double(ends - start) * 1000 / CLOCKS_PER_SEC;
-    std::cout 	<< "READ DATA IN A SHARED MEMORY : " 
-                << res << std::endl;
-
-    start = clock();
-        monManageMem.release_hw_Write(0,2);
-    ends = clock();
-    res =  double(ends - start) * 1000 / CLOCKS_PER_SEC;
-    std::cout 	<< "WRITE DATA IN A SHARED MEMORY : " 
-                << res << std::endl;
-
-    /*################## SHARED MEMORY TESTS BELOW ####################### */
-    //Insert data in the vector
-    std::cout << "First try complete " << std::endl;
-
-    std::cout << "Press a Enter to continue..." << std::endl;
-    cin.get();
-
-    
-
-    /*############################## TEST CODE ##############################*/
-
     /* MAIN LOOP
+    vector<App_timing_qos> time_qos_data;
     ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
     while(ros::ok())
     { 
@@ -389,7 +313,10 @@ int main (int argc, char ** argv)
         {
             e.update_timing_qos(time_qos_data);	
             if(!compare(time_qos_data,C3))
+            {
                 do1(e); 
+                publish_to_MM(verify(automaton_out),automaton_out);  
+            }
         }
         loop_rate.sleep();
     }
@@ -541,7 +468,7 @@ int find_BTS_addr(vector<Bitstream_map> bts_map, int version_code)
     return -1;
 }
 
-void mapping(vector<Map_app_out> const& map_config_app, 
+void task_mapping(vector<Map_app_out> const& map_config_app, 
             vector<Map_app_out> const& prev_map_config_app, 
             vector<Bitstream_map> const& bitstream_map, 
             MemoryCoordinator & shared_memory)
@@ -651,11 +578,134 @@ void	wait_release(int app, int region_id, vector<Map_app_out> const& prev_map_co
                 cout << "\033[0;33m Wait END for HW Task no: " << app << "\033[0m"  << endl;
                 cout << "SIGNAL WAIT App : " << app_index << endl;
                 while(!shared_memory.release_hw_Read(app_index));
-                cout << "\033[1;33m Tile no: " << region_id  << " freed !!! \033[0m"  << endl;
+                cout << "\033[1;33m Tile no: " << region_id  << " released !!! \033[0m"  << endl;
             }
 }
 
 
+void compare_data_access_speed(MemoryCoordinator & shared_memory)
+{
+    clock_t start, ends;
+    start = clock();
+        read_value_file(PATH_RELEASE_HW,3);
+    ends = clock();
+    double res = double(ends - start) * 1000 / CLOCKS_PER_SEC;
+    std::cout 	<< "READ DATA IN A FILE : " 
+                << res << std::endl;
+
+    start = clock();
+        int foo = shared_memory.release_hw_Read(2);
+    ends = clock();
+    res =  double(ends - start) * 1000 / CLOCKS_PER_SEC;
+    std::cout 	<< "READ DATA IN A SHARED MEMORY : " 
+                << res << std::endl;
+
+    start = clock();
+        shared_memory.release_hw_Write(0,2);
+    ends = clock();
+    res =  double(ends - start) * 1000 / CLOCKS_PER_SEC;
+    std::cout 	<< "WRITE DATA IN A SHARED MEMORY : " 
+                << res << std::endl;
+}
+
+void sh_mem_setup(MemoryCoordinator & shared_memory, vector<Task_in> C3)
+{
+    std::vector<int> achievable_init;
+    std::vector<int> release_hw_init;
+    std::vector<int> done_init;
+    for(int i = 0; i < APPLICATION_NUMBER; i++)
+    {
+        achievable_init.push_back(1);   //EM, everything achievable by default
+        release_hw_init.push_back(1);   //  everything released by default
+        done_init.push_back(0);         //  nothing done by default
+    }
+    std::vector<int> Sh_C3_init;
+    for(int i = 0; i < C3.size(); i++)
+    {
+        Sh_C3_init.push_back(C3[i].req);
+        Sh_C3_init.push_back(C3[i].texec);
+        Sh_C3_init.push_back(C3[i].mintexec);
+        Sh_C3_init.push_back(C3[i].maxtexec);
+        Sh_C3_init.push_back(C3[i].qos);
+        Sh_C3_init.push_back(C3[i].minqos);
+        Sh_C3_init.push_back(C3[i].maxqos);
+        Sh_C3_init.push_back(C3[i].priority);
+    }
+    shared_memory.Fill_ShMem_C3_table(Sh_C3_init);
+    shared_memory.Fill_ShMem_achievable(achievable_init);
+    shared_memory.Fill_ShMem_release_hw(release_hw_init);
+    shared_memory.Fill_ShMem_done(done_init);
+    std::cout << "Fill shared memories, done! " << std::endl;
+}
+
+vector<Task_in>	sh_mem_read_C3(MemoryCoordinator & shared_memory)
+{
+    vector<Task_in> res;
+    Task_in tmp;
+    vector<int> shared_data;
+    for(int i=0; i<APPLICATION_NUMBER; i++)
+    {
+        shared_data = shared_memory.C3_table_Read(i);
+        tmp.req			= shared_data[0];
+        tmp.texec		= shared_data[1];
+        tmp.mintexec	= shared_data[2];
+        tmp.maxtexec	= shared_data[3];
+        tmp.qos			= shared_data[4];
+        tmp.minqos 		= shared_data[5];
+        tmp.maxqos 		= shared_data[6];
+        tmp.priority	= shared_data[7];
+
+        res.push_back(tmp);
+    }
+   
+    /*cout << "There are "<< res.size() << " tasks" << endl;
+       for (size_t i = 0; i < res.size(); i++)
+    {
+        cout << "Task " << i << " : " <<  endl;
+        res[i].print();
+    }*/
+    return res;
+}
 
 
 
+vector<App_timing_qos> 	sh_mem_read_time_qos(MemoryCoordinator & shared_memory)
+{
+    vector<App_timing_qos> res;
+    App_timing_qos tmp;
+    for(int i=0; i<APPLICATION_NUMBER; i++)
+    {
+        tmp.texec		= shared_memory.Read_ExecTime(i);
+        tmp.qos			= shared_memory.Read_QoS(i);
+        res.push_back(tmp);
+    }
+   
+    /*cout << "There are "<< res.size() << " tasks" << endl;
+       for (size_t i = 0; i < res.size(); i++)
+    {
+        cout << "Task " << i << " : " <<  endl;
+        res[i].print();
+    }*/
+    return res;
+}
+
+    /*############################## TEST CODE ##############################*/
+    /*std::cout << "Press Enter to continue..." << std::endl;
+    std::cin.get();
+
+
+
+    s = fake_output2();
+    if(!first_step)
+        prev_app_output_config = app_output_config;
+    app_output_config = init_output(s); //conversion sortie step -> table 
+
+    task_mapping(app_output_config, prev_app_output_config, bts_map, shMemAccess);
+
+     
+    
+
+    std::cout << "Press Enter to continue..." << std::endl;
+    std::cin.get();
+    */
+    /*############################## TEST CODE ##############################*/

@@ -23,8 +23,8 @@
  * Boost InterProcess library used.
  * 
  * When you use this class to enable IPC, one of your target application must
- * create an object of this class as an "Admin" with the main constructor.
- * 
+ * create an object of this class as an "Admin" with the main constructor. Then, this
+ * "Admin" must instantiate shared memories before use them by other applications.
  * IPC = Inter Process Communication
  *************************************************************************************/
 
@@ -71,7 +71,7 @@ class MemoryCoordinator {
         std::vector<int>    C3_table_Read(int app_index);
         void                C3_table_Write(const std::vector<int> &data, int app_index);
 
-        //Useful single data Read/Write for C3 table 
+        //Useful single data Read/Write functions for C3 table 
         void    Update_ExecTime(int data, int app_index);
         void    Update_QoS(int data, int app_index);
         int     Read_ExecTime(int app_index);

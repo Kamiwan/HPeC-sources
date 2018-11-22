@@ -53,10 +53,12 @@ extern"C"{
 using namespace std; 
 using namespace cv;
 
+//### EM, Potential functions to modify
 void achievable_tab(Step_out s); //EM, TODO: CHANGE IT OR DELETE IT
 bool verify(Step_out s);
 void publish_to_MM(bool a,Step_out s);
 void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
+//###
 
 bool 	compare(std::vector<App_timing_qos> time_qos
 				, std::vector<Task_in> C3, Step_in e);
@@ -70,12 +72,17 @@ vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config
 											, vector<Bitstream_map> const& bitstream_map);
 void 	activate_desactivate_task(int app_index, std_msgs::Int32 msg);
 void	check_sequence(vector<Map_app_out> & map_config_app);
+
 void	wait_release(int app, int region_id, vector<Map_app_out> const& prev_map_config_app
 					, MemoryCoordinator	& shared_memory);
-void 	mapping(vector<Map_app_out> const& map_config_app
+void 	task_mapping(vector<Map_app_out> const& map_config_app
 				, vector<Map_app_out> const& prev_map_config_app
 				, vector<Bitstream_map> const& bitstream_map
 				, MemoryCoordinator & shared_memory);
+void 	compare_data_access_speed(MemoryCoordinator & shared_memory);
+void	sh_mem_setup(MemoryCoordinator & shared_memory, vector<Task_in> C3);
+vector<Task_in>			sh_mem_read_C3(MemoryCoordinator & shared_memory);
+vector<App_timing_qos> 	sh_mem_read_time_qos(MemoryCoordinator & shared_memory);
 
 /*********** Global variables ***********/ 
 extern vector<Map_app_out> prev_app_output_config;
