@@ -69,5 +69,18 @@ typedef std::vector<int, ShmemAllocator> SharedVector;
 #define C3_MAX_QOS          6
 #define C3_PRIORITY         7
 
+//EM, App index
+#define CONTRAST_IMG       0  
+#define MOTION_ESTIM_IMU   1     
+#define MOTION_ESTIM_IMG   2    
+#define SEARCH_LANDING     3   
+#define OBSTACLE_AVOIDANCE 4      
+#define T_LANDING          5
+#define ROTOZ_S            6
+#define ROTOZ_B            7
+#define REPLANNING         8   
+#define DETECTION          9  
+#define TRACKING           10
+
 
 #endif

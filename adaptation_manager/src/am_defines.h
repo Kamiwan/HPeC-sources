@@ -12,4 +12,5 @@
 #define APPLICATION_NUMBER		 11 	//EM, the number of apps in C3 table
 #define MULTI_APP_THRESHOLD_CODE 140 	//EM, every code above means a bitstream fusion of apps
 
+
 #endif

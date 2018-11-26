@@ -33,6 +33,7 @@ using namespace cv;
 vector<Map_app_out> prev_app_output_config;
 vector<Map_app_out> app_output_config;
 bool first_step = true;
+bool MM_request = false;
 
 boost::shared_ptr<ros::Publisher> search_land_pub = NULL;
 boost::shared_ptr<ros::Publisher> contrast_img_pub = NULL;
@@ -50,84 +51,53 @@ boost::shared_ptr<ros::Publisher> achievable_pub=NULL;
 /****** END GLOBAL VARIABLES ********/
 
 
-void achievable_tab(Step_out s){
-     int i;
-    vector< vector<string> > M(11); 
-   for(i=0; i < 11; ++i) {
-     M[i] = vector<string>(2);
-   }
-   M[0][0] = "contrast_img";
-   M[1][0] = "motion_estim_imu";
-   M[2][0] = "motion_estim_img";
-   M[3][0] = "search_landing";
-   M[4][0] = "obstacle_avoidance";
-   M[5][0] = "t_landing";
-   M[6][0] = "rotoz_s";
-   M[7][0] = "rotoz_b";
-   M[8][0] = "replanning";
-   M[9][0] = "detection";
-   M[10][0] = "tracking";
+//******************BOUDABZA Ghizlane, check if an app is not achieved
+bool check_achievable(MemoryCoordinator & shared_memory, Step_out s){
+    bool is_achievable = true; 
+    is_achievable = is_achievable & (s.contrast_img.achievable) 
+        & (s.motion_estim_imu.achievable)
+        & (s.motion_estim_img.achievable)& (s.search_landing.achievable)
+        & (s.obstacle_avoidance.achievable)& (s.t_landing.achievable)
+        & (s.rotoz_s.achievable)& (s.rotoz_b.achievable)& (s.replanning.achievable)
+        & (s.detection.achievable)& (s.tracking.achievable);
+    
+    sh_mem_write_achievable(shared_memory, s);
 
-   M[0][1] = to_string(s.contrast_img.achievable);
-   M[1][1] = to_string(s.motion_estim_imu.achievable);
-   M[2][1] = to_string(s.motion_estim_img.achievable);
-   M[3][1] = to_string(s.search_landing.achievable);
-   M[4][1] = to_string(s.obstacle_avoidance.achievable);
-   M[5][1] = to_string(s.t_landing.achievable);
-   M[6][1] = to_string(s.rotoz_s.achievable);
-   M[7][1] = to_string(s.rotoz_b.achievable);
-   M[8][1] = to_string(s.replanning.achievable);
-   M[9][1] = to_string(s.detection.achievable);
-   M[10][1] = to_string(s.tracking.achievable);
-
-    ofstream file(PATH_ACHIEVABLE_TAB, ios::out); 
-   if ( file ) 
-    {       
-        for (int i = 0; i < 11; ++i){
-            if(M[i][1]=="0"){
-              file <<M[i][0]<<endl;
-              file <<M[i][1]<<endl; 
-            }
-        }
-         file.close();  
-    }  else{
-                cerr << "Impossible d'ouvrir le fichier !" << endl;
-    }
-
+    return is_achievable;
 }
 
-
-//******************BOUDABZA Ghizlane; verification de la realisation de toutes les APPs..
-bool verify(Step_out s){
-    bool a = true; 
-    a = a & (s.contrast_img.achievable) & (s.motion_estim_imu.achievable)
-          & (s.motion_estim_img.achievable)& (s.search_landing.achievable)
-          & (s.obstacle_avoidance.achievable)& (s.t_landing.achievable)
-          & (s.rotoz_s.achievable)& (s.rotoz_b.achievable)& (s.replanning.achievable)
-          & (s.detection.achievable)& (s.tracking.achievable);
-    return a;
+void sh_mem_write_achievable(MemoryCoordinator & shared_memory, Step_out s)
+{
+    shared_memory.achievable_Write(s.contrast_img.achievable, CONTRAST_IMG);
+    shared_memory.achievable_Write(s.motion_estim_imu.achievable, MOTION_ESTIM_IMU);
+    shared_memory.achievable_Write(s.motion_estim_img.achievable, MOTION_ESTIM_IMG);
+    shared_memory.achievable_Write(s.search_landing.achievable, SEARCH_LANDING);
+    shared_memory.achievable_Write(s.obstacle_avoidance.achievable, OBSTACLE_AVOIDANCE);
+    shared_memory.achievable_Write(s.t_landing.achievable, T_LANDING);
+    shared_memory.achievable_Write(s.rotoz_s.achievable, ROTOZ_S);
+    shared_memory.achievable_Write(s.rotoz_b.achievable, ROTOZ_B);
+    shared_memory.achievable_Write(s.replanning.achievable, REPLANNING);
+    shared_memory.achievable_Write(s.detection.achievable, DETECTION);
+    shared_memory.achievable_Write(s.tracking.achievable, TRACKING);
 }
 
-//********************* Publier l'alerte à Mission Manager
-void publish_to_MM(bool a,Step_out s)
+//********************* Send Alert to Mission Manager if needed
+void publish_to_MM(bool is_achievable,Step_out s)
 {   
     std_msgs::Int32 msg1;
-    //remplissage de liste des taches nn realisables
-       achievable_tab(s);
-       if(a==1)
+    if(is_achievable)
     {
-        ROS_INFO("[LOADING][BITSTREAM][SCHEDULING] , Achievable : [%d]", a);
-    }else{
-        ROS_INFO("[ALERT][MISSION_MANAGER]");
-        msg1.data =1;      
+        ROS_INFO("[ADAPTATION MANAGER]: Configuration achievable");
+    }else
+    {
+        ROS_INFO("[ADAPTATION MANAGER]: Configuration NOT achievable!");
+        ROS_INFO("[ADAPTATION MANAGER]: Send alert to Mission Manager");
+        msg1.data =(int)is_achievable;      
         achievable_pub->publish(msg1);   
-        ROS_INFO("STATE OF Total_Achievable : [%d]", a);
-        ROS_INFO("[LOADING][BITSTREAM][LAST AUTOMATE OUTPUT]");
     }
 }
 
 
-//******************fonction d'activation des taches en sw ou hw: en (-), ou en (s,f,-)
 void activate_desactivate_task(int app_index, std_msgs::Int32 msg){
 
     switch (app_index)
@@ -176,14 +146,13 @@ bool compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3)
 { 
     if(time_qos.size() != C3.size())
     {
-        ROS_ERROR("COMPARE function failed! C3 and time_qos are not of the same size! C3=%ld and time_qos=%ld"
+        ROS_ERROR("COMPARE failed! C3 and time_qos are not of the same size! C3=%ld and time_qos=%ld"
                     ,time_qos.size(), C3.size());
         exit(1);
     }
 
     vector<bool> T; 
     bool res=true;
-
 
     for(int j = 0; j < C3.size(); j++)
     {
@@ -204,16 +173,12 @@ bool compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3)
 }
 
 //***************************
-void notify_Callback(const std_msgs::Int32::ConstPtr& msg){
-      ROS_INFO("[RECU][MISSION_M][CHANGEMENT D'INTERVALLES DANS TABLE C3..] \n");
-      ROS_INFO("%d", msg->data);
-      float texe; 
+void notify_Callback(const std_msgs::Int32::ConstPtr& msg)
+{
+    ROS_INFO("[FROM][MISSION_M]: New configuration request! \n");
+    ROS_INFO("%d", msg->data);
 
-    vector<Task_in> C3 = read_C3(PATH_TABLE_C3);
-      Step_in e;
-    e.init();
-    e.load_C3(C3); 
-      do1(e);
+    MM_request = true;
 }
 
 
@@ -297,23 +262,26 @@ int main (int argc, char ** argv)
         //cpu_pub.publish( load );
         
         time_qos_data = sh_mem_read_time_qos(sh_mem_access);
-        if(!compare(time_qos_data,C3_current))
+        if(!compare(time_qos_data,C3_current) || MM_request)
         {
-            automaton_in.load_C3(C3_current);
+            if(MM_request) //EM, When the reconfiguration is asked from Mission Manager
+            {
+                C3_current    = sh_mem_read_C3(sh_mem_access);
+                automaton_in.load_C3(C3_current);
+                MM_request = false;
+            }
             automaton_in.update_timing_qos(time_qos_data);
             automaton_out = do1(automaton_in); //Call reconfiguration automaton
 
             prev_app_output_config = app_output_config; 
             app_output_config = init_output(automaton_out);
-            publish_to_MM(verify(automaton_out),automaton_out);  
+            publish_to_MM(check_achievable(sh_mem_access, automaton_out),automaton_out);  
 
             task_mapping(app_output_config, prev_app_output_config, bts_map, sh_mem_access);
         }
         std::cout << "DONE app Check, Time to sleep" << std::endl;
         loop_rate.sleep();
     }
-    //C3_current    = sh_mem_read_C3(sh_mem_access); Use it with when MM send requests.
-    //automaton_in.load_C3(C3_current);
 }
 
 vector<Task_in> read_C3(const char* path)
@@ -442,11 +410,11 @@ vector<Bitstream_map> read_BTS_MAP(const char* path)
         res.push_back(tmp);
     }
    
-       cout << "There are "<< file_content.size() << " lines in the file" << endl;
+    cout << "There are "<< file_content.size() << " lines in the file" << endl;
     cout << "There are "<< res.size() << " Bitstreams" << endl;
        for (size_t i = 0; i < res.size(); i++)
     {
-        //cout << "App MAP " << i << " : " <<  endl;
+        cout << "App MAP " << i << " : " <<  endl;
         res[i].print();
     }
     return res;
@@ -678,20 +646,4 @@ void	raz_timing_qos(vector<Task_in> & C3)
     /*############################## TEST CODE ##############################*/
     /*std::cout << "Press Enter to continue..." << std::endl;
     std::cin.get();
-
-
-
-    s = fake_output2();
-    if(!first_step)
-        prev_app_output_config = app_output_config;
-    app_output_config = init_output(s); //conversion sortie step -> table 
-
-    task_mapping(app_output_config, prev_app_output_config, bts_map, sh_mem_access);
-
-     
-    
-
-    std::cout << "Press Enter to continue..." << std::endl;
-    std::cin.get();
-    */
     /*############################## TEST CODE ##############################*/
