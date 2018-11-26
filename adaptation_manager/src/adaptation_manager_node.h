@@ -53,16 +53,16 @@ extern"C"{
 using namespace std; 
 using namespace cv;
 
-//### EM, Potential functions to modify
+//### EM, Functions to modify
 void achievable_tab(Step_out s); //EM, TODO: CHANGE IT OR DELETE IT
 bool verify(Step_out s);
 void publish_to_MM(bool a,Step_out s);
 void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
 //###
 
-bool 	compare(std::vector<App_timing_qos> time_qos
-				, std::vector<Task_in> C3, Step_in e);
+bool 	compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3);
 int		find_BTS_addr(vector<Bitstream_map> bts_map, int version_code);
+void	raz_timing_qos(vector<Task_in> & C3);
 vector<Bitstream_map> 	read_BTS_MAP(const char* path);
 vector<Task_in> 		read_C3(const char* path);
 vector<App_timing_qos> 	read_time_qos(const char* path);

@@ -171,8 +171,7 @@ void activate_desactivate_task(int app_index, std_msgs::Int32 msg){
 }
 
 
-//**************************BOUDABZA Ghizlane; 
-//la fonction qui verifie est ce que texe appartient à l'intervalle [Tmin, Tmax]...pour chaque fonction;
+
 bool compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3) 
 { 
     if(time_qos.size() != C3.size())
@@ -185,10 +184,11 @@ bool compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3)
     vector<bool> T; 
     bool res=true;
 
+
     for(int j = 0; j < C3.size(); j++)
     {
-        if((time_qos[j].texec >= C3[j].mintexec && time_qos[j].qos <= C3[j].mintexec) 
-            && (time_qos[j].qos >= C3[j].minqos && time_qos[j].qos <= C3[j].maxqos))
+        if( (time_qos[j].texec <= C3[j].maxtexec)  //&& time_qos[j].texec >= C3[j].mintexec
+            && (time_qos[j].qos <= C3[j].maxqos) ) //&& time_qos[j].qos >= C3[j].minqos
             T.push_back(true);
         else
             T.push_back(false);
@@ -226,46 +226,32 @@ int main (int argc, char ** argv)
 {   
     ros::init(argc, argv, "adaptation_manager_node");
     ros::NodeHandle nh;
-
     ROS_INFO("[ADAPTATION MANAGER] [RUNNING] \n");
 
-     //contrast_img_pub;
-    contrast_img_pub= boost::make_shared<ros::Publisher>( 
+    contrast_img_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/contrast_img_mgt_topic", 1));
-    //motion_estim_imu_pub;
-    motion_estim_imu_pub= boost::make_shared<ros::Publisher>( 
+    motion_estim_imu_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/motion_estim_imu_mgt_topic", 1));
-     //motion_estim_img_pub;
-    motion_estim_img_pub= boost::make_shared<ros::Publisher>( 
+    motion_estim_img_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/motion_estim_img_mgt_topic", 1));
-    //search_land_pub;
-    search_land_pub= boost::make_shared<ros::Publisher>( 
+    search_land_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/search_landing_area_mgt_topic", 1));
-     //obstacle_avoidance_pub;
-    obstacle_avoidance_pub= boost::make_shared<ros::Publisher>( 
+    obstacle_avoidance_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/obstacle_avoidance_mgt_topic", 1));
-     //t_landing_pub;
-    t_landing_pub= boost::make_shared<ros::Publisher>( 
+    t_landing_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/t_landing_mgt_topic", 1));
-     //rotoz_s_pub;
-    rotoz_s_pub= boost::make_shared<ros::Publisher>( 
+    rotoz_s_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/rotoz_s_mgt_topic", 1));
-     //rotoz_b_pub;
-    rotoz_b_pub= boost::make_shared<ros::Publisher>( 
+    rotoz_b_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/rotoz_b_mgt_topic", 1));
-    //replanning_pub;
-    replanning_pub= boost::make_shared<ros::Publisher>( 
+    replanning_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/replanning_mgt_topic", 1));   
-     //detection_pub;
-    detection_pub= boost::make_shared<ros::Publisher>( 
+    detection_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/detection_mgt_topic", 1));
-     //tracking_pub;
-    tracking_pub= boost::make_shared<ros::Publisher>( 
+    tracking_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/tracking_mgt_topic", 1));
-
-    achievable_pub= boost::make_shared<ros::Publisher>( 
+    achievable_pub = boost::make_shared<ros::Publisher>( 
                         nh.advertise<std_msgs::Int32>("/achievable_topic", 1000));
-
     ros::Subscriber notify_from_MM_sub;
         notify_from_MM_sub = nh.subscribe("/notify_from_MM_topic", 1000, notify_Callback);
                     
@@ -274,14 +260,18 @@ int main (int argc, char ** argv)
     //*****************Ghizlane BOUDABZA
     std_msgs::Float32 load;
 
+
+
     //EM, Data structure setup
     Step_in     automaton_in;
     Step_out    automaton_out;
-    vector<Task_in>         C3      = read_C3(PATH_TABLE_C3);
+    vector<Task_in>         C3_init = read_C3(PATH_TABLE_C3);
     vector<Bitstream_map>   bts_map = read_BTS_MAP(PATH_MAP_TAB);
+    raz_timing_qos(C3_init);
+    automaton_in.load_C3(C3_init);
     //EM, Shared Memory setup
-    MemoryCoordinator shMemAccess("Admin");
-    sh_mem_setup(shMemAccess, C3);
+    MemoryCoordinator sh_mem_access("Admin");
+    sh_mem_setup(sh_mem_access, C3_init);
 
     //EM, First Step use with start configuration
     automaton_out = do1(automaton_in); //Call reconfiguration automaton
@@ -290,37 +280,40 @@ int main (int argc, char ** argv)
     Map_app_out empty_map;
     empty_map.init();
     for(size_t i = 0; i < APPLICATION_NUMBER; i++)
-    {
-        prev_app_output_config.push_back(empty_map);
-    }        
-    app_output_config = init_output(automaton_out); //convert automaton_out
+        prev_app_output_config.push_back(empty_map);     
+    app_output_config = init_output(automaton_out); //convert automaton_out to vector<App_map_out>
 
-
-    task_mapping(app_output_config, prev_app_output_config, bts_map, shMemAccess);
+    task_mapping(app_output_config, prev_app_output_config, bts_map, sh_mem_access);
     
-    /* MAIN LOOP
-    vector<App_timing_qos> time_qos_data;
-    ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
+    // MAIN LOOP
+    vector<App_timing_qos>  time_qos_data;
+    vector<Task_in>         C3_current = sh_mem_read_C3(sh_mem_access);
+    ros::Rate loop_rate(1); //10hz = 100ms, 0.1hz=10s
     while(ros::ok())
     { 
         ros::spinOnce();
 
-        load.data = cpuload ( ) ;
-        cpu_pub.publish( load );
-
-        time_qos_data = read_time_qos(PATH_TIME_QOS);
-        if(time_qos_data.size()!=0)
+        //load.data = cpuload();
+        //cpu_pub.publish( load );
+        
+        time_qos_data = sh_mem_read_time_qos(sh_mem_access);
+        if(!compare(time_qos_data,C3_current))
         {
-            e.update_timing_qos(time_qos_data);	
-            if(!compare(time_qos_data,C3))
-            {
-                do1(e); 
-                publish_to_MM(verify(automaton_out),automaton_out);  
-            }
+            automaton_in.load_C3(C3_current);
+            automaton_in.update_timing_qos(time_qos_data);
+            automaton_out = do1(automaton_in); //Call reconfiguration automaton
+
+            prev_app_output_config = app_output_config; 
+            app_output_config = init_output(automaton_out);
+            publish_to_MM(verify(automaton_out),automaton_out);  
+
+            task_mapping(app_output_config, prev_app_output_config, bts_map, sh_mem_access);
         }
+        std::cout << "DONE app Check, Time to sleep" << std::endl;
         loop_rate.sleep();
     }
-    */
+    //C3_current    = sh_mem_read_C3(sh_mem_access); Use it with when MM send requests.
+    //automaton_in.load_C3(C3_current);
 }
 
 vector<Task_in> read_C3(const char* path)
@@ -646,24 +639,17 @@ vector<Task_in>	sh_mem_read_C3(MemoryCoordinator & shared_memory)
     for(int i=0; i<APPLICATION_NUMBER; i++)
     {
         shared_data = shared_memory.C3_table_Read(i);
-        tmp.req			= shared_data[0];
-        tmp.texec		= shared_data[1];
-        tmp.mintexec	= shared_data[2];
-        tmp.maxtexec	= shared_data[3];
-        tmp.qos			= shared_data[4];
-        tmp.minqos 		= shared_data[5];
-        tmp.maxqos 		= shared_data[6];
-        tmp.priority	= shared_data[7];
+        tmp.req			= shared_data[C3_ACTIVE_REQUEST];
+        tmp.texec	    = shared_data[C3_CURRENT_TEXEC];
+        tmp.mintexec	= shared_data[C3_MIN_TEXEC];
+        tmp.maxtexec	= shared_data[C3_MAX_TEXEC];
+        tmp.qos 		= shared_data[C3_CURRENT_QOS];
+        tmp.minqos		= shared_data[C3_MIN_QOS];
+        tmp.maxqos 		= shared_data[C3_MAX_QOS];
+        tmp.priority	= shared_data[C3_PRIORITY];
 
         res.push_back(tmp);
     }
-   
-    /*cout << "There are "<< res.size() << " tasks" << endl;
-       for (size_t i = 0; i < res.size(); i++)
-    {
-        cout << "Task " << i << " : " <<  endl;
-        res[i].print();
-    }*/
     return res;
 }
 
@@ -679,14 +665,14 @@ vector<App_timing_qos> 	sh_mem_read_time_qos(MemoryCoordinator & shared_memory)
         tmp.qos			= shared_memory.Read_QoS(i);
         res.push_back(tmp);
     }
-   
-    /*cout << "There are "<< res.size() << " tasks" << endl;
-       for (size_t i = 0; i < res.size(); i++)
-    {
-        cout << "Task " << i << " : " <<  endl;
-        res[i].print();
-    }*/
     return res;
+}
+
+
+void	raz_timing_qos(vector<Task_in> & C3)
+{
+    for(size_t i = 0; i < C3.size(); i++)
+        C3[i].raz_timing_qos();
 }
 
     /*############################## TEST CODE ##############################*/
@@ -700,7 +686,7 @@ vector<App_timing_qos> 	sh_mem_read_time_qos(MemoryCoordinator & shared_memory)
         prev_app_output_config = app_output_config;
     app_output_config = init_output(s); //conversion sortie step -> table 
 
-    task_mapping(app_output_config, prev_app_output_config, bts_map, shMemAccess);
+    task_mapping(app_output_config, prev_app_output_config, bts_map, sh_mem_access);
 
      
     

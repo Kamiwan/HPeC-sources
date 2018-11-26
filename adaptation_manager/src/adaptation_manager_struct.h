@@ -67,8 +67,9 @@ struct Step_in
 	//EM, useful functions to use Step_in easily
 	void init();
 	void raz_timing_qos();
-	void load_C3(const std::vector<Task_in> C3);
+	void load_C3(std::vector<Task_in> const& C3);
 	void update_timing_qos(std::vector<App_timing_qos> time_qos);
+	std::vector<Task_in> record_step_in();
 };
 
 

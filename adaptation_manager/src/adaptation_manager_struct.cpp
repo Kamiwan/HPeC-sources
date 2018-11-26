@@ -97,7 +97,7 @@ void Step_in::raz_timing_qos()
 	tracking.raz_timing_qos();
 }
 
-void Step_in::load_C3(const std::vector<Task_in> C3)
+void Step_in::load_C3(std::vector<Task_in> const& C3)
 {
 	if(C3.size() < APPLICATION_NUMBER)
 	{
@@ -139,6 +139,25 @@ void Step_in::update_timing_qos(std::vector<App_timing_qos> time_qos)
 	tracking 			= time_qos[10];
 }
 
+
+std::vector<Task_in> Step_in::record_step_in()
+{
+	std::vector<Task_in> C3;
+
+	C3.push_back(contrast_img);
+	C3.push_back(motion_estim_imu);
+	C3.push_back(motion_estim_img);
+	C3.push_back(search_landing);
+	C3.push_back(obstacle_avoidance);
+	C3.push_back(t_landing);
+	C3.push_back(rotoz_s);
+	C3.push_back(rotoz_b);
+	C3.push_back(replanning);
+	C3.push_back(detection);
+	C3.push_back(tracking);
+
+	return C3;
+}
 
 void App_timing_qos::print(){
 	std::cout 	<< "texec = " << texec << std::endl
