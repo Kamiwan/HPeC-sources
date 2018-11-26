@@ -21,7 +21,7 @@
  * Main file header of the Adaptation Manager ROS node.
  *   This application controls the execution of other HPeC nodes and execute a 
  *   reconfiguration automaton to get the right schedule.
- *   The configuration is given according Mission Manager requests 
+ *   The configuration is given according Mission Manager requests with C3 table
  *************************************************************************************/
 
 #ifndef ADAPTATION_MANAGER_NODE_H
@@ -83,37 +83,90 @@ vector<Bitstream_map> 	read_BTS_MAP(const char* path);
 vector<Task_in> 		read_C3(const char* path);
 vector<App_timing_qos> 	read_time_qos(const char* path);
 
-//Functions to interact with the Mission Manager
+//##### Functions to interact with the Mission Manager (MM) #####
+/* notify_Callback
+ROS callback function to get requests from MM
+@param msg    the number associated to the app
+*/
 void notify_Callback(const std_msgs::Int32::ConstPtr& msg);
+/* publish_to_MM
+Publish on a ROS topic an alert if there is no perfect solution
+@param is_achievable 	tells if the next configuration respects all requests
+@param s				reconfiguration automaton output	
+*/
 void publish_to_MM(bool is_achievable, Step_out s);
 
-//Main functions, these are mainly setup functions
+//##### Main functions, these are mainly setup functions #####
 void					sh_mem_setup(MemoryCoordinator & shared_memory, vector<Task_in> C3);
 vector<Task_in>			sh_mem_read_C3(MemoryCoordinator & shared_memory);
+/* sh_mem_read_time_qos
+Read only a part of C3 shared_memory to reduce resource occupancy time
+@param shared_memory 	
+@return		current timing and qos of each application
+*/
 vector<App_timing_qos> 	sh_mem_read_time_qos(MemoryCoordinator & shared_memory);
 vector<Map_app_out>  	init_output(Step_out const& step_output);
 void					raz_timing_qos(vector<Task_in> & C3);
-bool 					compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3);
+/* compare
+Read only a part of C3 shared_memory to reduce resource occupancy time
+@param time_qos
+@param C3
+@return		0 if an application does not respect requests from MM, 1 otherwise
+*/
+bool	compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3);
 
-//Functions needed for the task_mapping function
+//##### Functions needed for the task_mapping function #####
 int		find_BTS_addr(vector<Bitstream_map> bts_map, int version_code);
+/* create_scheduler_tab
+The scheduler array tells which application has a modification in its configuration
+@param map_config_app		the next app configuration to move to
+@param prev_map_config_app	the current app configuration
+@param bitstream_map		it stores bitstream @ of each HW app configuration
+@return		the scheduler array
+*/
 vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config_app
 											, vector<Map_app_out> const& prev_map_config_app
 											, vector<Bitstream_map> const& bitstream_map);
+/* check_sequence
+Check if there is a couple of application that are working in sequence 
+(In HPeC, it can only be Detection & Tracking)
+@param map_config_app		the next app configuration to move to
+*/											
 void	check_sequence(vector<Map_app_out> & map_config_app);
+/* wait_release
+busy-waiting loop (polling) in order to wait the HW resource (a FPGA Tile) has been released
+by the previous application that used it.
+@param map_config_app		the next app configuration to move to
+@param app					index of the app waiting for the HW resource
+@param region_id			the ID of FPGA Tile
+@param prev_map_config_app	previous system configuration to know which app to wait
+@param shared_memory
+*/	
 void	wait_release(int app, int region_id, vector<Map_app_out> const& prev_map_config_app
 					, MemoryCoordinator	& shared_memory);
+/* activate_desactivate_task
+Send a msg using a ROS topic to give orders to applications
+@param app_index	target app to receive orders
+@param msg			message to send (ROS data type)
+*/	
 void 	activate_desactivate_task(int app_index, std_msgs::Int32 msg);
+/* task_mapping
+Set up the next system configuration from automaton results. 
+@param map_config_app		the next app configuration to move to
+@param prev_map_config_app	the current app configuration	
+@param bitstream_map		it stores bitstream @ of each HW app configuration
+@param shared_memory		
+*/	
 void 	task_mapping(vector<Map_app_out> const& map_config_app
 				, vector<Map_app_out> const& prev_map_config_app
 				, vector<Bitstream_map> const& bitstream_map
 				, MemoryCoordinator & shared_memory);
 
-//Functions to check if the configuration satisfies the whole requests
+//##### Functions to check if the configuration satisfies the whole requests #####
 bool 	check_achievable(MemoryCoordinator & shared_memory, Step_out s);
 void	sh_mem_write_achievable(MemoryCoordinator & shared_memory, Step_out s);
 
-//EM, just a function to evaluate the data access time
+//##### EM, just a function to evaluate the data access time #####
 void 	compare_data_access_speed(MemoryCoordinator & shared_memory);
 
 
