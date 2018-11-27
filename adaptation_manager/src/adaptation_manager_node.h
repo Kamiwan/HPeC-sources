@@ -108,7 +108,7 @@ vector<App_timing_qos> 	sh_mem_read_time_qos(MemoryCoordinator & shared_memory);
 vector<Map_app_out>  	init_output(Step_out const& step_output);
 void					raz_timing_qos(vector<Task_in> & C3);
 /* compare
-Read only a part of C3 shared_memory to reduce resource occupancy time
+Compare current app QoS and exec time to MM requests
 @param time_qos
 @param C3
 @return		0 if an application does not respect requests from MM, 1 otherwise
@@ -162,7 +162,7 @@ void 	task_mapping(vector<Map_app_out> const& map_config_app
 				, vector<Bitstream_map> const& bitstream_map
 				, MemoryCoordinator & shared_memory);
 
-//##### Functions to check if the configuration satisfies the whole requests #####
+//##### Functions to check if it exists a configuration that satisfies the whole requests #####
 bool 	check_achievable(MemoryCoordinator & shared_memory, Step_out s);
 void	sh_mem_write_achievable(MemoryCoordinator & shared_memory, Step_out s);
 
