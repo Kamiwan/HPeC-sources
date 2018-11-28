@@ -32,8 +32,8 @@ using namespace cv;
 /****** GLOBAL VARIABLES ********/
 vector<Map_app_out> prev_app_output_config;
 vector<Map_app_out> app_output_config;
-bool first_step = true;
 bool MM_request = false;
+int verbose;
 
 boost::shared_ptr<ros::Publisher> search_land_pub = NULL;
 boost::shared_ptr<ros::Publisher> contrast_img_pub = NULL;
@@ -163,11 +163,14 @@ bool compare(std::vector<App_timing_qos> time_qos, std::vector<Task_in> C3)
             T.push_back(false);
     }
 
-    for(int i=0;i<T.size();i++){
-        res= res & T[i];
-        cout<<T[i]<<" ";
+    if(verbose > VERBOSITY_OFF)
+    {
+        for(int i=0;i<T.size();i++){
+            res= res & T[i];
+            cout<<T[i]<<" ";
+        }
+        cout<<endl;
     }
-    cout<<endl;
 
     return res;
 }
@@ -190,8 +193,19 @@ void notify_Callback(const std_msgs::Int32::ConstPtr& msg)
 int main (int argc, char ** argv)
 {   
     ros::init(argc, argv, "adaptation_manager_node");
-    ros::NodeHandle nh;
+    ros::NodeHandle nh("~");
     ROS_INFO("[ADAPTATION MANAGER] [RUNNING] \n");
+
+    if (!nh.hasParam("verbose"))
+        ROS_INFO("No param named 'verbose'");
+    
+    if(nh.getParam("verbose",  verbose))
+        ROS_INFO("verbose level = %d", verbose);
+    else
+    {
+        ROS_ERROR("FAILED TO GET verbose, default value %d",VERBOSITY_DEFAULT);
+        verbose = VERBOSITY_DEFAULT;
+    }
 
     contrast_img_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/contrast_img_mgt_topic", 1));
@@ -305,12 +319,15 @@ vector<Task_in> read_C3(const char* path)
         res.push_back(tmp);
     }
    
-    cout << "There are "<< file_content.size() << " lines in the file" << endl;
-    cout << "There are "<< res.size() << " tasks" << endl;
-       for (size_t i = 0; i < res.size(); i++)
+    if(verbose > VERBOSITY_LOW)
     {
-        //cout << "Task " << i << " : " <<  endl;
-        //res[i].print();
+        cout << "There are "<< file_content.size() << " lines in the file" << endl;
+        cout << "There are "<< res.size() << " tasks" << endl;
+           for (size_t i = 0; i < res.size(); i++)
+        {
+            cout << "Task " << i << " : " <<  endl;
+            res[i].print();
+        }
     }
     return res;
 }
@@ -332,13 +349,17 @@ vector<App_timing_qos> read_time_qos(const char* path)
         res.push_back(tmp);
     }
    
-    cout << "There are "<< file_content.size() << " lines in the file" << endl;
-    cout << "There are "<< res.size() << " tasks" << endl;
-    for (size_t i = 0; i < res.size(); i++)
+    if(verbose > VERBOSITY_LOW)
     {
-        //cout << "Task " << i << " : " <<  endl;
-        //res[i].print();
+        cout << "There are "<< file_content.size() << " lines in the file" << endl;
+        cout << "There are "<< res.size() << " tasks" << endl;
+        for (size_t i = 0; i < res.size(); i++)
+        {
+            cout << "Task " << i << " : " <<  endl;
+            res[i].print();
+        }
     }
+
     return res;
 }
 
@@ -350,12 +371,6 @@ vector<Map_app_out>	init_output(Step_out const& step_output)
     tmp.init();
     for(int i=0; i < APPLICATION_NUMBER; i++)
         res.push_back(tmp);
-
-    if(first_step)
-    {
-        prev_app_output_config = res;
-        first_step = false;
-    }
 
     //EM, I know it's dirty, it would have been better with an array of attributes...
     res[0] 	= step_output.contrast_img;
@@ -410,13 +425,17 @@ vector<Bitstream_map> read_BTS_MAP(const char* path)
         res.push_back(tmp);
     }
    
-    cout << "There are "<< file_content.size() << " lines in the file" << endl;
-    cout << "There are "<< res.size() << " Bitstreams" << endl;
-       for (size_t i = 0; i < res.size(); i++)
+    if(verbose > VERBOSITY_LOW)
     {
-        cout << "App MAP " << i << " : " <<  endl;
-        res[i].print();
+        cout << "There are "<< file_content.size() << " lines in the file" << endl;
+        cout << "There are "<< res.size() << " Bitstreams" << endl;
+        for (size_t i = 0; i < res.size(); i++)
+        {
+            cout << "App MAP " << i << " : " <<  endl;
+            res[i].print();
+        }
     }
+
     return res;
 }
 
@@ -519,11 +538,14 @@ vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config
             res.push_back(tmp);
         }
 
-    cout << "Scheduler array size = " << res.size() << " : " <<  endl;
-    for(int i = 0; i < res.size(); i++)
+    if(verbose > VERBOSITY_OFF)
     {
-        cout << "Scheduler array [" << i << "] : " <<  endl;
-        res[i].print();
+        cout << "Scheduler array size = " << res.size() << " : " <<  endl;
+        for(int i = 0; i < res.size(); i++)
+        {
+            cout << "Scheduler array [" << i << "] : " <<  endl;
+            res[i].print();
+        }
     }
     return res;
 }

@@ -173,7 +173,7 @@ void 	compare_data_access_speed(MemoryCoordinator & shared_memory);
 /*********** Global variables ***********/ 
 extern vector<Map_app_out> prev_app_output_config;
 extern vector<Map_app_out> app_output_config;
-extern bool first_step;
+extern int	verbose;
 #endif
 
 

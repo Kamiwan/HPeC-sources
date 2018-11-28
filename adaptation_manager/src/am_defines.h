@@ -12,5 +12,12 @@
 #define APPLICATION_NUMBER		 11 	//EM, the number of apps in C3 table
 #define MULTI_APP_THRESHOLD_CODE 140 	//EM, every code above means a bitstream fusion of apps
 
+//EM
+#define VERBOSITY_DEFAULT   0
+#define VERBOSITY_OFF       0
+#define VERBOSITY_LOW       1
+#define VERBOSITY_MEDIUM    2
+#define VERBOSITY_HIGH      3
+
 
 #endif
