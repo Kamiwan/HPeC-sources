@@ -21,7 +21,7 @@
  * Main file header of the Adaptation Manager ROS node.
  *   This application controls the execution of other HPeC nodes and execute a 
  *   reconfiguration automaton to get the right schedule.
- *   The configuration is given according Mission Manager requests with C3 table
+ *   The configuration is given according Mission Manager requests with C3 table 
  *************************************************************************************/
 
 #ifndef ADAPTATION_MANAGER_NODE_H

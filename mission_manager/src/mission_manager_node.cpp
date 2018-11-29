@@ -1,12 +1,33 @@
-#include <ros/ros.h>
-#include <boost/thread.hpp>
-#include <iostream>
-#include <string>
+/* 
+ * This file is part of the HPeC distribution (https://github.com/Kamiwan/HPeC-sources).
+ * Copyright (c) 2018 Lab-STICC Laboratory.
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
+/*************************************************************************************
+ * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
+ * Created on:  November 28, 2018
+ * 
+ * Main file of the Mission Manager ROS node.
+ *    This application controls the UAV in order to fullfill the given mission.
+ *    Its role is to select which applications must be executed by giving requests to
+ *    the Adaptation Manager. A shared memory is used for IPC.
+ *************************************************************************************/
 
-#include "std_msgs/String.h"
-#include "std_msgs/Int32.h"
-#include "std_msgs/Float32.h"
+#include "mission_manager_node.hpp"
 
+/*********** Global variables ***********/ 
+int	verbose;
 boost::shared_ptr<ros::Publisher> notify_from_MM_pub;
 
 
@@ -22,26 +43,44 @@ void achievable_Callback(const std_msgs::Int32::ConstPtr &msg1)
    msg.data = 1;
    notify_from_MM_pub->publish(msg);
 }
+
+
 //******************
 void cpu_load_Callback(const std_msgs::Float32::ConstPtr &load)
 {
    ROS_INFO("[CPU][LOAD] : [%f]", load->data);
 }
+
+
 //***********************
 int main(int argc, char **argv)
 {
    ros::init(argc, argv, "mission_manager");
-   ros::NodeHandle n;
-   //************** reception de la liste des taches nn realisables, publiée par l'automate ...
-   ros::Subscriber achievable_sub = n.subscribe("/achievable_topic", 1000, achievable_Callback);
-   notify_from_MM_pub = boost::make_shared<ros::Publisher>(
-      n.advertise<std_msgs::Int32>("/notify_from_MM_topic", 1000));
+   ros::NodeHandle nh("~"); //EM, use ~ for private parameters, here it's for verbose
+   
+   //EM, to use the verbose argument in command line write this: _verbose:=value
+   if (!nh.hasParam("verbose"))
+      ROS_ERROR("No param named 'verbose'");
+    
+   if(nh.getParam("verbose",  verbose))
+      ROS_INFO("Verbose level = %d", verbose);
+   else
+   {
+      ROS_ERROR("FAILED TO GET verbose, default value %d",VERBOSITY_DEFAULT);
+      verbose = VERBOSITY_DEFAULT;
+   }
 
-   ros::Subscriber cpu_sub = n.subscribe("/cpu_load_topic", 1000, cpu_load_Callback);
+
+   //************** reception de la liste des taches nn realisables, publiée par l'automate ...
+   ros::Subscriber achievable_sub = nh.subscribe("/achievable_topic", 1000, achievable_Callback);
+   ros::Subscriber cpu_sub = nh.subscribe("/cpu_load_topic", 1000, cpu_load_Callback);
+   
+   notify_from_MM_pub = boost::make_shared<ros::Publisher>(
+      nh.advertise<std_msgs::Int32>("/notify_from_MM_topic", 1000));
 
    ROS_INFO("[mission_manager][listening]");
 
-   ros::Rate loop_rate1(10);
+   ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
    while (ros::ok())
    {
 
@@ -50,6 +89,6 @@ int main(int argc, char **argv)
 
       ros::spin();
 
-      loop_rate1.sleep();
+      loop_rate.sleep();
    }
 }
