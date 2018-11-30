@@ -32,6 +32,10 @@
 #include <iostream>
 #include <string>
 
+#include <sensor_msgs/NavSatFix.h>
+#include <tf/transform_datatypes.h>
+#include "sensor_msgs/Imu.h"
+#include "sensor_msgs/BatteryState.h"
 #include "std_msgs/String.h"
 #include "std_msgs/Int32.h"
 #include "std_msgs/Float32.h"
@@ -45,10 +49,16 @@
 #define VERBOSITY_MEDIUM    2
 #define VERBOSITY_HIGH      3
 
+void battery_callback(const sensor_msgs::BatteryState::ConstPtr &bat_msg);
+void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
 void cpu_load_Callback(const std_msgs::Float32::ConstPtr &load);
 void achievable_Callback(const std_msgs::Int32::ConstPtr &msg1);
 
 /*********** Global variables ***********/ 
 extern int	verbose;
+extern double   roll, pitch, yaw;
+extern double   prev_roll, prev_pitch, prev_yaw;
+extern float    battery_level;
+extern bool     first_time_imu;
 
 #endif

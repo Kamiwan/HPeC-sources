@@ -272,7 +272,7 @@ int main (int argc, char ** argv)
     { 
         ros::spinOnce();
 
-        //load.data = cpuload();
+        load.data = cpuload();
         //cpu_pub.publish( load );
         
         time_qos_data = sh_mem_read_time_qos(sh_mem_access);

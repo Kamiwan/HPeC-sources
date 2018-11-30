@@ -399,10 +399,10 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 			 imu_msg->orientation.x, imu_msg->orientation.y, 
 			 imu_msg->orientation.z, imu_msg->orientation.w);
 
-   double quatx= imu_msg->orientation.x;
-   double quaty= imu_msg->orientation.y;
-   double quatz= imu_msg->orientation.z;
-   double quatw= imu_msg->orientation.w;
+   	double quatx= imu_msg->orientation.x;
+   	double quaty= imu_msg->orientation.y;
+   	double quatz= imu_msg->orientation.z;
+   	double quatw= imu_msg->orientation.w;
 
     tf::Quaternion q(quatx, quaty, quatz, quatw);
     tf::Matrix3x3 m(q);

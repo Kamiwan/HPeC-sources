@@ -28,7 +28,69 @@
 
 /*********** Global variables ***********/ 
 int	verbose;
+double roll, pitch, yaw;
+double prev_roll, prev_pitch, prev_yaw;
+float    battery_level;
+bool   first_time_imu;
 boost::shared_ptr<ros::Publisher> notify_from_MM_pub;
+/*********** Global variables ***********/ 
+
+
+
+/*******************************************************************
+ * battery_callback
+ * Author : EM 
+ * @param bat_msg
+ * 
+ * Callback function to get battery %
+*******************************************************************/
+void battery_callback(const sensor_msgs::BatteryState::ConstPtr &bat_msg)
+{
+   battery_level = bat_msg->percentage;
+}
+
+
+/*******************************************************************
+ * imu_callback
+ * Author : EM 
+ * @param imu_msg, 
+ * 
+ * Callback function to get IMU data
+*******************************************************************/
+void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
+{
+   double quatx= imu_msg->orientation.x;
+   double quaty= imu_msg->orientation.y;
+   double quatz= imu_msg->orientation.z;
+   double quatw= imu_msg->orientation.w;
+
+	double tmp_roll, tmp_pitch, tmp_yaw;
+
+   tf::Quaternion q(quatx, quaty, quatz, quatw);
+   tf::Matrix3x3 m(q);
+   m.getRPY(tmp_roll, tmp_pitch, tmp_yaw);
+
+	if(first_time_imu)	
+	{
+		prev_roll = tmp_roll;
+		prev_pitch = tmp_pitch;
+		prev_yaw = tmp_yaw;
+
+		first_time_imu = false;
+	} else {
+		prev_roll = roll;
+		prev_pitch = pitch;
+		prev_yaw = yaw;
+	}
+
+	roll = tmp_roll;
+	pitch = tmp_pitch;
+	yaw = tmp_yaw;
+	
+	ROS_INFO("\nSeq: [%d]", imu_msg->header.seq);
+   ROS_INFO("\nRoll: [%f],Pitch: [%f],Yaw: [%f]",roll,pitch,yaw);
+}
+
 
 
 void achievable_Callback(const std_msgs::Int32::ConstPtr &msg1)
@@ -71,24 +133,22 @@ int main(int argc, char **argv)
    }
 
 
-   //************** reception de la liste des taches nn realisables, publiée par l'automate ...
    ros::Subscriber achievable_sub = nh.subscribe("/achievable_topic", 1000, achievable_Callback);
    ros::Subscriber cpu_sub = nh.subscribe("/cpu_load_topic", 1000, cpu_load_Callback);
+   ros::Subscriber imu_sub = nh.subscribe("mavros/imu/data", 1000, imu_callback);
+   ros::Subscriber bat_sub = nh.subscribe("mavros/battery", 1000, battery_callback);
    
    notify_from_MM_pub = boost::make_shared<ros::Publisher>(
       nh.advertise<std_msgs::Int32>("/notify_from_MM_topic", 1000));
 
-   ROS_INFO("[mission_manager][listening]");
+   ROS_INFO("[MISSION_MANAGER]: listening");
 
-   ros::Rate loop_rate(10); //10hz = 100ms, 0.1hz=10s
+   ros::Rate loop_rate(1); //10hz = 100ms, 0.1hz=10s
    while (ros::ok())
    {
+      ros::spinOnce();
 
-      //lecture de C3 apres modif des Qos et Texec
-      ROS_INFO("TABLE C3");
-
-      ros::spin();
-
+      ROS_INFO("TIME TO SLEEP");
       loop_rate.sleep();
    }
 }
