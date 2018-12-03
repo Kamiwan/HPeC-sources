@@ -27,10 +27,12 @@
 #include "mission_manager_node.hpp"
 
 /*********** Global variables ***********/ 
-int	verbose;
-double roll, pitch, yaw;
-double prev_roll, prev_pitch, prev_yaw;
-float    battery_level;
+int	 verbose;
+double roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw;
+double altitude, longitude, latitude;
+double ang_vel_x, ang_vel_y, ang_vel_z, lin_vel_x, lin_vel_y, lin_vel_z;
+double ang_wind_x, ang_wind_y, ang_wind_z, lin_wind_x, lin_wind_y, lin_wind_z;
+float  battery_level;
 bool   first_time_imu;
 boost::shared_ptr<ros::Publisher> notify_from_MM_pub;
 /*********** Global variables ***********/ 
@@ -47,6 +49,94 @@ boost::shared_ptr<ros::Publisher> notify_from_MM_pub;
 void battery_callback(const sensor_msgs::BatteryState::ConstPtr &bat_msg)
 {
    battery_level = bat_msg->percentage;
+
+   if(verbose > VERBOSITY_OFF)
+   {
+	   ROS_INFO("Seq: [%d]", bat_msg->header.seq);
+      std::cout << "Battery left : [" << std::setprecision(3) << battery_level << "]% \n";
+   }
+}
+
+
+/*******************************************************************
+ * gps_pos_callback
+ * Author : EM 
+ * @param position
+ * 
+ * Callback function to get position
+*******************************************************************/
+void gps_pos_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
+{
+	altitude  = position->altitude;
+   latitude  = position->latitude;
+   longitude = position->longitude;
+
+   if(verbose > VERBOSITY_OFF)
+   {
+	   ROS_INFO("Seq: [%d]", position->header.seq);
+      std::cout << "GPS POS Alt: [" << altitude << std::setprecision(10)
+                  <<"], Long: [" << longitude  
+                  << "], Lat: [" << latitude << "] \n";
+   }
+}
+
+/*******************************************************************
+ * gps_vel_callback
+ * Author : EM 
+ * @param vel_msg
+ * 
+ * Callback function to get UAV speed
+*******************************************************************/
+void gps_vel_callback(const geometry_msgs::TwistStamped::ConstPtr &vel_msg)
+{
+   ang_vel_x = vel_msg->twist.angular.x;
+   ang_vel_y = vel_msg->twist.angular.y;
+   ang_vel_z = vel_msg->twist.angular.z;
+
+   lin_vel_x = vel_msg->twist.linear.x;
+   lin_vel_y = vel_msg->twist.linear.y;
+   lin_vel_z = vel_msg->twist.linear.z;
+
+   if(verbose > VERBOSITY_OFF)
+   {
+	   ROS_INFO("Seq: [%d]", vel_msg->header.seq);
+      std::cout << "LINEAR SPEED x: [" << std::setprecision(3) << lin_vel_x 
+                  << "], y: [" << lin_vel_y 
+                  <<"], z: [" << lin_vel_z <<"]";
+      std::cout << "\nANGULAR SPEED x: [" << ang_vel_x 
+                  <<"], y: [" << ang_vel_y 
+                  <<"], z: [" << ang_vel_z << "] \n";
+   }
+}
+
+/*******************************************************************
+ * wind_callback
+ * Author : EM 
+ * @param wind_msg
+ * 
+ * Callback function to get wind estimation
+*******************************************************************/
+void wind_callback(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr &wind_msg)
+{
+   ang_wind_x = wind_msg->twist.twist.angular.x;
+   ang_wind_y = wind_msg->twist.twist.angular.y;
+   ang_wind_z = wind_msg->twist.twist.angular.z;
+
+   lin_wind_x = wind_msg->twist.twist.linear.x;
+   lin_wind_y = wind_msg->twist.twist.linear.y;
+   lin_wind_z = wind_msg->twist.twist.linear.z;
+
+   if(verbose > VERBOSITY_OFF)
+   {
+	   ROS_INFO("Seq: [%d]", wind_msg->header.seq);
+      std::cout << "LINEAR WIND x: [" << std::setprecision(3) << lin_wind_x 
+                  << "], y: [" << lin_wind_y 
+                  <<"], z: [" << lin_wind_z <<"]";
+      std::cout << "\nANGULAR WIND x: [" << ang_wind_x 
+                  <<"], y: [" << ang_wind_y 
+                  <<"], z: [" << ang_wind_z << "] \n";
+   }
+
 }
 
 
@@ -87,8 +177,13 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 	pitch = tmp_pitch;
 	yaw = tmp_yaw;
 	
-	ROS_INFO("\nSeq: [%d]", imu_msg->header.seq);
-   ROS_INFO("\nRoll: [%f],Pitch: [%f],Yaw: [%f]",roll,pitch,yaw);
+   if(verbose > VERBOSITY_LOW)
+   {
+	   ROS_INFO("Seq: [%d]", imu_msg->header.seq);
+      std::cout   << std::setprecision(4) << "Roll: ["  << roll 
+                  << "],Pitch: [" << pitch 
+                  << "],Yaw: ["   << yaw << "] \n";
+   }
 }
 
 
@@ -106,7 +201,6 @@ void achievable_Callback(const std_msgs::Int32::ConstPtr &msg1)
    notify_from_MM_pub->publish(msg);
 }
 
-
 //******************
 void cpu_load_Callback(const std_msgs::Float32::ConstPtr &load)
 {
@@ -118,13 +212,14 @@ void cpu_load_Callback(const std_msgs::Float32::ConstPtr &load)
 int main(int argc, char **argv)
 {
    ros::init(argc, argv, "mission_manager");
-   ros::NodeHandle nh("~"); //EM, use ~ for private parameters, here it's for verbose
+   ros::NodeHandle nh;  //EM non-private Node Handle to get topics notifications from other nodes
+   ros::NodeHandle n("~"); //EM, use ~ for private parameters, here it's for verbose
    
    //EM, to use the verbose argument in command line write this: _verbose:=value
-   if (!nh.hasParam("verbose"))
+   if (!n.hasParam("verbose"))
       ROS_ERROR("No param named 'verbose'");
     
-   if(nh.getParam("verbose",  verbose))
+   if(n.getParam("verbose",  verbose))
       ROS_INFO("Verbose level = %d", verbose);
    else
    {
@@ -134,10 +229,16 @@ int main(int argc, char **argv)
 
 
    ros::Subscriber achievable_sub = nh.subscribe("/achievable_topic", 1000, achievable_Callback);
-   ros::Subscriber cpu_sub = nh.subscribe("/cpu_load_topic", 1000, cpu_load_Callback);
-   ros::Subscriber imu_sub = nh.subscribe("mavros/imu/data", 1000, imu_callback);
-   ros::Subscriber bat_sub = nh.subscribe("mavros/battery", 1000, battery_callback);
+   ros::Subscriber cpu_sub        = nh.subscribe("/cpu_load_topic", 1000, cpu_load_Callback);
+
+   ros::Subscriber imu_sub        = nh.subscribe("mavros/imu/data", 1000, imu_callback);
+   ros::Subscriber bat_sub        = nh.subscribe("mavros/battery", 1000, battery_callback);
+   ros::Subscriber vel_sub        = nh.subscribe("mavros/global_position/raw/gps_vel", 1000, gps_vel_callback);
+   ros::Subscriber pos_sub        = nh.subscribe("mavros/global_position/global", 1000, gps_pos_callback);
+   ros::Subscriber wind_sub       = nh.subscribe("mavros/wind_estimation", 1000, wind_callback);
    
+   
+
    notify_from_MM_pub = boost::make_shared<ros::Publisher>(
       nh.advertise<std_msgs::Int32>("/notify_from_MM_topic", 1000));
 
