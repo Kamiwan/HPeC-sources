@@ -54,7 +54,6 @@
 void battery_callback(const sensor_msgs::BatteryState::ConstPtr &bat_msg);
 void gps_vel_callback(const geometry_msgs::TwistStamped::ConstPtr &vel_msg);
 void gps_pos_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
-void wind_callback(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr &wind_msg);
 void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
 void cpu_load_Callback(const std_msgs::Float32::ConstPtr &load);
 void achievable_Callback(const std_msgs::Int32::ConstPtr &msg1);
@@ -64,7 +63,6 @@ extern int	    verbose;
 extern double   roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw;;
 extern double   altitude, longitude, latitude;
 extern double   ang_vel_x, ang_vel_y, ang_vel_z, lin_vel_x, lin_vel_y, lin_vel_z;
-extern double   ang_wind_x, ang_wind_y, ang_wind_z, lin_wind_x, lin_wind_y, lin_wind_z;
 extern float    battery_level;
 extern bool     first_time_imu;
 

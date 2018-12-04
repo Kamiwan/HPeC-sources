@@ -31,7 +31,6 @@ int	 verbose;
 double roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw;
 double altitude, longitude, latitude;
 double ang_vel_x, ang_vel_y, ang_vel_z, lin_vel_x, lin_vel_y, lin_vel_z;
-double ang_wind_x, ang_wind_y, ang_wind_z, lin_wind_x, lin_wind_y, lin_wind_z;
 float  battery_level;
 bool   first_time_imu;
 boost::shared_ptr<ros::Publisher> notify_from_MM_pub;
@@ -44,7 +43,7 @@ boost::shared_ptr<ros::Publisher> notify_from_MM_pub;
  * Author : EM 
  * @param bat_msg
  * 
- * Callback function to get battery %
+ * Callback function to get battery % between 0 and 1
 *******************************************************************/
 void battery_callback(const sensor_msgs::BatteryState::ConstPtr &bat_msg)
 {
@@ -64,6 +63,7 @@ void battery_callback(const sensor_msgs::BatteryState::ConstPtr &bat_msg)
  * @param position
  * 
  * Callback function to get position
+ * Altitude in m (MSL)
 *******************************************************************/
 void gps_pos_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 {
@@ -85,7 +85,7 @@ void gps_pos_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
  * Author : EM 
  * @param vel_msg
  * 
- * Callback function to get UAV speed
+ * Callback function to get UAV speed m/s
 *******************************************************************/
 void gps_vel_callback(const geometry_msgs::TwistStamped::ConstPtr &vel_msg)
 {
@@ -109,35 +109,6 @@ void gps_vel_callback(const geometry_msgs::TwistStamped::ConstPtr &vel_msg)
    }
 }
 
-/*******************************************************************
- * wind_callback
- * Author : EM 
- * @param wind_msg
- * 
- * Callback function to get wind estimation
-*******************************************************************/
-void wind_callback(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr &wind_msg)
-{
-   ang_wind_x = wind_msg->twist.twist.angular.x;
-   ang_wind_y = wind_msg->twist.twist.angular.y;
-   ang_wind_z = wind_msg->twist.twist.angular.z;
-
-   lin_wind_x = wind_msg->twist.twist.linear.x;
-   lin_wind_y = wind_msg->twist.twist.linear.y;
-   lin_wind_z = wind_msg->twist.twist.linear.z;
-
-   if(verbose > VERBOSITY_OFF)
-   {
-	   ROS_INFO("Seq: [%d]", wind_msg->header.seq);
-      std::cout << "LINEAR WIND x: [" << std::setprecision(3) << lin_wind_x 
-                  << "], y: [" << lin_wind_y 
-                  <<"], z: [" << lin_wind_z <<"]";
-      std::cout << "\nANGULAR WIND x: [" << ang_wind_x 
-                  <<"], y: [" << ang_wind_y 
-                  <<"], z: [" << ang_wind_z << "] \n";
-   }
-
-}
 
 
 /*******************************************************************
@@ -235,7 +206,6 @@ int main(int argc, char **argv)
    ros::Subscriber bat_sub        = nh.subscribe("mavros/battery", 1000, battery_callback);
    ros::Subscriber vel_sub        = nh.subscribe("mavros/global_position/raw/gps_vel", 1000, gps_vel_callback);
    ros::Subscriber pos_sub        = nh.subscribe("mavros/global_position/global", 1000, gps_pos_callback);
-   ros::Subscriber wind_sub       = nh.subscribe("mavros/wind_estimation", 1000, wind_callback);
    
    
 
