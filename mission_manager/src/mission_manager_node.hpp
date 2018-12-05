@@ -60,6 +60,9 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
 void obstacle_callback(const communication::obstacle_detection_msg::ConstPtr& detection_msg);
 void achievable_Callback(const std_msgs::Int32::ConstPtr &msg1);
 
+void   init_cpu_load();
+double current_cpu_value();
+
 /*********** Global variables ***********/ 
 extern int	    verbose;
 extern double   roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw;;

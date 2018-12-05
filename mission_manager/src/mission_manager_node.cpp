@@ -26,6 +26,11 @@
 
 #include "mission_manager_node.hpp"
 
+//EM, for CPU load functions, init_cpu_load() and current_cpu_value()
+#include "stdlib.h"
+#include "stdio.h"
+#include "string.h"
+
 /*********** Global variables ***********/ 
 int	 verbose;
 double roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw;
@@ -34,9 +39,70 @@ double ang_vel_x, ang_vel_y, ang_vel_z, lin_vel_x, lin_vel_y, lin_vel_z;
 float  battery_level;
 bool   first_time_imu;
 boost::shared_ptr<ros::Publisher> notify_from_MM_pub;
+static unsigned long long lastTotalUser, lastTotalUserLow, lastTotalSys, lastTotalIdle; //EM, CPU load
 /*********** Global variables ***********/ 
 
 
+
+
+
+
+
+
+/*******************************************************************
+ * init_cpu_load
+ * Author : EM 
+ * 
+ * First read of /proc/stat to get reference to compute cpu_load
+*******************************************************************/
+void init_cpu_load()
+{
+   FILE* file = fopen("/proc/stat", "r");
+   fscanf(file, "cpu %llu %llu %llu %llu", &lastTotalUser, &lastTotalUserLow,
+      &lastTotalSys, &lastTotalIdle);
+   fclose(file);
+}
+
+/*******************************************************************
+ * current_cpu_value
+ * Author : EM 
+ * @return percent
+ * 
+ * Callback function to get battery % between 0 and 1
+*******************************************************************/
+double current_cpu_value()
+{
+   double percent;
+   FILE* file;
+   unsigned long long totalUser, totalUserLow, totalSys, totalIdle, total;
+
+   file = fopen("/proc/stat", "r");
+   fscanf(file, "cpu %llu %llu %llu %llu", &totalUser, &totalUserLow,
+      &totalSys, &totalIdle);
+   fclose(file);
+
+   if (totalUser < lastTotalUser || totalUserLow < lastTotalUserLow ||
+       totalSys < lastTotalSys || totalIdle < lastTotalIdle)
+   {
+      //Overflow detection. Just skip this value.
+      percent = -1.0;
+   }
+   else{
+      total = (totalUser - lastTotalUser) + (totalUserLow - lastTotalUserLow) +
+         (totalSys - lastTotalSys);
+      percent = total;
+      total += (totalIdle - lastTotalIdle);
+      percent /= total;
+      percent *= 100;
+   }
+
+   lastTotalUser = totalUser;
+   lastTotalUserLow = totalUserLow;
+   lastTotalSys = totalSys;
+   lastTotalIdle = totalIdle;
+
+   return percent;
+}
 
 /*******************************************************************
  * battery_callback
@@ -207,6 +273,8 @@ int main(int argc, char **argv)
       verbose = VERBOSITY_DEFAULT;
    }
 
+   init_cpu_load(); //EM, reference values to get cpu_load
+
    ros::Subscriber imu_sub        = nh.subscribe("mavros/imu/data", 1000, imu_callback);
    ros::Subscriber bat_sub        = nh.subscribe("mavros/battery", 1000, battery_callback);
    ros::Subscriber vel_sub        = nh.subscribe("mavros/global_position/raw/gps_vel", 1000, gps_vel_callback);
@@ -225,6 +293,7 @@ int main(int argc, char **argv)
    {
       ros::spinOnce();
 
+      std::cout << "Current CPU load = " << current_cpu_value() << " %" << std::endl;
       ROS_INFO("TIME TO SLEEP");
       loop_rate.sleep();
    }
