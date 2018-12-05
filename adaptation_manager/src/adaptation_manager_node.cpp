@@ -232,15 +232,9 @@ int main (int argc, char ** argv)
     tracking_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/tracking_mgt_topic", 1));
     achievable_pub = boost::make_shared<ros::Publisher>( 
-                        nh.advertise<std_msgs::Int32>("/achievable_topic", 1000));
+                     nh.advertise<std_msgs::Int32>("/achievable_topic", 1000));
     ros::Subscriber notify_from_MM_sub;
         notify_from_MM_sub = nh.subscribe("/notify_from_MM_topic", 1000, notify_Callback);
-                    
-    ros::Publisher cpu_pub;
-        cpu_pub = nh.advertise<std_msgs::Float32>("/cpu_load_topic", 1);				    
-    //*****************Ghizlane BOUDABZA
-    std_msgs::Float32 load;
-
 
 
     //EM, Data structure setup
@@ -274,9 +268,6 @@ int main (int argc, char ** argv)
     { 
         ros::spinOnce();
 
-        load.data = cpuload();
-        //cpu_pub.publish( load );
-        
         time_qos_data = sh_mem_read_time_qos(sh_mem_access);
         if(!compare(time_qos_data,C3_current) || MM_request)
         {
@@ -467,6 +458,10 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         msg.data = 0; 
         activate_desactivate_task(scheduler_array[i].app_index, msg);	
         cout << "\033[1;31m Disable Task no: " << scheduler_array[i].app_index << "\033[0m"  << endl;
+
+        //EM, write in shared memory the state of each Tile that are released thanks to HW tasks shutdown
+        if(scheduler_array[i].region_id != 0 && scheduler_array[i].active ==0) 
+            shared_memory.busy_tile_Write(0, scheduler_array[i].region_id); 
     }
 
     //EM, Second loop: Ensure that all Tiles that are gonna be configured are freed.
@@ -498,6 +493,7 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[1;36m Enable HW version of Task no: " << scheduler_array[i].app_index 
                     << " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
+            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id); //EM, notify the Tile reservation in sh mem
         }
 
         //Enable HW tasks in fusion "f"
@@ -510,6 +506,7 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[36m Enable HW FUSION version of Task no: " << scheduler_array[i].app_index 
                     << " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
+            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id); //EM, notify the Tile reservation in sh mem
         }
     }
     cout << endl;

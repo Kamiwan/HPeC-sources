@@ -225,7 +225,6 @@ class MemoryCoordinator {
         bip::offset_ptr<SharedVector> done_Vptr;
         bip::offset_ptr<SharedVector> busy_tile_Vptr;
         
-
         //Offset Pointers to USE easily the shared memory
         //Use them ONLY when vectors are full of data
         bip::offset_ptr<int> C3_table_ptr;
@@ -234,7 +233,6 @@ class MemoryCoordinator {
         bip::offset_ptr<int> done_ptr;
         bip::offset_ptr<int> busy_tile_ptr;
         
-
         //Named mutexes to protect the shared memory access
         //The default constructor is private, instanciation mandatory...
         bip::named_mutex C3_table_mutex{
