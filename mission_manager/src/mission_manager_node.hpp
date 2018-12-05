@@ -65,7 +65,7 @@ double current_cpu_value();
 
 /*********** Global variables ***********/ 
 extern int	    verbose;
-extern double   roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw;;
+extern double   roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw, delta_roll, delta_pitch, delta_yaw;
 extern double   altitude, longitude, latitude;
 extern double   ang_vel_x, ang_vel_y, ang_vel_z, lin_vel_x, lin_vel_y, lin_vel_z;
 extern float    battery_level;

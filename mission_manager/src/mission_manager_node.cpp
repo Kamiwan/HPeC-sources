@@ -33,7 +33,7 @@
 
 /*********** Global variables ***********/ 
 int	 verbose;
-double roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw;
+double roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw, delta_roll, delta_pitch, delta_yaw;
 double altitude, longitude, latitude;
 double ang_vel_x, ang_vel_y, ang_vel_z, lin_vel_x, lin_vel_y, lin_vel_z;
 float  battery_level;
@@ -68,7 +68,7 @@ void init_cpu_load()
  * Author : EM 
  * @return percent
  * 
- * Callback function to get battery % between 0 and 1
+ * Callback function to the current cpu load in % 
 *******************************************************************/
 double current_cpu_value()
 {
@@ -211,6 +211,10 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 	roll = tmp_roll;
 	pitch = tmp_pitch;
 	yaw = tmp_yaw;
+
+   delta_roll  = roll  - prev_roll;       
+   delta_pitch = pitch - prev_pitch;      
+   delta_yaw   = yaw   - prev_yaw;  
 	
    if(verbose > VERBOSITY_LOW)
    {
@@ -273,18 +277,19 @@ int main(int argc, char **argv)
       verbose = VERBOSITY_DEFAULT;
    }
 
-   init_cpu_load(); //EM, reference values to get cpu_load
-
    ros::Subscriber imu_sub        = nh.subscribe("mavros/imu/data", 1000, imu_callback);
    ros::Subscriber bat_sub        = nh.subscribe("mavros/battery", 1000, battery_callback);
    ros::Subscriber vel_sub        = nh.subscribe("mavros/global_position/raw/gps_vel", 1000, gps_vel_callback);
    ros::Subscriber pos_sub        = nh.subscribe("mavros/global_position/global", 1000, gps_pos_callback);
    
    ros::Subscriber achievable_sub = nh.subscribe("/achievable_topic", 1000, achievable_Callback);
-   ros::Subscriber obstacle_sub   = nh.subscribe("/cpu_load_topic", 1000, obstacle_callback);
+   ros::Subscriber obstacle_sub   = nh.subscribe("obstacle_detection_topic", 1000, obstacle_callback);
    
    notify_from_MM_pub = boost::make_shared<ros::Publisher>(
       nh.advertise<std_msgs::Int32>("/notify_from_MM_topic", 1000));
+
+
+   MemoryCoordinator sh_mem_access("User"); //EM, may MM able to use the shared memory
 
    ROS_INFO("[MISSION_MANAGER]: listening");
 
@@ -294,6 +299,10 @@ int main(int argc, char **argv)
       ros::spinOnce();
 
       std::cout << "Current CPU load = " << current_cpu_value() << " %" << std::endl;
+      std::cout << "Current Tiles used, Tile 1 = " << sh_mem_access.busy_tile_Read(TILE_1)
+                  <<   ", Tile 2 = " << sh_mem_access.busy_tile_Read(TILE_2)
+                  <<   ", Tile 3 = " << sh_mem_access.busy_tile_Read(TILE_3)
+                  << std::endl;
       ROS_INFO("TIME TO SLEEP");
       loop_rate.sleep();
    }

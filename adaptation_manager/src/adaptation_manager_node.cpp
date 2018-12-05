@@ -461,7 +461,7 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
 
         //EM, write in shared memory the state of each Tile that are released thanks to HW tasks shutdown
         if(scheduler_array[i].region_id != 0 && scheduler_array[i].active ==0) 
-            shared_memory.busy_tile_Write(0, scheduler_array[i].region_id); 
+            shared_memory.busy_tile_Write(0, scheduler_array[i].region_id-1); //EM, -1 because sh_vector index starts at 0
     }
 
     //EM, Second loop: Ensure that all Tiles that are gonna be configured are freed.
@@ -493,7 +493,8 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[1;36m Enable HW version of Task no: " << scheduler_array[i].app_index 
                     << " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
-            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id); //EM, notify the Tile reservation in sh mem
+            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id-1); //EM, notify the Tile reservation in sh mem
+            //EM, -1 because sh_vector index starts at 0
         }
 
         //Enable HW tasks in fusion "f"
@@ -506,7 +507,8 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[36m Enable HW FUSION version of Task no: " << scheduler_array[i].app_index 
                     << " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
-            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id); //EM, notify the Tile reservation in sh mem
+            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id-1); //EM, notify the Tile reservation in sh mem
+            //EM, -1 because sh_vector index starts at 0
         }
     }
     cout << endl;
