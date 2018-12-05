@@ -45,16 +45,19 @@ typedef std::vector<int, ShmemAllocator> SharedVector;
 #define NAME_ACHIEVABLE_SEGMENT   "Achievable_segment"
 #define NAME_RELEASE_SEGMENT      "Release_hw_segment"
 #define NAME_DONE_SEGMENT         "Done_segment"
+#define NAME_BUSY_TILE_SEGMENT    "Busy_Tile_segment"
 
 #define VECTOR_NAME_C3_SEGMENT           "Vector_C3_table_segment"
 #define VECTOR_NAME_ACHIEVABLE_SEGMENT   "Vector_Achievable_segment"
 #define VECTOR_NAME_RELEASE_SEGMENT      "Vector_Release_hw_segment"
 #define VECTOR_NAME_DONE_SEGMENT         "Vector_Done_segment"
+#define VECTOR_NAME_BUSY_TILE_SEGMENT    "Vector_Busy_Tile_segment"
 
 #define MUTEX_NAME_C3_SEGMENT           "Mutex_C3_table_segment"
 #define MUTEX_NAME_ACHIEVABLE_SEGMENT   "Mutex_Achievable_segment"
 #define MUTEX_NAME_RELEASE_SEGMENT      "Mutex_Release_hw_segment"
 #define MUTEX_NAME_DONE_SEGMENT         "Mutex_Done_segment"
+#define MUTEX_NAME_BUSY_TILE_SEGMENT    "Mutex_Busy_Tile_segment"
 
 #define PAGE_SIZE_BYTES      4096
 
@@ -82,5 +85,9 @@ typedef std::vector<int, ShmemAllocator> SharedVector;
 #define DETECTION          9  
 #define TRACKING           10
 
+//EM, Tile index
+#define TILE_1             0
+#define TILE_2             1
+#define TILE_3             2
 
 #endif
