@@ -2,7 +2,6 @@
 #define OBSTACLE_DETECTION_CLASS_H
 
 # include <ros/ros.h>
-#include "taf.h"
 # include "communication/obstacle_detection_msg.h"
 
 class obstacle_detection_class
@@ -35,15 +34,13 @@ class obstacle_detection_class
 	private:
 		
 		//fonctions
-		
-		std::vector<float> compute(std::vector<float> L, std::vector<float> S, std::vector<float> U, std::vector<float> E, std::vector<float> O);
-		
+		std::vector<float> compute(std::vector<float> L, std::vector<float> S
+								, std::vector<float> U, std::vector<float> E
+								, std::vector<float> O);
 		float irwf( float v1, float v2, float v3, float v4, float v5, float v6, float v7);
-		
 		float wf( float v1, float v2, float v3, float v4, float v5, float v6);
 		
 		//variables
-		
 		float a;
 		float b;
 		float c;
@@ -66,8 +63,8 @@ class obstacle_detection_class
 		std::vector<float> irl;
 		std::vector<float> irs;
 		
-		std::vector<float> old_L ;
-		std::vector<float>  old_S;
+		std::vector<float> old_L;
+		std::vector<float> old_S;
 		std::vector<float> old_D;
 		std::vector<float> old_U;
 		std::vector<float> old_I;

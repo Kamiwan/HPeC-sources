@@ -193,13 +193,15 @@ void notify_Callback(const std_msgs::Int32::ConstPtr& msg)
 int main (int argc, char ** argv)
 {   
     ros::init(argc, argv, "adaptation_manager_node");
-    ros::NodeHandle nh("~");
+    ros::NodeHandle nh;     //EM non-private Node Handle to get topics notifications from other nodes
+    ros::NodeHandle n("~"); //EM, use ~ for private parameters, here it's for verbose
+
     ROS_INFO("[ADAPTATION MANAGER] [RUNNING] \n");
 
-    if (!nh.hasParam("verbose"))
+    if (!n.hasParam("verbose"))
         ROS_INFO("No param named 'verbose'");
     
-    if(nh.getParam("verbose",  verbose))
+    if(n.getParam("verbose",  verbose))
         ROS_INFO("verbose level = %d", verbose);
     else
     {

@@ -41,6 +41,7 @@
 #include "std_msgs/String.h"
 #include "std_msgs/Int32.h"
 #include "std_msgs/Float32.h"
+#include "communication/obstacle_detection_msg.h"
 
 #include "CommSharedMemory.hpp" //EM, shared_memory_lib header
 
@@ -55,7 +56,8 @@ void battery_callback(const sensor_msgs::BatteryState::ConstPtr &bat_msg);
 void gps_vel_callback(const geometry_msgs::TwistStamped::ConstPtr &vel_msg);
 void gps_pos_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
 void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
-void cpu_load_Callback(const std_msgs::Float32::ConstPtr &load);
+
+void obstacle_callback(const communication::obstacle_detection_msg::ConstPtr& detection_msg);
 void achievable_Callback(const std_msgs::Int32::ConstPtr &msg1);
 
 /*********** Global variables ***********/ 

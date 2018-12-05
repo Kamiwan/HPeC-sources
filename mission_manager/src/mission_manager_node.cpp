@@ -109,8 +109,6 @@ void gps_vel_callback(const geometry_msgs::TwistStamped::ConstPtr &vel_msg)
    }
 }
 
-
-
 /*******************************************************************
  * imu_callback
  * Author : EM 
@@ -158,6 +156,22 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 }
 
 
+/*******************************************************************
+ * obstacle_callback
+ * Author : EM 
+ * @param detection_msg, 
+ * 
+ * Callback function to know if an obstacle is detected
+*******************************************************************/
+void obstacle_callback(const communication::obstacle_detection_msg::ConstPtr& detection_msg)
+{
+	int8_t dir = detection_msg->direction; 
+   if(dir!=0) //EM TODO: add check if current state diff of STANDBY
+   {
+      if(verbose > VERBOSITY_OFF)
+         ROS_INFO("OBSTACLE DETECTED !!!");
+   }
+}
 
 void achievable_Callback(const std_msgs::Int32::ConstPtr &msg1)
 {
@@ -172,11 +186,6 @@ void achievable_Callback(const std_msgs::Int32::ConstPtr &msg1)
    notify_from_MM_pub->publish(msg);
 }
 
-//******************
-void cpu_load_Callback(const std_msgs::Float32::ConstPtr &load)
-{
-   ROS_INFO("[CPU][LOAD] : [%f]", load->data);
-}
 
 
 //***********************
@@ -198,17 +207,14 @@ int main(int argc, char **argv)
       verbose = VERBOSITY_DEFAULT;
    }
 
-
-   ros::Subscriber achievable_sub = nh.subscribe("/achievable_topic", 1000, achievable_Callback);
-   ros::Subscriber cpu_sub        = nh.subscribe("/cpu_load_topic", 1000, cpu_load_Callback);
-
    ros::Subscriber imu_sub        = nh.subscribe("mavros/imu/data", 1000, imu_callback);
    ros::Subscriber bat_sub        = nh.subscribe("mavros/battery", 1000, battery_callback);
    ros::Subscriber vel_sub        = nh.subscribe("mavros/global_position/raw/gps_vel", 1000, gps_vel_callback);
    ros::Subscriber pos_sub        = nh.subscribe("mavros/global_position/global", 1000, gps_pos_callback);
    
+   ros::Subscriber achievable_sub = nh.subscribe("/achievable_topic", 1000, achievable_Callback);
+   ros::Subscriber obstacle_sub   = nh.subscribe("/cpu_load_topic", 1000, obstacle_callback);
    
-
    notify_from_MM_pub = boost::make_shared<ros::Publisher>(
       nh.advertise<std_msgs::Int32>("/notify_from_MM_topic", 1000));
 
