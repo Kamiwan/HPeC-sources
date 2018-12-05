@@ -42,21 +42,26 @@ namespace bip = boost::interprocess;
 class MemoryCoordinator {
     public:
         /* Fill_ShMem_...
-        Copy a vector of int in the dedicated shared memory
-        @param memory the data vector to record
-        /!\ Use these functions at least once with the Admin (see constructor)
-            in order to use the shared memory later
+        *  Copy a vector of int in the dedicated shared memory
+        *  @param memory the data vector to record
+        *  /!\ Use these functions at least once with the Admin (see constructor)
+        *      in order to use the shared memory later
+        *  /!\ busy_tile must only be an array (vector) of 3 elements because we
+        *      have 3 tiles
         */
         void    Fill_ShMem_C3_table(const std::vector<int> &memory);
         void    Fill_ShMem_achievable(const std::vector<int> &memory);
         void    Fill_ShMem_release_hw(const std::vector<int> &memory);
         void    Fill_ShMem_done(const std::vector<int> &memory);
+        void    Fill_ShMem_busy_tile(const std::vector<int> &memory);
 
         /* ..._Read/Write
-        Read or write a single data in the dedicated shared memory
-        @param app_index    the number associated to the app
-        @param data         the data to write (Write)
-        @return             the data stored (Read)
+         * Read or write a single data in the dedicated shared memory
+         * @param app_index    the number associated to the app
+         * @param data         the data to write (Write)
+         * @return             the data stored (Read)
+         * 
+         * (i) For busy_tile, tile_index must not exceed the number of tiles
         */
         int     achievable_Read(int app_index);
         void    achievable_Write(int data, int app_index);
@@ -64,6 +69,8 @@ class MemoryCoordinator {
         void    release_hw_Write(int data, int app_index);
         int     done_Read(int app_index);
         void    done_Write(int data, int app_index);
+        int     busy_tile_Read(int tile_index);
+        void    busy_tile_Write(int data, int tile_index);
 
         /*C3 contains several parameters per app so Read and Write use an array
           (vector) instead of a single int
