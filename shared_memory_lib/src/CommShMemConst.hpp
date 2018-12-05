@@ -86,6 +86,7 @@ typedef std::vector<int, ShmemAllocator> SharedVector;
 #define TRACKING           10
 
 //EM, Tile index
+#define TILE_NUMBER        3
 #define TILE_1             0
 #define TILE_2             1
 #define TILE_3             2

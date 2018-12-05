@@ -598,12 +598,17 @@ void sh_mem_setup(MemoryCoordinator & shared_memory, vector<Task_in> C3)
     std::vector<int> achievable_init;
     std::vector<int> release_hw_init;
     std::vector<int> done_init;
+    std::vector<int> busy_tile_init;
     for(int i = 0; i < APPLICATION_NUMBER; i++)
     {
         achievable_init.push_back(1);   //EM, everything achievable by default
         release_hw_init.push_back(1);   //  everything released by default
         done_init.push_back(0);         //  nothing done by default
+
+        if(i < TILE_NUMBER)
+            busy_tile_init.push_back(0); //EM, no tile used by default
     }
+
     std::vector<int> Sh_C3_init;
     for(int i = 0; i < C3.size(); i++)
     {
@@ -620,6 +625,7 @@ void sh_mem_setup(MemoryCoordinator & shared_memory, vector<Task_in> C3)
     shared_memory.Fill_ShMem_achievable(achievable_init);
     shared_memory.Fill_ShMem_release_hw(release_hw_init);
     shared_memory.Fill_ShMem_done(done_init);
+    shared_memory.Fill_ShMem_busy_tile(busy_tile_init);
     std::cout << "Fill shared memories, done! " << std::endl;
 }
 
