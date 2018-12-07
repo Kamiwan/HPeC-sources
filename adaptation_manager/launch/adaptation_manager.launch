@@ -1,0 +1,5 @@
+<?xml version ='1.0'?>
+
+	<launch>
+		<node pkg="adaptation_manager" type="adaptation_manager_node" name="adaptation_manager_node" />		
+	</launch>

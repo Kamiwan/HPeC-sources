@@ -188,6 +188,7 @@ add_executable(detection_tracking_node
 			src/detection_tracking_node.cpp
       src/main.cpp 
       src/debug.c	
+      src/utils.cpp
 )
 
 add_executable(tld_gui_node     src/tld_gui_node.cpp

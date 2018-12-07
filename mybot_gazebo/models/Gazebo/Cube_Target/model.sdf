@@ -41,5 +41,148 @@
         </meta>
       </visual>
     </link>
+    <!--link name='test_sensor_link'>
+      <pose>.5 0 0 0 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='test_sensor_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='test_sensor_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+      <sensor name='test_sensor' type='ray'>
+      <update_rate>10</update_rate>
+      <visualize>true</visualize>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>3</samples>
+            <resolution>1</resolution>
+            <min_angle>-5e-3</min_angle>
+            <max_angle>5e-3</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.25</min>
+          <max>1.50</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.006666</stddev>
+        </noise>
+      </ray>
+      <plugin name='gazebo_ros_head_hokuyo_controller' filename='libgazebo_ros_laser.so'>
+        <robotNamespace>/</robotNamespace>
+        <topicName>/target/IRS/IRS222</topicName>
+        <frameName>IRS222</frameName>
+      </plugin>
+    </sensor>
+  </link>
+  
+  <link name='test_sensor2_link'>
+      <pose>-1 0 0 0 0 1.57</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>0.001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00002</iyy>
+            <iyz>0</iyz>
+            <izz>0.00002</izz>
+          </inertia>
+        </inertial>
+      <collision name='test_sensor2_collision'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='test_sensor2_visual'>
+        <geometry>
+          <box>
+              <size>.02 .04 .02</size>
+          </box>
+        </geometry>
+      </visual>
+      <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/FlatBlack</name>
+            </script>
+      </material>
+        <sensor type="ray" name="sonar">
+        <visualize>true</visualize>
+          <update_rate>5</update_rate>
+          <ray>
+            <scan>
+              <horizontal>
+                <samples>5</samples>
+                <resolution>1.0</resolution>
+                <min_angle>-0.25</min_angle>
+                <max_angle>0.25</max_angle>
+              </horizontal>
+              <vertical>
+                <samples>5</samples>
+                <resolution>1</resolution>
+                <min_angle>-0.25</min_angle>
+                <max_angle>0.25</max_angle>
+              </vertical>
+            </scan>
+            <range>
+              <min>0.2</min>
+              <max>2</max>
+              <resolution>0.01</resolution>
+            </range>
+          </ray>
+          <plugin filename="libgazebo_ros_range.so" name="gazebo_ros_range">
+            <gaussianNoise>0.005</gaussianNoise>
+            <alwaysOn>true</alwaysOn>
+            <updateRate>5</updateRate>
+            <topicName>sonar</topicName>
+            <frameName>sonar_link</frameName>
+            <fov>0.5</fov>
+            <radiation>ultrasound</radiation>
+          </plugin>
+        </sensor>
+  </link>
+  <joint name='test_sensor_joint' type='fixed'>
+    <child>test_sensor_link</child>
+    <parent>Cube_Target_link</parent> 
+  </joint>
+  <joint name='test_sensor2_joint' type='fixed'>
+    <child>test_sensor2_link</child>
+    <parent>Cube_Target_link</parent> 
+  </joint-->
+
   </model>
 </sdf>

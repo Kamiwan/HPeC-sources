@@ -1,23 +1,5 @@
 #include "emergency_landing_node.h"
 
-long elapse_time_u(struct timeval *end, struct timeval *start)
-{
-	long seconds = end->tv_sec - start->tv_sec;
-	long micro_seconds = end->tv_usec - start->tv_usec;
-	if (micro_seconds < 0)
-	{
-		seconds -= 1;
-	}
-	return (seconds * 1000000) + abs(micro_seconds);
-}
-
-long time_micros(struct timeval *end, struct timeval *start)
-{
-	if (end != NULL && start != NULL)
-		return (((double)elapse_time_u(end, start)) / 1000);
-	return -1;
-}
-
 // source ppm color image 24bits RGB (packed)
 // The video IP cores used for edge detection require the RGB 24 bits of each pixel to be
 // word aligned (aka 1 byte of padding per pixel). | unused 8 bits | red 8 bits | green 8 bits | blue 8 bits |
@@ -559,11 +541,12 @@ void stop()
 		if (run)
 		{
 			pthread_cancel(worker_thread->native_handle());
-
 			if (hardware == 1)
 			{
 				release();
 				hardware = 0;
+				//EM, tells to the Adaptation Manager the Tile is released
+				write_value_file(PATH_RELEASE_HW,"search_landing",1);
 			}
 		}
 	}
@@ -677,11 +660,8 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 			dbprintf("stop_on_early  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_early);
 			dbprintf("irq  : %d\n",dispatcher_read.GetStatusReg().msBits.irq); 
 		}
-
 		dispatcher_write.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on write DMA
 		dispatcher_read.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on read DMA
-
-
 	}
 
 
@@ -705,6 +685,8 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		dbprintf("wrapper_ver %.0f %d\n", ((double)time_micros(&current, &beginning)), value->data);
 		stop();
 		hardware = 1;
+		//EM, tells to the Adaptation Manager search_landing is using a HW Tile
+		write_value_file(PATH_RELEASE_HW,"search_landing",0);
 		workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
 		worker_thread = boost::make_shared<boost::thread>(&search_landing_area_hwsw, workerHandle_ptr);
 		break;
@@ -719,14 +701,13 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "emergency_landing_node");
 	ros::NodeHandle nh;
 	
-	//beginning = clock();
 	gettimeofday(&beginning, NULL);
+
 	ros::Subscriber mgt_topic;
 	mgt_topic = nh.subscribe("/search_landing_area_mgt_topic", 1, managing_controller_request);
-
 	search_land_pub = boost::make_shared<ros::Publisher>(
 		nh.advertise<std_msgs::Float32>("/search_landing_notification_topic", 1));
-	//current = clock();
+
 	gettimeofday(&current, NULL);
 
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));

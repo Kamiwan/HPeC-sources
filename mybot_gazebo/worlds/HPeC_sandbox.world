@@ -394,13 +394,13 @@
       </include>
     </model>
 
-     <model name="Cube_Target">
+     <!--model name="Cube_Target">
       <include>
         <uri>model:///Gazebo/Cube_Target</uri>
         <pose>3 3 1 0 0 0 </pose>
         <name>"Cube_Target"</name>
       </include>
-    </model>
+    </model-->
 
 <!-- FOR GAZEBO 8 OR HIGHER  -->
 <actor name="animated_box2"> 

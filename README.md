@@ -85,34 +85,16 @@ This section aims at creating a catkin workspace and include sources from this r
 First step, create a catkin workspace directory and go inside it.
 
 ```
-$ mkdir -p  ./catkin_ws/src
+$ mkdir -p  ./catkin_ws
 $ cd ./catkin_ws/
 ```
 
-Execute catkin_make to setup the directory
+Clone the git repository in catkin_ws/ and rename it /src.
 
 ```
-$ catkin_make
+$ git clone https://github.com/Kamiwan/HPeC-sources.git /src
 ```
-It creates the folder build/ and devel/ and the CMake top level in src/. 
 
-Clone the git repository in catkin_ws/.
-
-```
-$ git clone https://github.com/Kamiwan/HPeC-sources.git
-```
-Move source files from HPeC-sources/ to src/
-
-```
-$ mv ./HPeC-sources/* ./HPeC-sources/.* ./src/
-```
-It worked but you will get a message error such as **"mv: cannot move './HPeC-sources/.' to './src/.'"** because this command tries to move the "." directory pointer. 
-
-Then, remove the empty HPeC-sources directory
-
-```
-$ rm -r HPeC-sources/
-```
 Then, check if the repo is properly in place.
 ```
 $ cd ./src/

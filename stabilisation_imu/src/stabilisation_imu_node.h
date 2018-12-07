@@ -13,6 +13,7 @@
  *************************************************************************************/
 #include <opencv2/opencv.hpp>
 #include <math.h>
+#include "utils.h"
 
 //Erwan Moréac, 05/03/18 
 #define HIL	 //Code modifications for Hardware In the Loop
@@ -25,14 +26,6 @@
 #define HFOV 60
 #define VFOV 45
 #define REFRESH_RTZ_PARAM 20 //EM, Number of pictures before update of theta, x and y
-
-/*!
-* \brief ROS callback functions
-* Author : Soguy 
-*/
-long elapse_time_u(struct timeval *end, struct timeval *start);
-long time_micros(struct timeval *end, struct timeval *start);
-
 
 /*!
 * \brief ROS callback functions

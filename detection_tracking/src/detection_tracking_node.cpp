@@ -33,7 +33,7 @@ extern "C" {
 #include "std_msgs/String.h"
 
 #include "main.hpp" //EM, HIL definition there
-
+#include "utils.h"
 
 time_t start, ends;
 struct timeval beginning, current, end;
@@ -53,25 +53,6 @@ boost::shared_ptr<ros::Publisher> detect_track_pub;
 
 
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
-
-long elapse_time_u(struct timeval *end, struct timeval *start)
-{
-	long seconds = end->tv_sec - start->tv_sec;
-	long micro_seconds = end->tv_usec - start->tv_usec;
-	if (micro_seconds < 0)
-	{
-		seconds -= 1;
-	}
-	return (seconds * 1000000) + abs(micro_seconds);
-}
-
-long time_micros(struct timeval *end, struct timeval *start)
-{
-	if (end != NULL && start != NULL)
-		return (((double)elapse_time_u(end, start)) / 1000);
-	return -1;
-}
-
 
 void termination_handler(int signum);
 

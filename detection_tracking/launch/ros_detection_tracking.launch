@@ -3,7 +3,7 @@
 	<!-- declare arg to be passed in -->
 	<arg name="load_model" default="true"/>
 	<arg name="auto_face_detection" default="false"/>
-	<arg name="model_import_file" default="/home/labsticc/Bureau/test_model_hanouna"/>
+	<arg name="model_import_file" default="/home/labsticc/Bureau/trump_track_model"/>
 	<arg name="model_export_file" default="/home/tld_models/sample"/>
 	<arg name="cascade_path" default=
 		"$(env ROS_ROOT)/../OpenCV/haarcascades/haarcascade_frontalface_alt.xml"/>

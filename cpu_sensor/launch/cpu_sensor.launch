@@ -1,0 +1,5 @@
+<?xml version ='1.0'?>
+
+	<launch>		
+		<node pkg="cpu_sensor" type="cpu_sensor_node" name="cpu_sensor_node" />		
+	</launch>

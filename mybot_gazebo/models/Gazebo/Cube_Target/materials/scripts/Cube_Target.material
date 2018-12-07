@@ -8,7 +8,7 @@ material Cube_Target/Diffuse
       
       texture_unit
       {
-        texture cyril-hanouna.jpg
+        texture Trump.jpg
       }
       
     }
