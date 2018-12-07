@@ -149,8 +149,8 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(reconfig_test_node
-			src/reconfig_test.cpp
       src/pr_internal_host.c
+			src/reconfig_test.cpp
       src/debug.c	
 )
 

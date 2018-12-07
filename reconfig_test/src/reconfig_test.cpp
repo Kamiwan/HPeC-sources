@@ -437,7 +437,7 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 }
 
 
-int load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int offset_addr)
+/*int load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int offset_addr)
 {
     FILE* file = fopen(bitstream_path.c_str(), "rb");
     if(file == NULL)
@@ -485,15 +485,7 @@ int load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int 
 
 	printf("\n BITSTREAM LOADING COMPLETE!");
     return 0;
-}
-
-
-long fsize(FILE *fp){
-    fseek(fp, 0L, SEEK_END);
-    long sz=ftell(fp);
-    fseek(fp,0,SEEK_SET); //go back to where we were
-    return sz;
-}
+}*/
 
 /* start trigger module */
 void start_reconfiguration(int bitstream_address, int region_id)
@@ -555,23 +547,93 @@ int init_FPGA_reconfiguration()
 							MAP_SHARED, fd, LW_HPS2FPGA_AXI_MASTER+0x00080000); 
 
 	/* write partial bitstream file in DDR memory */
-    int initconf_state=load_bitstream("/home/ubuntu/personna/personna_1.rbf", 
-                            		fd, 
-                            		PERSONNA_1,
-                            		HPS2FPGA_AXI_MASTER+HARD_DDR3_CONTROLLER);
+    //int initconf_state=load_bitstream("/home/ubuntu/personna/personna_1.rbf", 
+    //                        		fd, 
+    //                        		PERSONNA_1,
+    //                        		HPS2FPGA_AXI_MASTER+HARD_DDR3_CONTROLLER);
 	return 0;
 }
 
-
 void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 {
-    /* start the detector */
-    start_reconfiguration(PERSONNA_1, 2);      
- 
-    /* check the detection computation is done */
-	//reconfiguration_done();
-    while(reconfiguration_done()==0); 
+	ros::CallbackQueue queue;
+	workerHandle_ptr->setCallbackQueue(&queue);
+
+	//EM, C writing style because reconfiguration have been designed with C
+	char * rbf_path_app1, * rbf_path_app2;
+	char * bitstream_app1, * bitstream_app2;
+	unsigned int *pr_base_iomem;
+	long size_bts_app1, size_bts_app2;
+	int fd_mem;
+	
+	boost::shared_ptr<ros::Publisher> search_land_pub = boost::make_shared<ros::Publisher>( 
+        workerHandle_ptr->advertise<std_msgs::Int32>("/search_landing_area_mgt_topic", 1));
+	boost::shared_ptr<ros::Publisher> harris_pub = boost::make_shared<ros::Publisher>( 
+        workerHandle_ptr->advertise<std_msgs::Int32>("/harris_detector_mgt_topic", 1));
+	std_msgs::Int32 msg;	
+
+
+	ROS_INFO("[RECONFIG_TEST]: Start FPGA reconfiguration test!");
+
+    /* map pr_controler to user address space  */
+	pr_base_iomem = pr_controler_init(fd_mem);
+	/* write partial bitstream file in HPS DDR memory */
+    bitstream_app1 = load_bitstream(rbf_path_app1, &size_bts_app1);
+	bitstream_app2 = load_bitstream(rbf_path_app2, &size_bts_app2);
+	
+	if (pr_controler_start(pr_base_iomem)==0)
+	{
+		pr_controler_write(pr_base_iomem,bitstream_app1,size_bts_app1);
+		pr_controler_write_complete(pr_base_iomem);
+	}
+	ROS_INFO("[RECONFIG_TEST]: Reconfiguration succeed!");
+	
+	//Start app1
+	msg.data = 2;
+	search_land_pub->publish(msg);
+
+	ROS_INFO("[RECONFIG_TEST]: Appli 1 launched for 30 sec!");
+	//Sleep 30s
+	std::this_thread::sleep_for(std::chrono::milliseconds(30000));
+
+	//Stop app1
+	msg.data = 0;
+	search_land_pub->publish(msg);
+	//Wait 3 sec end app1
+	std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+
+	ROS_INFO("[RECONFIG_TEST]: Start second FPGA reconfiguration test!");
+
+	if (pr_controler_start(pr_base_iomem)==0)
+	{
+		pr_controler_write(pr_base_iomem,bitstream_app2,size_bts_app2);
+		pr_controler_write_complete(pr_base_iomem);
+	}
+	ROS_INFO("[RECONFIG_TEST]: Reconfiguration succeed!");
+
+	//Start app2
+	msg.data = 2;
+	harris_pub->publish(msg);
+	
+	ROS_INFO("[RECONFIG_TEST]: Appli 2 launched for 30 sec!");
+	//Sleep 30s
+	std::this_thread::sleep_for(std::chrono::milliseconds(30000));
+
+	//Stop app2
+	msg.data = 0;
+	harris_pub->publish(msg);
+	//Wait 3 sec end app2
+	std::this_thread::sleep_for(std::chrono::milliseconds(30000));
+
+	pr_controler_release(pr_base_iomem);
+
 	ROS_INFO("RECONFIGURATION COMPLETE!");
+
+	/* start the detector 
+    start_reconfiguration(PERSONNA_1, 2);      
+    // check the detection computation is done 
+	//reconfiguration_done();
+    while(reconfiguration_done()==0); */
 }
 
 

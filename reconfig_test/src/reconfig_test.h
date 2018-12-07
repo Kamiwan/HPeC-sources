@@ -27,7 +27,8 @@
 #include <iostream>
 
 extern "C" {
-#include "debug.h"
+    #include "debug.h"
+    #include "pr_internal_host.h"
 }
 
 #include <opencv2/highgui/highgui.hpp>
@@ -46,6 +47,8 @@ extern "C" {
 #include <fcntl.h>    /* For O_RDWR */
 #include <unistd.h>   /* For open(), creat() */
 #include <sys/mman.h>
+#include <thread>
+#include <chrono>
 
 /************************************************************************
  * EM, Insert here:
@@ -121,6 +124,8 @@ void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 int  init_FPGA_reconfiguration();
 void release();
 
-int  load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int offset_addr);
+
+
+//int  load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int offset_addr);
 void start_reconfiguration(int bitstream_address, int region_id);
 int  reconfiguration_done();
