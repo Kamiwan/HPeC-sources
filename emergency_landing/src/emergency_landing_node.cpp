@@ -546,7 +546,7 @@ void stop()
 				release();
 				hardware = 0;
 				//EM, tells to the Adaptation Manager the Tile is released
-				write_value_file(PATH_RELEASE_HW,"search_landing",1);
+				//write_value_file(PATH_RELEASE_HW,"search_landing",1);
 			}
 		}
 	}
@@ -686,7 +686,7 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		stop();
 		hardware = 1;
 		//EM, tells to the Adaptation Manager search_landing is using a HW Tile
-		write_value_file(PATH_RELEASE_HW,"search_landing",0);
+		//write_value_file(PATH_RELEASE_HW,"search_landing",0);
 		workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
 		worker_thread = boost::make_shared<boost::thread>(&search_landing_area_hwsw, workerHandle_ptr);
 		break;
