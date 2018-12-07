@@ -243,10 +243,10 @@ void obstacle_callback(const communication::obstacle_detection_msg::ConstPtr& de
    }
 }
 
-void achievable_Callback(const std_msgs::Int32::ConstPtr &msg1)
+void achievable_callback(const std_msgs::Int32::ConstPtr &msg1)
 {
    std_msgs::Int32 msg;
-   ROS_INFO("[RECU][ADAPTATION_MANAGER][Achievable_VALUE OF TASKS]");
+   ROS_INFO("[MSG][ADAPTATION_MANAGER]: At least one task config is not achievable ");
    ROS_INFO("[%d]", msg1->data);
    
    
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
    ros::Subscriber vel_sub        = nh.subscribe("mavros/global_position/raw/gps_vel", 1000, gps_vel_callback);
    ros::Subscriber pos_sub        = nh.subscribe("mavros/global_position/global", 1000, gps_pos_callback);
    
-   ros::Subscriber achievable_sub = nh.subscribe("/achievable_topic", 1000, achievable_Callback);
+   ros::Subscriber achievable_sub = nh.subscribe("/achievable_topic", 1000, achievable_callback);
    ros::Subscriber obstacle_sub   = nh.subscribe("obstacle_detection_topic", 1000, obstacle_callback);
    
    notify_from_MM_pub = boost::make_shared<ros::Publisher>(

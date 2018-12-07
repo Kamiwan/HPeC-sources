@@ -85,7 +85,7 @@ vector<App_timing_qos> 	read_time_qos(const char* path);
 
 //##### Functions to interact with the Mission Manager (MM) #####
 /* notify_Callback
-ROS callback function to get requests from MM
+ROS callback  function to get requests from MM
 @param msg    the number associated to the app
 */
 void notify_Callback(const std_msgs::Int32::ConstPtr& msg);

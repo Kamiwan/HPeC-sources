@@ -57,8 +57,8 @@ void gps_vel_callback(const geometry_msgs::TwistStamped::ConstPtr &vel_msg);
 void gps_pos_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
 void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
 
-void obstacle_callback(const communication::obstacle_detection_msg::ConstPtr& detection_msg);
-void achievable_Callback(const std_msgs::Int32::ConstPtr &msg1);
+void obstacle_callback(const communication::obstacle_detection_msg::ConstPtr &detection_msg);
+void achievable_callback(const std_msgs::Int32::ConstPtr &msg1);
 
 void   init_cpu_load();
 double current_cpu_value();
