@@ -310,14 +310,14 @@ int main(int argc, char **argv)
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
 
 
-	init_FPGA_reconfiguration(); //EM, TEST for reconfiguration
+	//init_FPGA_reconfiguration(); //EM, TEST for reconfiguration
 
 
 	ROS_INFO("[TASK WRAPPER][RUNNING]");
 	ros::spin();
 
 	ROS_INFO("[TASK WRAPPER][RELEASE INCOMING!]");
-	release(); //EM, called at the end to release memory reserved for FPGA DPR
+	//release(); //EM, called at the end to release memory reserved for FPGA DPR
 }
 
 
@@ -566,10 +566,10 @@ void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 	long size_bts_app1, size_bts_app2;
 	int fd_mem;
 	
-	boost::shared_ptr<ros::Publisher> search_land_pub = boost::make_shared<ros::Publisher>( 
-        workerHandle_ptr->advertise<std_msgs::Int32>("/search_landing_area_mgt_topic", 1));
 	boost::shared_ptr<ros::Publisher> harris_pub = boost::make_shared<ros::Publisher>( 
-        workerHandle_ptr->advertise<std_msgs::Int32>("/harris_detector_mgt_topic", 1));
+        workerHandle_ptr->advertise<std_msgs::Int32>("/harris_detector_mgt_topic", 100));
+	boost::shared_ptr<ros::Publisher> search_land_pub = boost::make_shared<ros::Publisher>( 
+        workerHandle_ptr->advertise<std_msgs::Int32>("/search_landing_area_mgt_topic", 100));
 	std_msgs::Int32 msg;	
 
 
@@ -586,15 +586,19 @@ void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 		pr_controler_write(pr_base_iomem,bitstream_app1,size_bts_app1);
 		pr_controler_write_complete(pr_base_iomem);
 	}
-	ROS_INFO("[RECONFIG_TEST]: Reconfiguration succeed!");
+	
+	ROS_INFO("[RECONFIG_TEST]: Wait 1s topic setup!");
+	//!\ EM, when Topic advertising configuration is done, 
+	//   we MUST wait the configuration done
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	
 	//Start app1
-	msg.data = 2;
+	msg.data = 1;
 	search_land_pub->publish(msg);
 
-	ROS_INFO("[RECONFIG_TEST]: Appli 1 launched for 30 sec!");
+	ROS_INFO("[RECONFIG_TEST]: Appli 1 launched for 20 sec!");
 	//Sleep 30s
-	std::this_thread::sleep_for(std::chrono::milliseconds(30000));
+	std::this_thread::sleep_for(std::chrono::milliseconds(20000));
 
 	//Stop app1
 	msg.data = 0;
@@ -612,18 +616,18 @@ void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 	ROS_INFO("[RECONFIG_TEST]: Reconfiguration succeed!");
 
 	//Start app2
-	msg.data = 2;
+	msg.data = 1;
 	harris_pub->publish(msg);
 	
-	ROS_INFO("[RECONFIG_TEST]: Appli 2 launched for 30 sec!");
+	ROS_INFO("[RECONFIG_TEST]: Appli 2 launched for 20 sec!");
 	//Sleep 30s
-	std::this_thread::sleep_for(std::chrono::milliseconds(30000));
+	std::this_thread::sleep_for(std::chrono::milliseconds(20000));
 
 	//Stop app2
 	msg.data = 0;
 	harris_pub->publish(msg);
 	//Wait 3 sec end app2
-	std::this_thread::sleep_for(std::chrono::milliseconds(30000));
+	std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
 	pr_controler_release(pr_base_iomem);
 

@@ -698,7 +698,7 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "emergency_landing_node");
+	ros::init(argc, argv, "search_landing_node");
 	ros::NodeHandle nh;
 	
 	gettimeofday(&beginning, NULL);
