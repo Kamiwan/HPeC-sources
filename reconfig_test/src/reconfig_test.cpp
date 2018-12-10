@@ -593,7 +593,7 @@ void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	
 	//Start app1
-	msg.data = 1;
+	msg.data = 2;
 	search_land_pub->publish(msg);
 
 	ROS_INFO("[RECONFIG_TEST]: Appli 1 launched for 20 sec!");
@@ -616,7 +616,7 @@ void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 	ROS_INFO("[RECONFIG_TEST]: Reconfiguration succeed!");
 
 	//Start app2
-	msg.data = 1;
+	msg.data = 2;
 	harris_pub->publish(msg);
 	
 	ROS_INFO("[RECONFIG_TEST]: Appli 2 launched for 20 sec!");
