@@ -22,6 +22,7 @@
         </constraints>
       </ode>
       <real_time_update_rate>0</real_time_update_rate>
+      <!-- -1 commenter l'autre. -->
       <max_step_size>0.0020</max_step_size>
     </physics>
     <gravity>0 0 -9.8</gravity>

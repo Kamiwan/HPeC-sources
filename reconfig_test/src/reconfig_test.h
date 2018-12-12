@@ -50,21 +50,10 @@ extern "C" {
 #include <thread>
 #include <chrono>
 
-/************************************************************************
- * EM, Insert here:
- * 	- Defines for the app
- *  - Topic names to subscribe or publish
-**********************************************************************/
 #define HIL     //Code modifications for Hardware In the Loop
 
 //EM, defines for FPGA DPR tests
-#define LW_HPS2FPGA_AXI_MASTER  0xFF200000
-#define HPS2FPGA_AXI_MASTER     0xC0000000
-#define HARD_DDR3_CONTROLLER    0x00000000
-#define PAGE_SIZE               16384
-#define PERSONNA_1              0
-#define PERSONNA_2              8028160
-#define DDR_PERSONNA_SPAN       0x800000
+#define PIO_PR_RESET_BASEADDR   0xFF214000
 
 #define NM_INPUT_TOPIC "/iris/camera2/image_raw" //example of Topic name def
 
@@ -121,11 +110,3 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam);
 
 //EM, Functions for FPGA DPR tests
 void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr);
-int  init_FPGA_reconfiguration();
-void release();
-
-
-
-//int  load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int offset_addr);
-void start_reconfiguration(int bitstream_address, int region_id);
-int  reconfiguration_done();

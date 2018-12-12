@@ -90,19 +90,19 @@ time_t start, ends,t1;
 time_t imcpy_start,imcpy_end;
 struct timeval beginning, current, end;
 
-unsigned int cma_base_addr;
-void *virtual_base_sdram;
-void *virtual_reconfig_ctrl;
+unsigned int sl_cma_base_addr;
+void *sl_virtual_base_sdram;
+void *sl_virtual_reconfig_ctrl;
 
-volatile unsigned int *mem_to_stream_dma_buffer = NULL;
-volatile unsigned char *stream_to_mem_dma_buffer = NULL;
+volatile unsigned int *sl_mem_to_stream_dma_buffer = NULL;
+volatile unsigned char *sl_stream_to_mem_dma_buffer = NULL;
 
 // Create  Dispatcher
-tcSGDMADispatcher     dispatcher_read;
-tcSGDMADispatcher     dispatcher_write;
+tcSGDMADispatcher     sl_dispatcher_read;
+tcSGDMADispatcher     sl_dispatcher_write;
 // Create  descriptor
-tsSGDMADescriptor descriptor_read;
-tsSGDMADescriptor descriptor_write;
+tsSGDMADescriptor sl_descriptor_read;
+tsSGDMADescriptor sl_descriptor_write;
 
 struct pixel *data;
 unsigned char *header;

@@ -309,10 +309,6 @@ int main(int argc, char **argv)
 
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
 
-
-	//init_FPGA_reconfiguration(); //EM, TEST for reconfiguration
-
-
 	ROS_INFO("[TASK WRAPPER][RUNNING]");
 	ros::spin();
 
@@ -437,123 +433,6 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 }
 
 
-/*int load_bitstream(std::string bitstream_path, int fd_mem,int mem_str_adrss,int offset_addr)
-{
-    FILE* file = fopen(bitstream_path.c_str(), "rb");
-    if(file == NULL)
-    {
-        printf("ERROR: could not open %s file\n",bitstream_path.c_str());
-		exit (1);
-    }
-
-    long fileSize = fsize(file);
-	printf("\n FileSize=%ld",fileSize);
-
-    void *bridge_map;
-    bridge_map = mmap(NULL, DDR_PERSONNA_SPAN, PROT_WRITE, MAP_SHARED, fd_mem, mem_str_adrss+offset_addr);
-    if (bridge_map == MAP_FAILED)
-	{
-		printf("ERROR: mmap() failed...\n");
-		exit (1);
-	}
-
-    long buffer_size = fileSize>>2;
-    char *buffer = (char *)malloc(fileSize + 1);
-    size_t test = fread(buffer, 1,fileSize,file);
-	printf("\n nb read=%ld\n",test);
-	printf("\n Buffer_size=%ld\n",buffer_size);
-	
-    memcpy(bridge_map, buffer, fileSize);
-
-	printf("\n FileSize=%x\n",fileSize);
-	for(int i=0; i<5;i++)
-		printf("%x ",buffer[i]);
-
-	printf("\n");
-
-	int *buff = (int *)buffer;
-	for(int i=(buffer_size-1); i>(buffer_size-40);i--)
-		printf("addr:%x value=%x \n",i,buff[i]);
-	printf("\n");
-    fclose(file);
-    free(buffer);
-
-	if (munmap(bridge_map, DDR_PERSONNA_SPAN) != 0)
-	{
-		ROS_ERROR("ERROR: munmap() failed...\n");
-	}
-
-	printf("\n BITSTREAM LOADING COMPLETE!");
-    return 0;
-}*/
-
-/* start trigger module */
-void start_reconfiguration(int bitstream_address, int region_id)
-{
-   printf("I received the reconf order\n");
-   int param_address,i;
-   int start_done_word[2] = {769 ,0};
-   //start_done_word = start_done_word + start_selector*256;
-
-   start_done_word[1] = start_done_word[0] + region_id*16;
-   start_done_word[0] = bitstream_address;
-   //int *pointer_param= &start_done_word;
-
-   char * tmp = (char *)virtual_reconfig_ctrl;
-   char * tmp2 = (char *)start_done_word;
-   
-   for (i=0;i<8;i++)
-    *(tmp+i) = *(tmp2+i);
-   
-	//memcpy(virtual_reconfig_ctrl,start_done_word,8);
-}
-
-int reconfiguration_done()
-{
-   int *pointer_param= (int*)virtual_reconfig_ctrl;
-   int value;
-   
-   if ((*pointer_param & 0x40000000) == 2)
-         value=1;
-   else
-         value=0;
-
-	printf("Pointer param = %x",*pointer_param);
-   return value;
-}
-
-
-void release()
-{
-	if (munmap(virtual_reconfig_ctrl, 4096) != 0)
-	{
-		ROS_ERROR("ERROR: munmap() failed...\n");
-	}
-    close( fd );
-}
-
-
-int init_FPGA_reconfiguration()
-{
-	//init hardware
-	// Open /dev/mem
-	if ((fd = open("/dev/mem", (O_RDWR | O_SYNC))) == -1)
-	{
-		dbprintf("ERROR: could not open \"/dev/mem\"...\n");
-		exit (1);
-	}
-
-	virtual_reconfig_ctrl = mmap(NULL, 4096, (PROT_READ | PROT_WRITE), 
-							MAP_SHARED, fd, LW_HPS2FPGA_AXI_MASTER+0x00080000); 
-
-	/* write partial bitstream file in DDR memory */
-    //int initconf_state=load_bitstream("/home/ubuntu/personna/personna_1.rbf", 
-    //                        		fd, 
-    //                        		PERSONNA_1,
-    //                        		HPS2FPGA_AXI_MASTER+HARD_DDR3_CONTROLLER);
-	return 0;
-}
-
 void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 {
 	ros::CallbackQueue queue;
@@ -575,21 +454,42 @@ void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 
 	ROS_INFO("[RECONFIG_TEST]: Start FPGA reconfiguration test!");
 
+	//init hardware
+    // Open /dev/mem
+	if( ( fd_mem = open( "/dev/mem", ( O_RDWR | O_SYNC ) ) ) == -1 ) {
+       	printf( "ERROR: could not open \"/dev/mem\"...\n" );
+		exit(1);
+    }
+
     /* map pr_controler to user address space  */
 	pr_base_iomem = pr_controler_init(fd_mem);
 	/* write partial bitstream file in HPS DDR memory */
+	rbf_path_app1 = "/home/ubuntu/personna2/search_landing.rbf";
+	rbf_path_app2 = "/home/ubuntu/personna2/harris.rbf";
     bitstream_app1 = load_bitstream(rbf_path_app1, &size_bts_app1);
 	bitstream_app2 = load_bitstream(rbf_path_app2, &size_bts_app2);
-	
+
+	volatile char *pio_reset_iomem = (volatile char *)mmap( NULL, 4096, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd_mem, PIO_PR_RESET_BASEADDR);
+
+   	if( pio_reset_iomem == MAP_FAILED ) {
+    	printf( "ERROR: mmap() failed...\n" );
+       	close( fd_mem );
+       	exit(1);
+   	}
+
+	// reset pr_region 
+	*pio_reset_iomem=0x0;
 	if (pr_controler_start(pr_base_iomem)==0)
 	{
 		pr_controler_write(pr_base_iomem,bitstream_app1,size_bts_app1);
 		pr_controler_write_complete(pr_base_iomem);
 	}
+	// unreset pr_region 
+	*pio_reset_iomem=0x1;
 	
 	ROS_INFO("[RECONFIG_TEST]: Wait 1s topic setup!");
 	//!\ EM, when Topic advertising configuration is done, 
-	//   we MUST wait the configuration done
+	//   we MUST wait some time to be sure it's working
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	
 	//Start app1
@@ -608,12 +508,16 @@ void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 
 	ROS_INFO("[RECONFIG_TEST]: Start second FPGA reconfiguration test!");
 
+	// reset pr_region 
+	*pio_reset_iomem=0x0;
 	if (pr_controler_start(pr_base_iomem)==0)
 	{
 		pr_controler_write(pr_base_iomem,bitstream_app2,size_bts_app2);
 		pr_controler_write_complete(pr_base_iomem);
 	}
 	ROS_INFO("[RECONFIG_TEST]: Reconfiguration succeed!");
+	// unreset pr_region 
+	*pio_reset_iomem=0x1;
 
 	//Start app2
 	msg.data = 2;
@@ -631,13 +535,11 @@ void test_reconfiguration(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 
 	pr_controler_release(pr_base_iomem);
 
-	ROS_INFO("RECONFIGURATION COMPLETE!");
+	close(fd_mem);
+	free(bitstream_app1);
+	free(bitstream_app2);
 
-	/* start the detector 
-    start_reconfiguration(PERSONNA_1, 2);      
-    // check the detection computation is done 
-	//reconfiguration_done();
-    while(reconfiguration_done()==0); */
+	ROS_INFO("RECONFIGURATION COMPLETE!");
 }
 
 
