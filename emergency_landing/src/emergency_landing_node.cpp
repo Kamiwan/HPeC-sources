@@ -61,19 +61,10 @@ int acquire()
 	sl_mem_to_stream_dma_buffer = (volatile unsigned int *)(sl_virtual_base_sdram);
 	sl_stream_to_mem_dma_buffer = (volatile unsigned char *)(sl_virtual_base_sdram + 0x2000000);
 
-	//sl_virtual_reconfig_ctrl = mmap(NULL, 4096, (PROT_READ | PROT_WRITE), 
-	//						MAP_SHARED, fd, LW_HPS2FPGA_AXI_MASTER+0x00080000); //EM, replace by sl_cma_base_addr
-
 	// Create  Dispatcher
 	sl_dispatcher_read.init(DMA_READ_CSR_BASEADDR, DMA_READ_DESC_BASEADDR, 0);
 	sl_dispatcher_write.init(DMA_WRITE_CSR_BASEADDR, DMA_WRITE_DESC_BASEADDR, 0);
 
-	//sl_dispatcher_write.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on write DMA
-	//sl_dispatcher_read.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on read DMA
-	// Create  descriptor, new instance of descriptor objects
-	//sl_descriptor_read = {0};
-	//sl_descriptor_write = {0};
-	
 	// EM, HW version update, Configure DMAs to the correct addresses
 	// Set the HPS Memory start address
 	if(USE_DDR_FPGA)
@@ -103,10 +94,8 @@ int acquire()
 	sl_descriptor_write.control.msBits.gen_eop = 1;
 	sl_descriptor_read.control.msBits.go = 0;
 	sl_descriptor_write.control.msBits.go = 0;
-	// configure the DMAs
-	//sl_dispatcher_read.WriteDescriptor(sl_descriptor_read);
-	//sl_dispatcher_write.WriteDescriptor(sl_descriptor_write);
 
+	// configure the DMAs
 	tuSgdmaCtrl csr_read ={0};
     tuSgdmaCtrl csr_write ={0};
 	    
@@ -160,10 +149,6 @@ void release()
 	{
 		ROS_ERROR("ERROR: munmap() failed...\n");
 	}
-	/*if (munmap(sl_virtual_reconfig_ctrl, 4096) != 0)
-	{
-		ROS_ERROR("ERROR: munmap() failed...\n");
-	}*/
     close( fd );
 }
 
@@ -188,26 +173,26 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 	double rate_double;
 	if (!workerHandle_ptr->getParam("/node_activation_rates/emergency_landing", rate_double))
 	{
-		//ROS_INFO("Could not read obstacle detection's activation rate. Setting 1 Hz");
+		ROS_INFO("Could not read obstacle detection's activation rate. Setting 1 Hz");
 		rate_double = 1;
 	}
 	ros::Rate rate(rate_double);
 
 	if (!workerHandle_ptr->getParam("/drone_features/diameter", diameter))
 	{
-		//ROS_INFO("Could not read drone's diameter. Setting to 0.6 meters");
+		ROS_INFO("Could not read drone's diameter. Setting to 0.6 meters");
 		diameter = 0.6;
 	}
 
 	if (!workerHandle_ptr->getParam("/camera_features/camera_angle", camera_angle))
 	{
-		//ROS_INFO("Could not read camera's angle. Setting to 0.4 radian");
+		ROS_INFO("Could not read camera's angle. Setting to 0.4 radian");
 		camera_angle = 0.4;
 	}
 
 	if (!workerHandle_ptr->getParam("/camera_features/image_height", image_height))
 	{
-		//ROS_INFO("Could not read image's height. Setting to 480");
+		ROS_INFO("Could not read image's height. Setting to 480");
 		image_height = 480;
 	}
 	altitude = 60;
@@ -227,14 +212,8 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 		//EM, Add a test in the case the camera topic is not activated
 		if (img_ibuf_color.h != 0 && img_ibuf_color.w != 0)
 		{
-			//img_ibuf_color = read_ppm("/home/ubuntu/search_land_are/sim_cam/australia.ppm");
-			// Write the image to the mem-to-stream buffer
-			//memcpy_consecutive_to_padded(img_ibuf_color.img, sl_mem_to_stream_dma_buffer, img_ibuf_color.h * img_ibuf_color.w);
-
 			// Start measuring time
 			start = clock();
-			// gettimeofday (&start , NULL);
-
 			t1=clock();
 			
 			#ifdef DEBUG
@@ -250,20 +229,6 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 			// Turn on the DMAs
 			sl_dispatcher_read.WriteDescriptor(sl_descriptor_read);
 			sl_dispatcher_write.WriteDescriptor(sl_descriptor_write);
-
-	        /*while(sl_dispatcher_read.GetStatusReg().msBits.busy)
-			{
-				dbprintf("wait read busy : %d\n",sl_dispatcher_read.GetStatusReg().msBits.busy);
-				dbprintf("desc_buf_empty : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
-				dbprintf("desc_buf_full : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_buf_full);
-				dbprintf("desc_res_empty : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_res_empty);
-				dbprintf("desc_res_full : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_res_full);
-				dbprintf("stopped : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stopped);
-				dbprintf("resetting  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.resetting);
-				dbprintf("stop_on_err  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_err);
-				dbprintf("stop_on_early  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_early);
-				dbprintf("irq  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.irq); 
-			}*/
 
 			// wait until the dma transfer complete
 			while(sl_dispatcher_write.GetStatusReg().msBits.busy)
@@ -281,13 +246,6 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 			};
 
 			dbprintf("TRANSFERT OK ############################################## \n");
-
-			//EM, HW synchro, Tell the dispatcher to STOP
-			/*sl_descriptor_read.control.msBits.go = 0;
-			sl_descriptor_write.control.msBits.go = 0;
-			// Turn off the DMAs
-			sl_dispatcher_read.WriteDescriptor(sl_descriptor_read);
-			sl_dispatcher_write.WriteDescriptor(sl_descriptor_write);*/
 
 			// Copy the edge detected image from the stream-to-mem buffer
 			img_ibuf_ero.w = img_ibuf_color.w;
@@ -479,11 +437,9 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 #ifdef WRITE_IMG
 			write_pgm(img_ibuf_mop3, "/home/labsticc/Bureau/search_res/dilate3.pgm");
 #endif
-
 			//erode
 			img_ibuf_ero = erode(img_ibuf_mop3);
 			ends = clock();
-			//gettimeofday(&end, NULL);
 
 #ifdef WRITE_IMG
 			write_pgm(img_ibuf_ero, "/home/labsticc/Bureau/search_res/erode.pgm");
@@ -589,13 +545,10 @@ void stop()
 				release();
 				hardware = 0;
 				//EM, tells to the Adaptation Manager the Tile is released
-				//write_value_file(PATH_RELEASE_HW,"search_landing",1);
+				//TODO USE SHARED MEMORY
 			}
 		}
 	}
-	// RESET
-	//workerHandle_ptr = NULL;
-	//worker_thread = NULL;
 }
 
 void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
@@ -718,7 +671,7 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		stop();
 		hardware = 1;
 		//EM, tells to the Adaptation Manager search_landing is using a HW Tile
-		//write_value_file(PATH_RELEASE_HW,"search_landing",0);
+		//TODO USE SHARED MEMORY
 		workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
 		worker_thread = boost::make_shared<boost::thread>(&search_landing_area_hwsw, workerHandle_ptr);
 		break;
@@ -813,10 +766,7 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
 			#endif
 		}
-
 		ROS_INFO("IMAGE RECOVERY SUCCEED");
-		//std::cout << "ORIGINAL PICTURE : " << image_DATA->image << std::endl;
-		//std::cout << "PICTURE PIXELS : " << img_ibuf_color.img << std::endl;
 	}
 	catch (cv_bridge::Exception &e)
 	{
