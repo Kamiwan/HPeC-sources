@@ -251,7 +251,7 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 			sl_dispatcher_read.WriteDescriptor(sl_descriptor_read);
 			sl_dispatcher_write.WriteDescriptor(sl_descriptor_write);
 
-	        while(sl_dispatcher_read.GetStatusReg().msBits.busy)
+	        /*while(sl_dispatcher_read.GetStatusReg().msBits.busy)
 			{
 				dbprintf("wait read busy : %d\n",sl_dispatcher_read.GetStatusReg().msBits.busy);
 				dbprintf("desc_buf_empty : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
@@ -263,7 +263,7 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 				dbprintf("stop_on_err  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_err);
 				dbprintf("stop_on_early  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_early);
 				dbprintf("irq  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.irq); 
-			}
+			}*/
 
 			// wait until the dma transfer complete
 			while(sl_dispatcher_write.GetStatusReg().msBits.busy)
@@ -283,11 +283,11 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 			dbprintf("TRANSFERT OK ############################################## \n");
 
 			//EM, HW synchro, Tell the dispatcher to STOP
-			sl_descriptor_read.control.msBits.go = 0;
+			/*sl_descriptor_read.control.msBits.go = 0;
 			sl_descriptor_write.control.msBits.go = 0;
 			// Turn off the DMAs
 			sl_dispatcher_read.WriteDescriptor(sl_descriptor_read);
-			sl_dispatcher_write.WriteDescriptor(sl_descriptor_write);
+			sl_dispatcher_write.WriteDescriptor(sl_descriptor_write);*/
 
 			// Copy the edge detected image from the stream-to-mem buffer
 			img_ibuf_ero.w = img_ibuf_color.w;
