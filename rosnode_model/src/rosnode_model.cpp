@@ -251,7 +251,9 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 		/**********************************************************************
 		 * EM, Insert here some application functions
 		**********************************************************************/
-		std::cout << "Hello World!" << std::endl;
+		//Get the time and store it in the time variable.
+		ros::Time time = ros::Time::now();
+		std::cout << "Hello World! It is " << time << " o'clock!" << std::endl;
 
 
 

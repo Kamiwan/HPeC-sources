@@ -515,6 +515,9 @@
       </vertical>
     </plugin>
 
+    <!-- reference to your plugin -->
+    <plugin name="gazebo_plugin" filename="libgazebo_plugin.so"/>
+
     <model name="iris">
       <enable_wind>true</enable_wind>
       <include>
