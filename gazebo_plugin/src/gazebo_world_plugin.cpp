@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <thread>
+#include <boost/thread.hpp>
 
 namespace gazebo
 {
@@ -17,21 +18,12 @@ class WorldPluginTutorial : public WorldPlugin
     {
     }
 
-    void Load(physics::WorldPtr _world, sdf::ElementPtr _sdf)
+    static void scenario_demo(physics::WorldPtr _world)
     {
-        // Make sure the ROS node for Gazebo has already been initialized
-        if (!ros::isInitialized())
-        {
-            ROS_FATAL_STREAM("A ROS node for Gazebo has not been initialized, unable to load plugin. "
-                             << "Load the Gazebo system plugin 'libgazebo_ros_api_plugin.so' in the gazebo_ros package)");
-            return;
-        }
-
-        ROS_INFO("Hello World FROM GAZEBO WORLD PLUGIN!");
-
-        //std::this_thread::sleep_for(std::chrono::seconds(10));
-
-        ROS_INFO("Hello World FROM GAZEBO WORLD PLUGIN!");
+        ROS_INFO("PLUGIN THREAD LAUNCHED!");
+        ROS_INFO("Test sleep in new thread");
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        ROS_INFO("Thread done!");
 
         // Option 3: Insert model from file via message passing.
         // Create a new transport node
@@ -74,12 +66,65 @@ class WorldPluginTutorial : public WorldPlugin
         msgs::Light msg_light;
         msg_light.set_name("sun");
         msgs::Set(msg_light.mutable_diffuse(),
-               common::Color(1, 0.0, 0.0, 1));
+               common::Color(1, 0.0, 200.0, 255));
         lightPub->Publish(msg_light);
-      
+
+        bool PARTY_HARD = true;
+        while(PARTY_HARD)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            msgs::Set(msg_light.mutable_diffuse(),
+                common::Color(0, 1, 0.0, 1));
+            lightPub->Publish(msg_light);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            msgs::Set(msg_light.mutable_diffuse(),
+                common::Color(1, 0.0, 1, 1));
+            lightPub->Publish(msg_light);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            msgs::Set(msg_light.mutable_diffuse(),
+                common::Color(1, 1, 1, 1));
+            lightPub->Publish(msg_light);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            msgs::Set(msg_light.mutable_diffuse(),
+                common::Color(0, 0.0, 1, 1));
+            lightPub->Publish(msg_light);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            msgs::Set(msg_light.mutable_diffuse(),
+                common::Color(1, 0.0, 0, 1));
+            lightPub->Publish(msg_light);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            msgs::Set(msg_light.mutable_diffuse(),
+                common::Color(0, 1, 0, 1));
+            lightPub->Publish(msg_light);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            msgs::Set(msg_light.mutable_diffuse(),
+                common::Color(0, 1, 1, 1));
+            lightPub->Publish(msg_light);
+        }
+    }
+
+    void Load(physics::WorldPtr _world, sdf::ElementPtr _sdf)
+    {
+        // Make sure the ROS node for Gazebo has already been initialized
+        if (!ros::isInitialized())
+        {
+            ROS_FATAL_STREAM("A ROS node for Gazebo has not been initialized, unable to load plugin. "
+                             << "Load the Gazebo system plugin 'libgazebo_ros_api_plugin.so' in the gazebo_ros package)");
+            return;
+        }
+
+        ROS_INFO("Hello World FROM GAZEBO WORLD PLUGIN!");      
+        worker_thread = boost::make_shared<boost::thread>(&scenario_demo, _world);
     }
 
   private:
+    boost::shared_ptr<boost::thread> worker_thread;
 
 };
     GZ_REGISTER_WORLD_PLUGIN(WorldPluginTutorial)
