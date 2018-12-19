@@ -69,17 +69,14 @@ class WorldPluginTutorial : public WorldPlugin
         windPub->Publish(msg_wind);
 
         // Create a publisher on the ~/light/modify
-        //transport::PublisherPtr lightPub =
-        //node->Advertise<msgs::Light>("~/light/modify");
-        //msgs::Light msg_light;
-        //msg_light.set_name("sun");
-        //msg_light.set_parent_name(_world->Name());
-        //msg_light.set_allocated_diffuse(msgs::Color * diffuse()));
-        /*msgs::Set(msg_light.mutable_diffuse(),
-                msgs::Color()
-            );
+        transport::PublisherPtr lightPub =
+        node->Advertise<msgs::Light>("~/light/modify");
+        msgs::Light msg_light;
+        msg_light.set_name("sun");
+        msgs::Set(msg_light.mutable_diffuse(),
+               common::Color(1, 0.0, 0.0, 1));
         lightPub->Publish(msg_light);
-      */
+      
     }
 
   private:
