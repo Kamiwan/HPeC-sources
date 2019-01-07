@@ -9,6 +9,8 @@
 #include <thread>
 #include <boost/thread.hpp>
 
+#define PROJECT_PATH "~/Bureau/HW_in_the_Loop/GitHub/HPeC_ws"
+
 namespace gazebo
 {
 class WorldPluginTutorial : public WorldPlugin
@@ -60,23 +62,22 @@ class WorldPluginTutorial : public WorldPlugin
                common::Color(1, 0.0, 200.0, 255));
         lightPub->Publish(msg_light);
 
-
         ROS_INFO("WAIT 2 min to test UAV failures.");
         std::this_thread::sleep_for(std::chrono::seconds(120));
         ROS_INFO("Start UAV failures test.");
 
-        std::string filename = "~/Bureau/HW_in_the_Loop/GitHub/HPeC_ws/src/parameters/mav_proxy_scripts/mavProxy_failures_test.py";
+        std::string filename = "/src/parameters/mav_proxy_scripts/mavProxy_failures_test.py";
         std::string command = "python ";
-        command += filename;
+        command = command + PROJECT_PATH + filename;
         system(command.c_str());
 
         std::this_thread::sleep_for(std::chrono::seconds(10));
         ROS_INFO("Set UAV normal parameters back.");
         std::this_thread::sleep_for(std::chrono::seconds(3));
 
-        filename = "~/Bureau/HW_in_the_Loop/GitHub/HPeC_ws/src/parameters/mav_proxy_scripts/mavProxy_set_normal_conf.py";
+        filename = "/src/parameters/mav_proxy_scripts/mavProxy_set_normal_conf.py";
         command  = "python ";
-        command += filename;
+        command = command + PROJECT_PATH + filename;
         system(command.c_str());
 
         ROS_INFO("PARTY HARD");
@@ -140,7 +141,7 @@ class WorldPluginTutorial : public WorldPlugin
             return;
         }
 
-        ROS_INFO("Hello World FROM GAZEBO WORLD PLUGIN!");      
+        ROS_INFO("Hello World FROM GAZEBO WORLD PLUGIN!");     
         worker_thread = boost::make_shared<boost::thread>(&scenario_demo, _world);
     }
 
@@ -150,3 +151,32 @@ class WorldPluginTutorial : public WorldPlugin
 };
     GZ_REGISTER_WORLD_PLUGIN(WorldPluginTutorial)
 } // namespace gazebo
+
+
+ /* EM
+    #include <boost/filesystem.hpp>
+    #include <sstream>
+    #include <unistd.h>
+    boost::filesystem::path find_executable()
+    {
+        unsigned int bufferSize = 512;
+        std::vector<char> buffer(bufferSize + 1);
+
+        // Get the process ID.
+        int pid = getpid();
+
+        // Construct a path to the symbolic link pointing to the process executable.
+        // This is at /proc/<pid>/exe on Linux systems (we hope).
+        std::ostringstream oss;
+        oss << "/proc/" << pid << "/exe";
+        std::string link = oss.str();
+
+        // Read the contents of the link.
+        int count = readlink(link.c_str(), &buffer[0], bufferSize);
+        if(count == -1) throw std::runtime_error("Could not read symbolic link");
+        buffer[count] = '\0';
+
+        std::string s = &buffer[0];
+        return s;
+    }*/
+
