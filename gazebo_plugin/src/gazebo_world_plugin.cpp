@@ -51,15 +51,6 @@ class WorldPluginTutorial : public WorldPlugin
         // Send the message
         factoryPub->Publish(msg);
 
-        transport::PublisherPtr windPub =
-            node->Advertise<msgs::Wind>("~/wind");
-        msgs::Wind msg_wind;
-
-        msgs::Set(msg_wind.mutable_linear_velocity(),
-                ignition::math::Vector3d(0, 5, 10)
-        );
-        windPub->Publish(msg_wind);
-
         // Create a publisher on the ~/light/modify
         transport::PublisherPtr lightPub =
         node->Advertise<msgs::Light>("~/light/modify");
@@ -69,35 +60,65 @@ class WorldPluginTutorial : public WorldPlugin
                common::Color(1, 0.0, 200.0, 255));
         lightPub->Publish(msg_light);
 
+
+        ROS_INFO("WAIT 2 min to test UAV failures.");
+        std::this_thread::sleep_for(std::chrono::seconds(120));
+        ROS_INFO("Start UAV failures test.");
+
+        std::string filename = "~/Bureau/HW_in_the_Loop/GitHub/HPeC_ws/src/parameters/mav_proxy_scripts/mavProxy_failures_test.py";
+        std::string command = "python ";
+        command += filename;
+        system(command.c_str());
+
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        ROS_INFO("Set UAV normal parameters back.");
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+
+        filename = "~/Bureau/HW_in_the_Loop/GitHub/HPeC_ws/src/parameters/mav_proxy_scripts/mavProxy_set_normal_conf.py";
+        command  = "python ";
+        command += filename;
+        system(command.c_str());
+
+        ROS_INFO("PARTY HARD");
+
+        transport::PublisherPtr windPub =
+        node->Advertise<msgs::Wind>("~/wind");
+        msgs::Wind msg_wind;
+
+        msgs::Set(msg_wind.mutable_linear_velocity(),
+                ignition::math::Vector3d(0, 5, 10)
+        );
+        windPub->Publish(msg_wind);
+
         bool PARTY_HARD = true;
         while(PARTY_HARD)
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
             msgs::Set(msg_light.mutable_diffuse(),
                 common::Color(0, 1, 0.0, 1));
             lightPub->Publish(msg_light);
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
             msgs::Set(msg_light.mutable_diffuse(),
                 common::Color(1, 0.0, 1, 1));
             lightPub->Publish(msg_light);
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
             msgs::Set(msg_light.mutable_diffuse(),
                 common::Color(1, 1, 1, 1));
             lightPub->Publish(msg_light);
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
             msgs::Set(msg_light.mutable_diffuse(),
                 common::Color(0, 0.0, 1, 1));
             lightPub->Publish(msg_light);
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
             msgs::Set(msg_light.mutable_diffuse(),
                 common::Color(1, 0.0, 0, 1));
             lightPub->Publish(msg_light);
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
             msgs::Set(msg_light.mutable_diffuse(),
                 common::Color(0, 1, 0, 1));
             lightPub->Publish(msg_light);
