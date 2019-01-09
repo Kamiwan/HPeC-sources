@@ -43,6 +43,10 @@
 #include "std_msgs/Float32.h"
 #include "communication/obstacle_detection_msg.h"
 
+#include <sensor_msgs/Illuminance.h>
+#include <image_transport/image_transport.h>
+#include <sensor_msgs/image_encodings.h>
+
 #include "CommSharedMemory.hpp" //EM, shared_memory_lib header
 
 //EM, Verbosity levels
@@ -52,6 +56,9 @@
 #define VERBOSITY_MEDIUM    2
 #define VERBOSITY_HIGH      3
 
+
+void sensor_cam_callback(const sensor_msgs::Image::ConstPtr &img_msg);
+void light_sensor_callback(const sensor_msgs::Illuminance::ConstPtr &light_msg);
 void battery_callback(const sensor_msgs::BatteryState::ConstPtr &bat_msg);
 void gps_vel_callback(const geometry_msgs::TwistStamped::ConstPtr &vel_msg);
 void gps_pos_callback(const sensor_msgs::NavSatFix::ConstPtr &position);

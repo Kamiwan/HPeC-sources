@@ -104,6 +104,48 @@ double current_cpu_value()
    return percent;
 }
 
+
+
+/*******************************************************************
+ * light_sensor_callback
+ * Author : EM 
+ * @param light_msg
+ * 
+ * Callback function to get illuminance between 0 and 255
+*******************************************************************/
+void sensor_cam_callback(const sensor_msgs::Image::ConstPtr &img_msg)
+{
+   //*battery_level = bat_msg->percentage;
+
+   std::cout << "DUMB CALLBACK OK \n";
+   /*
+   if(verbose > VERBOSITY_OFF)
+   {
+	   std::cout << "Seq: [" << bat_msg->header.seq << "]" << " \n";
+      std::cout << "Battery left : [" << std::setprecision(3) << battery_level << "]% \n";
+   }*/
+}
+
+/*******************************************************************
+ * light_sensor_callback
+ * Author : EM 
+ * @param light_msg
+ * 
+ * Callback function to get illuminance between 0 and 255
+*******************************************************************/
+void light_sensor_callback(const sensor_msgs::Illuminance::ConstPtr &light_msg)
+{
+   //*battery_level = bat_msg->percentage;
+
+   std::cout << "Illuminance = " << light_msg->illuminance << " \n";
+   /*
+   if(verbose > VERBOSITY_OFF)
+   {
+	   std::cout << "Seq: [" << bat_msg->header.seq << "]" << " \n";
+      std::cout << "Battery left : [" << std::setprecision(3) << battery_level << "]% \n";
+   }*/
+}
+
 /*******************************************************************
  * battery_callback
  * Author : EM 
@@ -274,6 +316,9 @@ int main(int argc, char **argv)
       ROS_ERROR("FAILED TO GET verbose, default value %d",VERBOSITY_DEFAULT);
       verbose = VERBOSITY_DEFAULT;
    }
+
+   ros::Subscriber cam_light_sub  = nh.subscribe("/iris/light_sensor/rgb/image_raw", 1000, sensor_cam_callback);
+   ros::Subscriber light_sub      = nh.subscribe("/light_sensor_plun/lightSensor", 1000, light_sensor_callback);
 
    ros::Subscriber imu_sub        = nh.subscribe("mavros/imu/data", 1000, imu_callback);
    ros::Subscriber bat_sub        = nh.subscribe("mavros/battery", 1000, battery_callback);

@@ -69,7 +69,7 @@ namespace gazebo
     if (!this->parentSensor->IsActive())
     {
       if ((*this->image_connect_count_) > 0)
-      // do this first so there's chance for sensor to run once after activated
+       //do this first so there's chance for sensor to run once after activated
         this->parentSensor->SetActive(true);
     }
     else
@@ -108,4 +108,6 @@ namespace gazebo
       }
     }
   }
+
+
 }

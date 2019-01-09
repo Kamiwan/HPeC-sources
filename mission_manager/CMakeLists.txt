@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   communication
+  image_transport
  #message_generation
 )
 
@@ -121,6 +122,7 @@ include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
   ../shared_memory_lib/src
+  /opt/ros/kinetic/include/image_transport
 )
 
 ## Declare a C++ library
@@ -161,6 +163,7 @@ add_dependencies(mission_manager_node demo_pkg_generate_messages_cpp)
  target_link_libraries(mission_manager_node
   ${catkin_LIBRARIES}
   shared_memory_lib
+  /opt/ros/kinetic/lib/libimage_transport.so
 )
 
 
