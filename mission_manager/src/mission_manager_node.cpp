@@ -117,7 +117,7 @@ void battery_callback(const sensor_msgs::BatteryState::ConstPtr &bat_msg)
 
    if(verbose > VERBOSITY_OFF)
    {
-	   ROS_INFO("Seq: [%d]", bat_msg->header.seq);
+	   std::cout << "Seq: [" << bat_msg->header.seq << "]" << " \n";
       std::cout << "Battery left : [" << std::setprecision(3) << battery_level << "]% \n";
    }
 }
@@ -139,7 +139,7 @@ void gps_pos_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 
    if(verbose > VERBOSITY_OFF)
    {
-	   ROS_INFO("Seq: [%d]", position->header.seq);
+	   std::cout << "Seq: [" << position->header.seq << "]" << " \n";
       std::cout << "GPS POS Alt: [" << altitude << std::setprecision(10)
                   <<"], Long: [" << longitude  
                   << "], Lat: [" << latitude << "] \n";
@@ -165,7 +165,7 @@ void gps_vel_callback(const geometry_msgs::TwistStamped::ConstPtr &vel_msg)
 
    if(verbose > VERBOSITY_OFF)
    {
-	   ROS_INFO("Seq: [%d]", vel_msg->header.seq);
+	   std::cout << "Seq: [" << vel_msg->header.seq << "]" << " \n";
       std::cout << "LINEAR SPEED x: [" << std::setprecision(3) << lin_vel_x 
                   << "], y: [" << lin_vel_y 
                   <<"], z: [" << lin_vel_z <<"]";
@@ -216,9 +216,9 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
    delta_pitch = pitch - prev_pitch;      
    delta_yaw   = yaw   - prev_yaw;  
 	
-   if(verbose > VERBOSITY_LOW)
+   if(verbose > VERBOSITY_OFF)
    {
-	   ROS_INFO("Seq: [%d]", imu_msg->header.seq);
+	   std::cout << "Seq: [" << imu_msg->header.seq << "]" << " \n";
       std::cout   << std::setprecision(4) << "Roll: ["  << roll 
                   << "],Pitch: [" << pitch 
                   << "],Yaw: ["   << yaw << "] \n";
@@ -249,9 +249,7 @@ void achievable_callback(const std_msgs::Int32::ConstPtr &msg1)
    ROS_INFO("[MSG][ADAPTATION_MANAGER]: At least one task config is not achievable ");
    ROS_INFO("[%d]", msg1->data);
    
-   
-
-   ROS_INFO("CHANGEMENT DE TABLE C3, ENVOIE DE NOTIF A AUTOMATE EN COURS...");
+   ROS_INFO("C3 array modified, send message to Adaptation Manager...");
    msg.data = 1;
    notify_from_MM_pub->publish(msg);
 }
@@ -307,3 +305,5 @@ int main(int argc, char **argv)
       loop_rate.sleep();
    }
 }
+
+
