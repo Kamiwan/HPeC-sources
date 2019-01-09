@@ -34,16 +34,13 @@
 /*********** Global variables ***********/ 
 int	 verbose;
 double roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw, delta_roll, delta_pitch, delta_yaw;
-double altitude, longitude, latitude;
+double altitude, longitude, latitude, illuminance;
 double ang_vel_x, ang_vel_y, ang_vel_z, lin_vel_x, lin_vel_y, lin_vel_z;
 float  battery_level;
 bool   first_time_imu;
 boost::shared_ptr<ros::Publisher> notify_from_MM_pub;
 static unsigned long long lastTotalUser, lastTotalUserLow, lastTotalSys, lastTotalIdle; //EM, CPU load
 /*********** Global variables ***********/ 
-
-
-
 
 
 
@@ -107,23 +104,21 @@ double current_cpu_value()
 
 
 /*******************************************************************
- * light_sensor_callback
+ * sensor_cam_callback
  * Author : EM 
- * @param light_msg
+ * @param img_msg
  * 
- * Callback function to get illuminance between 0 and 255
+ * Allow to get light sensor data, Subscription mandatory to the 
+ * camera used as light sensor. We do not need raw data so we use a
+ * dumb callback.
 *******************************************************************/
 void sensor_cam_callback(const sensor_msgs::Image::ConstPtr &img_msg)
 {
-   //*battery_level = bat_msg->percentage;
-
-   std::cout << "DUMB CALLBACK OK \n";
-   /*
-   if(verbose > VERBOSITY_OFF)
+   if(verbose > VERBOSITY_HIGH)
    {
-	   std::cout << "Seq: [" << bat_msg->header.seq << "]" << " \n";
-      std::cout << "Battery left : [" << std::setprecision(3) << battery_level << "]% \n";
-   }*/
+	   std::cout << "Seq: [" << img_msg->header.seq << "]" << " \n";
+      std::cout << "DUMB light sensor callback OK \n";
+   }
 }
 
 /*******************************************************************
@@ -135,15 +130,13 @@ void sensor_cam_callback(const sensor_msgs::Image::ConstPtr &img_msg)
 *******************************************************************/
 void light_sensor_callback(const sensor_msgs::Illuminance::ConstPtr &light_msg)
 {
-   //*battery_level = bat_msg->percentage;
-
-   std::cout << "Illuminance = " << light_msg->illuminance << " \n";
-   /*
+   illuminance = light_msg->illuminance;
+   
    if(verbose > VERBOSITY_OFF)
    {
-	   std::cout << "Seq: [" << bat_msg->header.seq << "]" << " \n";
-      std::cout << "Battery left : [" << std::setprecision(3) << battery_level << "]% \n";
-   }*/
+	   std::cout << "Seq: [" << light_msg->header.seq << "]" << " \n";
+      std::cout << "Illuminance = " << std::setprecision(3) << illuminance  << " \n";
+   }
 }
 
 /*******************************************************************
@@ -317,8 +310,8 @@ int main(int argc, char **argv)
       verbose = VERBOSITY_DEFAULT;
    }
 
-   ros::Subscriber cam_light_sub  = nh.subscribe("/iris/light_sensor/rgb/image_raw", 1000, sensor_cam_callback);
-   ros::Subscriber light_sub      = nh.subscribe("/light_sensor_plun/lightSensor", 1000, light_sensor_callback);
+   ros::Subscriber cam_light_sub  = nh.subscribe("iris/light_sensor/rgb/image_raw", 1000, sensor_cam_callback);
+   ros::Subscriber light_sub      = nh.subscribe("light_sensor_plugin/lightSensor", 1000, light_sensor_callback);
 
    ros::Subscriber imu_sub        = nh.subscribe("mavros/imu/data", 1000, imu_callback);
    ros::Subscriber bat_sub        = nh.subscribe("mavros/battery", 1000, battery_callback);
@@ -330,7 +323,6 @@ int main(int argc, char **argv)
    
    notify_from_MM_pub = boost::make_shared<ros::Publisher>(
       nh.advertise<std_msgs::Int32>("/notify_from_MM_topic", 1000));
-
 
    MemoryCoordinator sh_mem_access("User"); //EM, may MM able to use the shared memory
 

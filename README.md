@@ -111,6 +111,7 @@ Replace the path of *image_transport* lib by yours in the CMakeLists.txt of foll
 * harris_detector
 * detection_tracking
 * stabilisation_imu
+* mission_manager
 
 in the include directories
 ```bash 
