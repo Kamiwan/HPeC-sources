@@ -1,11 +1,11 @@
 #include "obstacle_detection_class.h"
-#include "taf.h"
 
 #include <cstdlib>
 #include<vector>
 #include<math.h>
 #include<ros/ros.h>
 # include "communication/obstacle_detection_msg.h"
+
 obstacle_detection_class::obstacle_detection_class()
 {
 	a=1;

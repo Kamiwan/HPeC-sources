@@ -251,7 +251,9 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 		/**********************************************************************
 		 * EM, Insert here some application functions
 		**********************************************************************/
-		std::cout << "Hello World!" << std::endl;
+		//Get the time and store it in the time variable.
+		ros::Time time = ros::Time::now();
+		std::cout << "Hello World! It is " << time << " o'clock!" << std::endl;
 
 
 
@@ -399,10 +401,10 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 			 imu_msg->orientation.x, imu_msg->orientation.y, 
 			 imu_msg->orientation.z, imu_msg->orientation.w);
 
-   double quatx= imu_msg->orientation.x;
-   double quaty= imu_msg->orientation.y;
-   double quatz= imu_msg->orientation.z;
-   double quatw= imu_msg->orientation.w;
+   	double quatx= imu_msg->orientation.x;
+   	double quaty= imu_msg->orientation.y;
+   	double quatz= imu_msg->orientation.z;
+   	double quatw= imu_msg->orientation.w;
 
     tf::Quaternion q(quatx, quaty, quatz, quatw);
     tf::Matrix3x3 m(q);

@@ -193,13 +193,15 @@ void notify_Callback(const std_msgs::Int32::ConstPtr& msg)
 int main (int argc, char ** argv)
 {   
     ros::init(argc, argv, "adaptation_manager_node");
-    ros::NodeHandle nh("~");
+    ros::NodeHandle nh;     //EM non-private Node Handle to get topics notifications from other nodes
+    ros::NodeHandle n("~"); //EM, use ~ for private parameters, here it's for verbose
+
     ROS_INFO("[ADAPTATION MANAGER] [RUNNING] \n");
 
-    if (!nh.hasParam("verbose"))
+    if (!n.hasParam("verbose"))
         ROS_INFO("No param named 'verbose'");
     
-    if(nh.getParam("verbose",  verbose))
+    if(n.getParam("verbose",  verbose))
         ROS_INFO("verbose level = %d", verbose);
     else
     {
@@ -230,15 +232,9 @@ int main (int argc, char ** argv)
     tracking_pub = boost::make_shared<ros::Publisher>( 
                      nh.advertise<std_msgs::Int32>("/tracking_mgt_topic", 1));
     achievable_pub = boost::make_shared<ros::Publisher>( 
-                        nh.advertise<std_msgs::Int32>("/achievable_topic", 1000));
+                     nh.advertise<std_msgs::Int32>("/achievable_topic", 1000));
     ros::Subscriber notify_from_MM_sub;
         notify_from_MM_sub = nh.subscribe("/notify_from_MM_topic", 1000, notify_Callback);
-                    
-    ros::Publisher cpu_pub;
-        cpu_pub = nh.advertise<std_msgs::Float32>("/cpu_load_topic", 1);				    
-    //*****************Ghizlane BOUDABZA
-    std_msgs::Float32 load;
-
 
 
     //EM, Data structure setup
@@ -272,9 +268,6 @@ int main (int argc, char ** argv)
     { 
         ros::spinOnce();
 
-        //load.data = cpuload();
-        //cpu_pub.publish( load );
-        
         time_qos_data = sh_mem_read_time_qos(sh_mem_access);
         if(!compare(time_qos_data,C3_current) || MM_request)
         {
@@ -465,6 +458,10 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         msg.data = 0; 
         activate_desactivate_task(scheduler_array[i].app_index, msg);	
         cout << "\033[1;31m Disable Task no: " << scheduler_array[i].app_index << "\033[0m"  << endl;
+
+        //EM, write in shared memory the state of each Tile that are released thanks to HW tasks shutdown
+        if(scheduler_array[i].region_id != 0 && scheduler_array[i].active ==0) 
+            shared_memory.busy_tile_Write(0, scheduler_array[i].region_id-1); //EM, -1 because sh_vector index starts at 0
     }
 
     //EM, Second loop: Ensure that all Tiles that are gonna be configured are freed.
@@ -496,6 +493,8 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[1;36m Enable HW version of Task no: " << scheduler_array[i].app_index 
                     << " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
+            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id-1); //EM, notify the Tile reservation in sh mem
+            //EM, -1 because sh_vector index starts at 0
         }
 
         //Enable HW tasks in fusion "f"
@@ -508,6 +507,8 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[36m Enable HW FUSION version of Task no: " << scheduler_array[i].app_index 
                     << " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
+            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id-1); //EM, notify the Tile reservation in sh mem
+            //EM, -1 because sh_vector index starts at 0
         }
     }
     cout << endl;
@@ -596,12 +597,17 @@ void sh_mem_setup(MemoryCoordinator & shared_memory, vector<Task_in> C3)
     std::vector<int> achievable_init;
     std::vector<int> release_hw_init;
     std::vector<int> done_init;
+    std::vector<int> busy_tile_init;
     for(int i = 0; i < APPLICATION_NUMBER; i++)
     {
         achievable_init.push_back(1);   //EM, everything achievable by default
         release_hw_init.push_back(1);   //  everything released by default
         done_init.push_back(0);         //  nothing done by default
+
+        if(i < TILE_NUMBER)
+            busy_tile_init.push_back(0); //EM, no tile used by default
     }
+
     std::vector<int> Sh_C3_init;
     for(int i = 0; i < C3.size(); i++)
     {
@@ -618,6 +624,7 @@ void sh_mem_setup(MemoryCoordinator & shared_memory, vector<Task_in> C3)
     shared_memory.Fill_ShMem_achievable(achievable_init);
     shared_memory.Fill_ShMem_release_hw(release_hw_init);
     shared_memory.Fill_ShMem_done(done_init);
+    shared_memory.Fill_ShMem_busy_tile(busy_tile_init);
     std::cout << "Fill shared memories, done! " << std::endl;
 }
 

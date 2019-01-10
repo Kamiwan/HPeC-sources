@@ -52,6 +52,13 @@ void MemoryCoordinator::Fill_ShMem_done(const std::vector<int> &memory)
         done_Vptr->push_back(memory[i]);
     }
 }
+void MemoryCoordinator::Fill_ShMem_busy_tile(const std::vector<int> &memory)
+{
+    bip::scoped_lock<bip::named_mutex> lock(busy_tile_mutex);
+    for(size_t i = 0; i < memory.size(); i++){
+        busy_tile_Vptr->push_back(memory[i]);
+    }
+}
 
 
 int  MemoryCoordinator::achievable_Read(int app_index) 
@@ -137,6 +144,35 @@ void MemoryCoordinator::done_Write(int data, int app_index)
         std::cerr << "SHARED MEMORY ERROR, Null pointer to done Shared Vector" << std::endl;
     }
 }
+int  MemoryCoordinator::busy_tile_Read(int tile_index) 
+{
+    bip::scoped_lock<bip::named_mutex> lock(busy_tile_mutex);
+    busy_tile_ptr = busy_tile_Vptr->data(); //Always update offset_ptr before use it
+    
+    if(busy_tile_ptr) //If shared memory contains data, we proceed
+    {
+        return busy_tile_ptr[tile_index];
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to busy_tile Shared Vector" << std::endl;
+        return -1;
+    }
+}
+void MemoryCoordinator::busy_tile_Write(int data, int tile_index)
+{
+    bip::scoped_lock<bip::named_mutex> lock(busy_tile_mutex);
+    busy_tile_ptr = busy_tile_Vptr->data(); //Always update offset_ptr before use it
+    
+    if(busy_tile_ptr) //If shared memory contains data, we proceed
+    {
+        busy_tile_ptr[tile_index] = data;
+    } else
+    {
+        std::cerr << "SHARED MEMORY ERROR, Null pointer to busy_tile Shared Vector" << std::endl;
+    }
+}
+
+
 
 
 std::vector<int> MemoryCoordinator::C3_table_Read(int app_index) 

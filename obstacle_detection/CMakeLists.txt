@@ -141,8 +141,6 @@ include_directories(
 add_executable(obstacle_detection_node
 	src/obstacle_detection_node.cpp
 	src/obstacle_detection_class.cpp
-	src/taf.cpp
-	src/utils.cpp
 )
 
 ## Rename C++ executable without prefix

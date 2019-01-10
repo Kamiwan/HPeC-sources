@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(mission_manager)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+## Add support for C++11, supported in ROS Kinetic and newer
+add_definitions(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -11,12 +11,14 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  communication
+  image_transport
  #message_generation
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
+set (CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lpthread -lrt")
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -119,6 +121,8 @@ CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ../shared_memory_lib/src
+  /opt/ros/kinetic/include/image_transport
 )
 
 ## Declare a C++ library
@@ -139,8 +143,8 @@ include_directories(
 
 
 add_executable(mission_manager_node 
-                src/mission_manager_node.cpp
-              )
+  src/mission_manager_node.cpp
+)
 
 
 
@@ -158,7 +162,9 @@ add_dependencies(mission_manager_node demo_pkg_generate_messages_cpp)
 ## Specify libraries to link a library or executable target against
  target_link_libraries(mission_manager_node
   ${catkin_LIBRARIES}
- )
+  shared_memory_lib
+  /opt/ros/kinetic/lib/libimage_transport.so
+)
 
 
 

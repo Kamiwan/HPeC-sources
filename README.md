@@ -111,6 +111,7 @@ Replace the path of *image_transport* lib by yours in the CMakeLists.txt of foll
 * harris_detector
 * detection_tracking
 * stabilisation_imu
+* mission_manager
 
 in the include directories
 ```bash 
@@ -130,6 +131,13 @@ and to link executable library. Image_transport include directory and binary fil
    ${OpenCV_LIBRARIES}
  )
 ```
+Then, replace the PROJECT_PATH in gazebo plugin by your in gazebo_plugin/gazebo_world_plugin.cpp without slash at the end
+
+```c++
+  #define PROJECT_PATH "/Your/Path"
+```
+
+
 Once every paths are updated you can compile the whole project with the following command at the root of your catkin workspace:
 ```
 $ cd ../

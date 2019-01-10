@@ -533,6 +533,7 @@
      19/01/2018  Erwan Moréac
      Adding of HPeC sensors: 
      - 2 cameras 
+     - 1 light sensor (based on a camera, 08/01/19)
      - 6 short range infrared sensors
      - 6 long range infrared sensors
      - 6 ultrasound sensors
@@ -676,6 +677,79 @@
   </link>
   <joint name='iris/camera2_joint' type='fixed'>
     <child>iris/camera2_link</child>
+    <parent>base_link</parent> 
+  </joint>
+
+
+  <link name='iris/light_sensor_link'>
+    <pose>0 0 -.07 0 1.570796 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.001</mass>
+        <inertia>
+          <ixx>0.00001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00002</iyy>
+          <iyz>0</iyz>
+          <izz>0.00002</izz>
+        </inertia>
+      </inertial>
+    <collision name='light_sensor_link_collision'>
+      <geometry>
+        <box>
+            <size>0.05 0.05 0.05</size>
+        </box>
+      </geometry>
+    </collision>
+    <visual name='light_sensor_link_visual'>
+      <geometry>
+        <box>
+            <size>0.05 0.05 0.05</size>
+        </box>
+      </geometry>
+    </visual>
+    <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/FlatBlack</name>
+          </script>
+    </material>
+    <sensor name='light_sensor' type='camera'>
+          <camera name='light_sensor'>
+            <horizontal_fov>1.047</horizontal_fov>
+            <image>
+              <width>3</width>
+              <height>3</height>
+            </image>
+            <clip>
+              <near>0.1</near>
+              <far>100</far>
+            </clip>
+          </camera>
+          <plugin name="gazebo_light_sensor_plugin" filename="libgazebo_light_sensor_plugin.so">
+            <robotNamespace>/</robotNamespace>
+            <cameraName>iris/light_sensor</cameraName>
+            <alwaysOn>true</alwaysOn>
+            <updateRate>10</updateRate>
+            <imageTopicName>rgb/image_raw</imageTopicName>
+            <depthImageTopicName>depth/image_raw</depthImageTopicName>
+            <pointCloudTopicName>depth/points</pointCloudTopicName>
+            <cameraInfoTopicName>rgb/camera_info</cameraInfoTopicName>
+            <depthImageCameraInfoTopicName>depth/camera_info</depthImageCameraInfoTopicName>
+            <frameName>camera_depth_optical_frame</frameName>
+            <baseline>0.1</baseline>
+            <distortion_k1>0.0</distortion_k1>
+            <distortion_k2>0.0</distortion_k2>
+            <distortion_k3>0.0</distortion_k3>
+            <distortion_t1>0.0</distortion_t1>
+            <distortion_t2>0.0</distortion_t2>
+            <pointCloudCutoff>0.4</pointCloudCutoff>
+          </plugin>
+        </sensor>
+  </link>
+  <joint name='iris/light_sensor_joint' type='fixed'>
+    <child>iris/light_sensor_link</child>
     <parent>base_link</parent> 
   </joint>
 
