@@ -1,124 +1,4 @@
-#include <ros/ros.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <image_transport/image_transport.h>
-#include <vector>
-#include <stdint.h>
-
-#include <opencv2/highgui/highgui.hpp>
-#include <cv_bridge/cv_bridge.h>
-#include <iostream>
-
-extern "C" {
-#include "image.h"
-#include "debug.h"
-}
-
-#include <sensor_msgs/NavSatFix.h>
-#include <sensor_msgs/image_encodings.h>
-
-#include <ros/callback_queue.h>
-#include <boost/thread.hpp>
-#include "std_msgs/Int32.h"
-#include "std_msgs/Float32.h"
-
-#include "std_msgs/String.h"
-#include <sstream>
-#include "communication/area_location.h"
-#include "sgdma_dispatcher.h"
-#include "sgdma_dispatcher_regs.h"
-
-#include "utils.h"
-
-#define SDRAM_SPAN (0x04000000)
-#define HW_REGS_SPAN (0x00020000)
-#define HWREG_BASE (0xff200000)
-#define DDR_FPGA_CMA_BASE_ADDR 0xC0000000
-
-//EM, 11/04/18, Hardware version preparation
-#define DMA_READ_CSR_BASEADDR 0xFF200000
-#define DMA_READ_DESC_BASEADDR 0xFF201000
-#define DMA_WRITE_CSR_BASEADDR 0xFF202000
-#define DMA_WRITE_DESC_BASEADDR 0xFF203000
-
-//Erwan Moréac, 05/03/18 : Setup #define
-#define HIL				 //Code modifications for Hardware In the Loop
-#define AREA_MIN 400	 //TODO : create a function to make it dependent of the UAV height and FOV
-#define AREA_MAX 2073601 //This value exceeds the area of an HD picture 1920 x 1080 in pixels
-#define SL_INPUT_TOPIC "/iris/camera2/image_raw"
-#define SL_OUTPUT_IMAGE_TOPIC "search_output/image"
-#define SL_OUTPUT_AREA_LOCATION_TOPIC "search_output/areas"
-
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-//#define WRITE_IMG //DEGUG only
-
-boost::shared_ptr<ros::Publisher> search_land_pub;
-
-PPM_IMG img_ibuf_color;
-PGM_IMG img_ibuf_g;
-PGM_IMG img_ibuf_ceh;
-PGM_IMG img_ibuf_me1;
-PGM_IMG img_ibuf_me;
-PGM_IMG img_ibuf_bw;
-PGM_IMG img_ibuf_ccl;
-PGM_IMG img_ibuf_mop;
-PGM_IMG img_ibuf_mop2;
-PGM_IMG img_ibuf_mop3;
-PGM_IMG img_ibuf_ero;
-PGM_IMG img_ibuf_gs;
-PGM_IMG img_ibuf_sp;
-PGM_IMG img_ibuf_se;
-PGM_IMG img_ibuf_ms;
-int nb_labels;
-COMPONENT *ccl;
-int count = 0;
-
-int hardware = 0;
-int fd;
-
-FILE *cma_dev_file;
-char cma_addr_string[10];
-
-time_t start, ends,t1;
-time_t imcpy_start,imcpy_end;
-struct timeval beginning, current, end;
-
-unsigned int cma_base_addr;
-void *virtual_base_sdram;
-
-volatile unsigned int *mem_to_stream_dma_buffer = NULL;
-volatile unsigned char *stream_to_mem_dma_buffer = NULL;
-
-// Create  Dispatcher
-tcSGDMADispatcher     dispatcher_read;
-tcSGDMADispatcher     dispatcher_write;
-// Create  descriptor
-tsSGDMADescriptor descriptor_read;
-tsSGDMADescriptor descriptor_write;
-
-struct pixel *data;
-unsigned char *header;
-
-double diameter;
-double altitude;
-double camera_angle;
-double image_height;
-
-void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
-
-void image_callback(const sensor_msgs::Image::ConstPtr &image_cam);
-
-bool run = false;
-int current_ver = 0;
-boost::shared_ptr<boost::thread> worker_thread;
-boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
-
+#include "emergency_landing_node.h"
 
 // source ppm color image 24bits RGB (packed)
 // The video IP cores used for edge detection require the RGB 24 bits of each pixel to be
@@ -153,56 +33,111 @@ int acquire()
 
 	// Determine the CMA block physical address
 	fgets(cma_addr_string, sizeof(cma_addr_string), cma_dev_file);
-	cma_base_addr = strtol(cma_addr_string, NULL, 16);
+	sl_cma_base_addr = strtol(cma_addr_string, NULL, 16);
 
-	dbprintf("Use CMA memory block at phys addr: 0x%x\n", cma_base_addr);
+	dbprintf("Use CMA memory block at phys addr: 0x%x\n", sl_cma_base_addr);
 
 	fclose(cma_dev_file);
 
 	// get virtual addr that maps to the sdram region (through HPS-FPGA non-lightweight bridge)
-	virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), 
-							MAP_SHARED, fd, DDR_FPGA_CMA_BASE_ADDR); //EM, replace by cma_base_addr
-	if (virtual_base_sdram == MAP_FAILED)
+	if(USE_DDR_FPGA)
+	{
+		sl_virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), 
+							MAP_SHARED, fd, DDR_FPGA_CMA_BASE_ADDR); //EM, replace by sl_cma_base_addr
+	}
+	else
+	{
+		sl_virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), 
+							MAP_SHARED, fd, sl_cma_base_addr); 
+	}
+
+	if (sl_virtual_base_sdram == MAP_FAILED)
 	{
 		printf("ERROR: mmap() failed...\n");
 		close(fd);
 		exit (1);
 	}
 
-	mem_to_stream_dma_buffer = (volatile unsigned int *)(virtual_base_sdram);
-	stream_to_mem_dma_buffer = (volatile unsigned char *)(virtual_base_sdram + 0x2000000);
+	sl_mem_to_stream_dma_buffer = (volatile unsigned int *)(sl_virtual_base_sdram);
+	sl_stream_to_mem_dma_buffer = (volatile unsigned char *)(sl_virtual_base_sdram + 0x2000000);
 
 	// Create  Dispatcher
-	dispatcher_read.init(DMA_READ_CSR_BASEADDR, DMA_READ_DESC_BASEADDR, 0);
-	dispatcher_write.init(DMA_WRITE_CSR_BASEADDR, DMA_WRITE_DESC_BASEADDR, 0);
+	sl_dispatcher_read.init(DMA_READ_CSR_BASEADDR, DMA_READ_DESC_BASEADDR, 0);
+	sl_dispatcher_write.init(DMA_WRITE_CSR_BASEADDR, DMA_WRITE_DESC_BASEADDR, 0);
 
-	//dispatcher_write.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on write DMA
-	//dispatcher_read.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on read DMA
-	// Create  descriptor, new instance of descriptor objects
-	//descriptor_read = {0};
-	//descriptor_write = {0};
-	
 	// EM, HW version update, Configure DMAs to the correct addresses
 	// Set the HPS Memory start address
-	descriptor_read.read_addr = DDR_FPGA_CMA_BASE_ADDR; //EM, replace by cma_base_addr 
-	descriptor_read.write_addr = DDR_FPGA_CMA_BASE_ADDR;
-	descriptor_write.read_addr = DDR_FPGA_CMA_BASE_ADDR+0x2000000;
-	descriptor_write.write_addr = DDR_FPGA_CMA_BASE_ADDR+0x2000000;
+	if(USE_DDR_FPGA)
+	{
+		sl_descriptor_read.read_addr 	= DDR_FPGA_CMA_BASE_ADDR;
+		sl_descriptor_read.write_addr 	= DDR_FPGA_CMA_BASE_ADDR;
+		sl_descriptor_write.read_addr 	= DDR_FPGA_CMA_BASE_ADDR+0x2000000;
+		sl_descriptor_write.write_addr	= DDR_FPGA_CMA_BASE_ADDR+0x2000000;
+	}
+	else
+	{
+		sl_descriptor_read.read_addr	= sl_cma_base_addr; 
+		sl_descriptor_read.write_addr 	= sl_cma_base_addr;
+		sl_descriptor_write.read_addr 	= sl_cma_base_addr+0x2000000;
+		sl_descriptor_write.write_addr = sl_cma_base_addr+0x2000000;
+	}
+
 	// We are using packetized streams so set length to max
-	descriptor_read.length = 640*480*sizeof(unsigned int);
-	descriptor_write.length = 640*480*sizeof(unsigned char);
+	sl_descriptor_read.length = 640*480*sizeof(unsigned int);
+	sl_descriptor_write.length = 640*480*sizeof(unsigned char);
 	// The dispatcher will use the End of Packet flag to end the transfer
-	descriptor_read.control.msBits.end_on_eop = 1;
-	descriptor_read.control.msBits.gen_sop = 1;
-	descriptor_read.control.msBits.gen_eop = 1;
-	descriptor_write.control.msBits.end_on_eop = 1;
-	descriptor_write.control.msBits.gen_sop = 1;
-	descriptor_write.control.msBits.gen_eop = 1;
-	descriptor_read.control.msBits.go = 0;
-	descriptor_write.control.msBits.go = 0;
+	sl_descriptor_read.control.msBits.end_on_eop = 1;
+	sl_descriptor_read.control.msBits.gen_sop = 1;
+	sl_descriptor_read.control.msBits.gen_eop = 1;
+	sl_descriptor_write.control.msBits.end_on_eop = 1;
+	sl_descriptor_write.control.msBits.gen_sop = 1;
+	sl_descriptor_write.control.msBits.gen_eop = 1;
+	sl_descriptor_read.control.msBits.go = 0;
+	sl_descriptor_write.control.msBits.go = 0;
+
 	// configure the DMAs
-	dispatcher_read.WriteDescriptor(descriptor_read);
-	dispatcher_write.WriteDescriptor(descriptor_write);
+	tuSgdmaCtrl csr_read ={0};
+    tuSgdmaCtrl csr_write ={0};
+	    
+    csr_read.msBits.reset_dispatcher=0;
+    csr_read.msBits.stop_dispatcher=1;   
+    csr_read.msBits.stop_desc=1;   
+    csr_write.msBits.reset_dispatcher=0;
+    csr_write.msBits.stop_dispatcher=1;
+    csr_write.msBits.stop_desc=1;
+    
+	  
+    if ((sl_dispatcher_read.GetStatusReg().msBits.busy) ||
+	(sl_dispatcher_write.GetStatusReg().msBits.busy))
+   	{
+	    //stop soft the DMAs
+       	sl_dispatcher_write.SetControlReg(csr_write.mnWord);
+      	sl_dispatcher_read.SetControlReg(csr_read.mnWord);
+	   
+	   	while( sl_dispatcher_read.GetStatusReg().msBits.stopped !=0);
+   	}
+    //stop soft the DMAs
+    csr_read.msBits.reset_dispatcher=1;
+    csr_read.msBits.stop_dispatcher=0;   
+    csr_read.msBits.stop_desc=0;   
+    csr_write.msBits.reset_dispatcher=1;
+    csr_write.msBits.stop_dispatcher=0;
+    csr_write.msBits.stop_desc=0;
+    //stop soft the DMAs
+   	sl_dispatcher_write.SetControlReg(csr_write.mnWord);
+    sl_dispatcher_read.SetControlReg(csr_read.mnWord);
+	   
+   	while( sl_dispatcher_read.GetStatusReg().msBits.resetting !=0);
+
+    csr_read.msBits.reset_dispatcher=0;
+    csr_read.msBits.stop_dispatcher=0;   
+    csr_read.msBits.stop_desc=0;   
+    csr_write.msBits.reset_dispatcher=0;
+    csr_write.msBits.stop_dispatcher=0;
+    csr_write.msBits.stop_desc=0;
+    //stop/reset off soft the DMAs
+	sl_dispatcher_write.SetControlReg(csr_write.mnWord);
+    sl_dispatcher_read.SetControlReg(csr_read.mnWord);
 
 	// ALL SUCCEDED ;
 	return 0;
@@ -210,7 +145,7 @@ int acquire()
 
 void release()
 {
-	if (munmap(virtual_base_sdram, SDRAM_SPAN) != 0)
+	if (munmap(sl_virtual_base_sdram, SDRAM_SPAN) != 0)
 	{
 		ROS_ERROR("ERROR: munmap() failed...\n");
 	}
@@ -238,26 +173,26 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 	double rate_double;
 	if (!workerHandle_ptr->getParam("/node_activation_rates/emergency_landing", rate_double))
 	{
-		//ROS_INFO("Could not read obstacle detection's activation rate. Setting 1 Hz");
+		ROS_INFO("Could not read obstacle detection's activation rate. Setting 1 Hz");
 		rate_double = 1;
 	}
 	ros::Rate rate(rate_double);
 
 	if (!workerHandle_ptr->getParam("/drone_features/diameter", diameter))
 	{
-		//ROS_INFO("Could not read drone's diameter. Setting to 0.6 meters");
+		ROS_INFO("Could not read drone's diameter. Setting to 0.6 meters");
 		diameter = 0.6;
 	}
 
 	if (!workerHandle_ptr->getParam("/camera_features/camera_angle", camera_angle))
 	{
-		//ROS_INFO("Could not read camera's angle. Setting to 0.4 radian");
+		ROS_INFO("Could not read camera's angle. Setting to 0.4 radian");
 		camera_angle = 0.4;
 	}
 
 	if (!workerHandle_ptr->getParam("/camera_features/image_height", image_height))
 	{
-		//ROS_INFO("Could not read image's height. Setting to 480");
+		ROS_INFO("Could not read image's height. Setting to 480");
 		image_height = 480;
 	}
 	altitude = 60;
@@ -277,73 +212,46 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 		//EM, Add a test in the case the camera topic is not activated
 		if (img_ibuf_color.h != 0 && img_ibuf_color.w != 0)
 		{
-			//img_ibuf_color = read_ppm("/home/ubuntu/search_land_are/sim_cam/australia.ppm");
-			// Write the image to the mem-to-stream buffer
-			//memcpy_consecutive_to_padded(img_ibuf_color.img, mem_to_stream_dma_buffer, img_ibuf_color.h * img_ibuf_color.w);
-
 			// Start measuring time
 			start = clock();
-			// gettimeofday (&start , NULL);
-
 			t1=clock();
 			
 			#ifdef DEBUG
 			std::cout << "Descriptor READ parameters: " << std::endl;
-			dispatcher_read.DisplayDescriptor(descriptor_read);
+			sl_dispatcher_read.DisplayDescriptor(sl_descriptor_read);
 			std::cout << "\nDescriptor WRITE parameters: " << std::endl;
-			dispatcher_write.DisplayDescriptor(descriptor_write);
+			sl_dispatcher_write.DisplayDescriptor(sl_descriptor_write);
 			#endif
 
 			// Tell the dispatcher to start
-			descriptor_read.control.msBits.go = 1;
-			descriptor_write.control.msBits.go = 1;
+			sl_descriptor_read.control.msBits.go = 1;
+			sl_descriptor_write.control.msBits.go = 1;
 			// Turn on the DMAs
-			dispatcher_read.WriteDescriptor(descriptor_read);
-			dispatcher_write.WriteDescriptor(descriptor_write);
-
-	        while(dispatcher_read.GetStatusReg().msBits.busy)
-			{
-				dbprintf("wait read busy : %d\n",dispatcher_read.GetStatusReg().msBits.busy);
-				dbprintf("desc_buf_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
-				dbprintf("desc_buf_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_full);
-				dbprintf("desc_res_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_empty);
-				dbprintf("desc_res_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_full);
-				dbprintf("stopped : %d\n",dispatcher_read.GetStatusReg().msBits.stopped);
-				dbprintf("resetting  : %d\n",dispatcher_read.GetStatusReg().msBits.resetting);
-				dbprintf("stop_on_err  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_err);
-				dbprintf("stop_on_early  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_early);
-				dbprintf("irq  : %d\n",dispatcher_read.GetStatusReg().msBits.irq); 
-			}
+			sl_dispatcher_read.WriteDescriptor(sl_descriptor_read);
+			sl_dispatcher_write.WriteDescriptor(sl_descriptor_write);
 
 			// wait until the dma transfer complete
-			while(dispatcher_write.GetStatusReg().msBits.busy)
+			while(sl_dispatcher_write.GetStatusReg().msBits.busy)
 			{
-				dbprintf("busy : %d\n",dispatcher_write.GetStatusReg().msBits.busy);
-				dbprintf("desc_buf_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
-				dbprintf("desc_buf_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_full);
-				dbprintf("desc_res_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_empty);
-				dbprintf("desc_res_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_full);
-				dbprintf("stopped : %d\n",dispatcher_write.GetStatusReg().msBits.stopped);
-				dbprintf("resetting  : %d\n",dispatcher_write.GetStatusReg().msBits.resetting);
-				dbprintf("stop_on_err  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_err);
-				dbprintf("stop_on_early  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_early);
-				dbprintf("irq  : %d\n",dispatcher_write.GetStatusReg().msBits.irq); 
+				dbprintf("busy : %d\n",sl_dispatcher_write.GetStatusReg().msBits.busy);
+				dbprintf("desc_buf_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
+				dbprintf("desc_buf_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_full);
+				dbprintf("desc_res_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_empty);
+				dbprintf("desc_res_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_full);
+				dbprintf("stopped : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stopped);
+				dbprintf("resetting  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.resetting);
+				dbprintf("stop_on_err  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_err);
+				dbprintf("stop_on_early  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_early);
+				dbprintf("irq  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.irq); 
 			};
 
 			dbprintf("TRANSFERT OK ############################################## \n");
-
-			//EM, HW synchro, Tell the dispatcher to STOP
-			descriptor_read.control.msBits.go = 0;
-			descriptor_write.control.msBits.go = 0;
-			// Turn off the DMAs
-			dispatcher_read.WriteDescriptor(descriptor_read);
-			dispatcher_write.WriteDescriptor(descriptor_write);
 
 			// Copy the edge detected image from the stream-to-mem buffer
 			img_ibuf_ero.w = img_ibuf_color.w;
 			img_ibuf_ero.h = img_ibuf_color.h;
 
-			img_ibuf_ero.img = (unsigned char *)stream_to_mem_dma_buffer; //zero copy
+			img_ibuf_ero.img = (unsigned char *)sl_stream_to_mem_dma_buffer; //zero copy
 			ends = clock();
 			gettimeofday(&end, NULL);
 			dbprintf("input padding time %.0f ms \r\n",((double) (t1 - start)) * 1000 / CLOCKS_PER_SEC);
@@ -529,11 +437,9 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 #ifdef WRITE_IMG
 			write_pgm(img_ibuf_mop3, "/home/labsticc/Bureau/search_res/dilate3.pgm");
 #endif
-
 			//erode
 			img_ibuf_ero = erode(img_ibuf_mop3);
 			ends = clock();
-			//gettimeofday(&end, NULL);
 
 #ifdef WRITE_IMG
 			write_pgm(img_ibuf_ero, "/home/labsticc/Bureau/search_res/erode.pgm");
@@ -639,122 +545,108 @@ void stop()
 				release();
 				hardware = 0;
 				//EM, tells to the Adaptation Manager the Tile is released
-				write_value_file(PATH_RELEASE_HW,"search_landing",1);
+				//TODO USE SHARED MEMORY
 			}
 		}
 	}
-	// RESET
-	//workerHandle_ptr = NULL;
-	//worker_thread = NULL;
 }
 
 void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 {
 	//current = clock();
 	gettimeofday(&current, NULL);
+	tuSgdmaCtrl csr_read ={0};
+    tuSgdmaCtrl csr_write ={0};
 
 	dbprintf("\n Hardware = %d\n",hardware);
 	if(hardware==1){ //EM, Perform soft reset on the IP before to switch to another mode than HW
 
 		//EM, Stops the current task to switch mode
-		descriptor_read.control.msBits.go = 0;
-		descriptor_write.control.msBits.go = 0;
-		dispatcher_read.WriteDescriptor(descriptor_read);
-		dispatcher_write.WriteDescriptor(descriptor_write);
+		sl_descriptor_read.control.msBits.go = 0;
+		sl_descriptor_write.control.msBits.go = 0;
+		sl_dispatcher_read.WriteDescriptor(sl_descriptor_read);
+		sl_dispatcher_write.WriteDescriptor(sl_descriptor_write);
 
-		dbprintf("busy : %d\n",dispatcher_read.GetStatusReg().msBits.busy);
-		dispatcher_read.SetControlReg(0x1); //EM, Stop Dispatcher on read DMA
-		while(dispatcher_read.GetStatusReg().msBits.stopped)
+		dbprintf("busy : %d\n",sl_dispatcher_read.GetStatusReg().msBits.busy);
+		csr_read.msBits.reset_dispatcher=0;
+	    csr_read.msBits.stop_dispatcher=1;   
+    	csr_read.msBits.stop_desc=1; 
+		sl_dispatcher_read.SetControlReg(csr_read.mnWord); //EM, Stop Dispatcher on read DMA
+
+		while(sl_dispatcher_read.GetStatusReg().msBits.stopped)
 		{
-			dbprintf("busy : %d\n",dispatcher_read.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_read.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_read.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_read.GetStatusReg().msBits.irq); 
+			dbprintf("busy : %d\n",sl_dispatcher_read.GetStatusReg().msBits.busy);
+			dbprintf("desc_buf_empty : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
+			dbprintf("desc_buf_full : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_buf_full);
+			dbprintf("desc_res_empty : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_res_empty);
+			dbprintf("desc_res_full : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_res_full);
+			dbprintf("stopped : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stopped);
+			dbprintf("resetting  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.resetting);
+			dbprintf("stop_on_err  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_err);
+			dbprintf("stop_on_early  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_early);
+			dbprintf("irq  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.irq); 
 		}
 
-		dispatcher_read.SetControlReg(0x2); //EM, Reset Dispatcher on read DMA
-		while(dispatcher_read.GetStatusReg().msBits.resetting)
+		csr_read.msBits.reset_dispatcher=1;
+	    csr_read.msBits.stop_dispatcher=0;   
+    	csr_read.msBits.stop_desc=0;   
+    	sl_dispatcher_read.SetControlReg(csr_read.mnWord); //EM, Reset Dispatcher on read DMA
+		while(sl_dispatcher_read.GetStatusReg().msBits.resetting)
 		{
-			dbprintf("busy : %d\n",dispatcher_read.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_read.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_read.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_read.GetStatusReg().msBits.irq); 
+			dbprintf("busy : %d\n",sl_dispatcher_read.GetStatusReg().msBits.busy);
+			dbprintf("desc_buf_empty : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
+			dbprintf("desc_buf_full : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_buf_full);
+			dbprintf("desc_res_empty : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_res_empty);
+			dbprintf("desc_res_full : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_res_full);
+			dbprintf("stopped : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stopped);
+			dbprintf("resetting  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.resetting);
+			dbprintf("stop_on_err  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_err);
+			dbprintf("stop_on_early  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_early);
+			dbprintf("irq  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.irq); 
 		}
 
-		dbprintf("busy : %d\n",dispatcher_write.GetStatusReg().msBits.busy);
-		dispatcher_write.SetControlReg(0x1); //EM, Stop Dispatcher on write DMA
-		while(dispatcher_write.GetStatusReg().msBits.stopped)
+		dbprintf("busy : %d\n",sl_dispatcher_write.GetStatusReg().msBits.busy);
+		
+		csr_write.msBits.reset_dispatcher=0;
+    	csr_write.msBits.stop_dispatcher=1;
+    	csr_write.msBits.stop_desc=1;
+		sl_dispatcher_write.SetControlReg(csr_write.mnWord); //EM, Stop Dispatcher on write DMA
+
+		while(sl_dispatcher_write.GetStatusReg().msBits.stopped)
 		{
-			dbprintf("busy : %d\n",dispatcher_write.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_write.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_write.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_write.GetStatusReg().msBits.irq); 
+			dbprintf("busy : %d\n",sl_dispatcher_write.GetStatusReg().msBits.busy);
+			dbprintf("desc_buf_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
+			dbprintf("desc_buf_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_full);
+			dbprintf("desc_res_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_empty);
+			dbprintf("desc_res_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_full);
+			dbprintf("stopped : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stopped);
+			dbprintf("resetting  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.resetting);
+			dbprintf("stop_on_err  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_err);
+			dbprintf("stop_on_early  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_early);
+			dbprintf("irq  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.irq); 
 		}
 
-		dispatcher_write.SetControlReg(0x2); //EM, Reset Dispatcher on write DMA
-		while(dispatcher_write.GetStatusReg().msBits.resetting)
+		csr_write.msBits.reset_dispatcher=1;
+    	csr_write.msBits.stop_dispatcher=0;
+    	csr_write.msBits.stop_desc=0;
+		sl_dispatcher_write.SetControlReg(csr_write.mnWord); //EM, Reset Dispatcher on write DMA
+
+		while(sl_dispatcher_write.GetStatusReg().msBits.resetting)
 		{
-			dbprintf("busy : %d\n",dispatcher_write.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_write.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_write.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_write.GetStatusReg().msBits.irq); 
+			dbprintf("busy : %d\n",sl_dispatcher_write.GetStatusReg().msBits.busy);
+			dbprintf("desc_buf_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
+			dbprintf("desc_buf_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_full);
+			dbprintf("desc_res_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_empty);
+			dbprintf("desc_res_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_full);
+			dbprintf("stopped : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stopped);
+			dbprintf("resetting  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.resetting);
+			dbprintf("stop_on_err  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_err);
+			dbprintf("stop_on_early  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_early);
+			dbprintf("irq  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.irq); 
 		}
 
-		dispatcher_write.SetControlReg(0x20); //EM, Reset Descriptor on write DMA
-		while(dispatcher_write.GetStatusReg().msBits.stopped)
-		{
-			dbprintf("busy : %d\n",dispatcher_write.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_write.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_write.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_write.GetStatusReg().msBits.irq); 
-		}
-
-		dispatcher_read.SetControlReg(0x20); //EM, Reset Descriptor on read DMA
-		while(dispatcher_read.GetStatusReg().msBits.stopped)
-		{
-			dbprintf("busy : %d\n",dispatcher_read.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_read.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_read.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_read.GetStatusReg().msBits.irq); 
-		}
-		dispatcher_write.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on write DMA
-		dispatcher_read.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on read DMA
+		sl_dispatcher_write.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on write DMA
+		sl_dispatcher_read.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on read DMA
 	}
 
 
@@ -779,7 +671,7 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		stop();
 		hardware = 1;
 		//EM, tells to the Adaptation Manager search_landing is using a HW Tile
-		write_value_file(PATH_RELEASE_HW,"search_landing",0);
+		//TODO USE SHARED MEMORY
 		workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
 		worker_thread = boost::make_shared<boost::thread>(&search_landing_area_hwsw, workerHandle_ptr);
 		break;
@@ -791,7 +683,7 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "emergency_landing_node");
+	ros::init(argc, argv, "search_landing_node");
 	ros::NodeHandle nh;
 	
 	gettimeofday(&beginning, NULL);
@@ -833,12 +725,12 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 			int width = img_ibuf_color.w;
 			int height = img_ibuf_color.h;
 			// We are using packetized streams so set length to max
-			descriptor_read.length = width*height*sizeof(unsigned int);
-			descriptor_write.length = width*height*sizeof(unsigned char);
+			sl_descriptor_read.length = width*height*sizeof(unsigned int);
+			sl_descriptor_write.length = width*height*sizeof(unsigned char);
 
 			imcpy_start = clock();
 			//EM, No changes is HIL or not
-			memcpy_consecutive_to_padded(image_DATA->image.data, mem_to_stream_dma_buffer,  width * height);
+			memcpy_consecutive_to_padded(image_DATA->image.data, sl_mem_to_stream_dma_buffer,  width * height);
 			imcpy_end = clock();
 
 			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
@@ -874,13 +766,15 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
 			#endif
 		}
-
 		ROS_INFO("IMAGE RECOVERY SUCCEED");
-		//std::cout << "ORIGINAL PICTURE : " << image_DATA->image << std::endl;
-		//std::cout << "PICTURE PIXELS : " << img_ibuf_color.img << std::endl;
 	}
 	catch (cv_bridge::Exception &e)
 	{
 		ROS_INFO("Could not convert from '%s' to 'bgr'.", image_cam->encoding.c_str());
 	}
 }
+
+
+
+
+

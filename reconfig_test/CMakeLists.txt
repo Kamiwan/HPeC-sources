@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(emergency_landing)
+project(reconfig_test)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
 add_definitions(-std=c++11)
 #add_definitions(-std=c++11 -O3 -mcpu=cortex-a9 -mfloat-abi=hard -ffast-math -mfpu=neon -ftree-vectorize)
+
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -111,7 +112,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES emergency_landing
+#  LIBRARIES reconfig_test
 CATKIN_DEPENDS 
 roscpp 
 std_msgs 
@@ -136,37 +137,22 @@ include_directories(
 
 ## Declare a C++ library
 #add_library(${PROJECT_NAME}(
-#   src/${PROJECT_NAME}/emergency_landing.cpp /opt/ros/kinetic/lib/libimage_transport.so
+#   src/${PROJECT_NAME}/reconfig_test.cpp /opt/ros/kinetic/lib/libimage_transport.so
 #)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-#add_dependencies(emergency_landing emergency_landing_generate_messages_cpp)
+#add_dependencies(reconfig_test reconfig_test_generate_messages_cpp)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(emergency_landing_node
-			src/canny.c
-			src/cca.c
-			src/cordic_atan.c
-			src/gaussianfilter.c
-			src/histequalization.c
-			src/hough.c
-			src/image.c
-			src/median.c
-			src/moments.c
-			src/morpho.c
-			src/sobel.c
-			src/threshold.c
-			src/zone.c
-			src/emergency_landing_node.cpp	
-			src/debug.c
-			src/sgdma_dispatcher.cpp
-			src/csr_map.cpp
-			src/utils.cpp
-	)
+add_executable(reconfig_test_node
+      src/pr_internal_host.c
+			src/reconfig_test.cpp
+      src/debug.c	
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -177,14 +163,14 @@ add_executable(emergency_landing_node
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_dependencies(emergency_landing_node emergency_landing_generate_messages_cpp)
+#add_dependencies(reconfig_test_node reconfig_test_generate_messages_cpp)
 add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
- target_link_libraries(emergency_landing_node
+ target_link_libraries(reconfig_test_node
    ${catkin_LIBRARIES}
     /opt/ros/kinetic/lib/libimage_transport.so
-	#/usr/lib/arm-linux-gnueabihf/libimage_transport.so
+    #/usr/lib/arm-linux-gnueabihf/libimage_transport.so
    ${OpenCV_LIBRARIES}
  )
 
@@ -228,7 +214,7 @@ add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_emergency_landing.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_reconfig_test.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
