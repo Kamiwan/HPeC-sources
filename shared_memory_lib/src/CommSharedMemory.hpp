@@ -31,10 +31,6 @@
 #ifndef COMM_SHARED_MEMORY_HPP
 #define COMM_SHARED_MEMORY_HPP
 
-#include <string>
-#include <vector>
-#include <iostream>
-
 #include "CommShMemConst.hpp"
 
 namespace bip = boost::interprocess;

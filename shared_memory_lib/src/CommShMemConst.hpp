@@ -34,6 +34,10 @@
 #include <boost/interprocess/sync/named_mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 
+#include <string>
+#include <vector>
+#include <iostream>
+
 //Alias an STL compatible allocator of ints that allocates ints from the managed
 //shared memory segment.  This allocator will allow to place containers
 //in managed shared memory segments
