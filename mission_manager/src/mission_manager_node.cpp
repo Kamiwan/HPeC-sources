@@ -338,6 +338,11 @@ int main(int argc, char **argv)
                   <<   ", Tile 2 = " << sh_mem_access.busy_tile_Read(TILE_2)
                   <<   ", Tile 3 = " << sh_mem_access.busy_tile_Read(TILE_3)
                   << std::endl;
+      std::cout << "Current Detection exec time = " << sh_mem_access.Read_ExecTime(DETECTION) << std::endl
+               <<  "Current Tracking  exec time = " << sh_mem_access.Read_ExecTime(TRACKING) << std::endl
+               <<  "Current Detection       qos = " << sh_mem_access.Read_QoS(DETECTION) << std::endl
+               <<  "Current Tracking        qos = " << sh_mem_access.Read_QoS(TRACKING)
+               << std::endl;
       ROS_INFO("TIME TO SLEEP");
       loop_rate.sleep();
    }
