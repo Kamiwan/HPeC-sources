@@ -110,11 +110,14 @@ class Main
 
 			if(!use_hpec_process)
 				semaphore.lock();
+
+			ptr_sh_mem_access = new MemoryCoordinator("User");
 		}
 		
 		~Main()
 		{
 			delete tld;
+			delete ptr_sh_mem_access;
 			ROS_INFO("**** DESTRUCTOR DONE! ****");
 		}
 
@@ -145,8 +148,9 @@ class Main
 		bool use_hpec_process;
 		bool img_acquired;
 		time_t imcpy_start,imcpy_end;
-		std_msgs::Float32 elapsed_time;
+		float elapsed_time;
 		cv::Mat * picture;
+		MemoryCoordinator * ptr_sh_mem_access; //EM, to use the shared memory
 
 		enum {
 			INIT,

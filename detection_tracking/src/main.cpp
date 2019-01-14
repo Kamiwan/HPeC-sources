@@ -235,13 +235,29 @@ void Main::process()
                     }
                   }
                   time_t ends = clock();
-                  std_msgs::Float32 elapsed_time;
-                  elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
-			            std::cout << "SOFTWARE TLD processing time : " << elapsed_time.data << std::endl;
-			  	        elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				          std::cout << "SOFTWARE HIL Image COPY time : " << elapsed_time.data << std::endl;
+                  float time_exe;
+                  float time2;
+                  time_exe = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
+			            std::cout << "SOFTWARE TLD processing time : " << time_exe << std::endl;
+			  	        time2 = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
+				          std::cout << "SOFTWARE HIL Image COPY time : " << time2 << std::endl;
                   ROS_INFO("Detection and Tracking done!");
 
+                  int exe_detec_tracking = (int)time_exe >> 1;//EM half time detection, half time tracking
+                  ptr_sh_mem_access->Update_ExecTime(exe_detec_tracking,DETECTION);
+                  ptr_sh_mem_access->Update_ExecTime(exe_detec_tracking,TRACKING);
+
+                  int confidence_level = (int)tld->currConf;
+                  if(tld->currBB != NULL){
+                    ptr_sh_mem_access->Update_QoS(1,DETECTION);
+                    ptr_sh_mem_access->Update_QoS(confidence_level,TRACKING);
+                  } 
+                  else 
+                  {
+                    ptr_sh_mem_access->Update_QoS(0,DETECTION);
+                    ptr_sh_mem_access->Update_QoS(0,TRACKING);
+                  }
+                  
                   #ifdef HIL
                     if(img_acquired)
                     {
@@ -367,8 +383,8 @@ void Main::process()
 
       imcpy_end = clock();
 
-			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-			std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
+			elapsed_time = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "SOFTWARE Image COPY time : " << elapsed_time << std::endl;
 
       img_buffer_ptr.reset();
     }

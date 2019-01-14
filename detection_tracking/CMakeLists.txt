@@ -20,6 +20,8 @@ find_package(catkin REQUIRED COMPONENTS
   communication REQUIRED
 )
 
+set (CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lpthread -lrt")
+
 ## System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
