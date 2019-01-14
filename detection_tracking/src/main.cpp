@@ -244,18 +244,18 @@ void Main::hpec_process(const boost::shared_ptr<ros::NodeHandle> &workerHandle_p
                 ptr_sh_mem_access->Update_ExecTime(exe_detec_tracking, DETECTION);
                 ptr_sh_mem_access->Update_ExecTime(exe_detec_tracking, TRACKING);
 
-                int confidence_level = (int)(tld->currConf * 100);
                 if (tld->currBB != NULL)
-                {
-                    ptr_sh_mem_access->Update_QoS(1, DETECTION);
-                    ptr_sh_mem_access->Update_QoS(confidence_level, TRACKING);
-                }
+                    ptr_sh_mem_access->Update_QoS(1, DETECTION);                
                 else
-                {
                     ptr_sh_mem_access->Update_QoS(0, DETECTION);
+                    
+                int confidence_level = (int)(tld->currConf * 100);
+                if(tld->valid)
+                    ptr_sh_mem_access->Update_QoS(confidence_level, TRACKING);                    
+                else
                     ptr_sh_mem_access->Update_QoS(0, TRACKING);
-                }
-            #ifdef HIL
+    
+              #ifdef HIL
                 if (img_acquired)
                 {
                     delete picture;
