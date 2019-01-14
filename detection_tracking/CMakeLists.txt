@@ -22,10 +22,12 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
 find_package(Qt4 REQUIRED COMPONENTS
   QtCore
   QtGui
 )
+
 
 set(OPENTLD_OUTPUT_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/../)
 
@@ -167,6 +169,8 @@ include_directories(
   /opt/ros/kinetic/include/image_transport
   ${OpenCV_INCLUDE_DIRS}
   ${OPENTLD_OUTPUT_DIR}/include/libopentld
+  /usr/local/include
+  ../shared_memory_lib/src
 )
 
 link_directories(${OPENTLD_OUTPUT_DIR}/lib/libopentld/)
@@ -219,6 +223,8 @@ add_dependencies(tld_gui_node tld_msgs_generate_messages_cpp)
   /opt/ros/kinetic/lib/libimage_transport.so
   ${OpenCV_LIBRARIES}
   libopentld
+  /usr/local/lib/
+  shared_memory_lib
  )
 
  target_link_libraries(tld_gui_node

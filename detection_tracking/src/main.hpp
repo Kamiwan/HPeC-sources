@@ -56,6 +56,8 @@
 #include <std_msgs/Float32.h>
 #include <string>
 
+#include "CommSharedMemory.hpp" //EM, shared_memory_lib header
+
 #define HIL		//EM, Code modifications for Hardware In the Loop
 #define TLD_INPUT_TOPIC "/iris/camera2/image_raw" 
 
@@ -146,11 +148,10 @@ class Main
 		std_msgs::Float32 elapsed_time;
 		cv::Mat * picture;
 
-		enum
-		{
+		enum {
 			INIT,
 			TRACKER_INIT,
-			TRACKING,
+			TRACKING_START,
 			STOPPED
 		} state;
 

@@ -28,6 +28,8 @@
 #include <ros/duration.h>
 #include <sensor_msgs/image_encodings.h>
 
+
+
 namespace enc = sensor_msgs::image_encodings;
 
 void Main::process()
@@ -61,7 +63,7 @@ void Main::process()
 
                     tld->readFromFile(modelImportFile.c_str());
                     tld->learningEnabled = false;
-                    state = TRACKING;
+                    state = TRACKING_START;
                 }
                 else if(autoFaceDetection || correctBB)
                 {
@@ -77,7 +79,7 @@ void Main::process()
 
                     tld->selectObject(target_image, &target_bb);
                     tld->learningEnabled = true;
-                    state = TRACKING;
+                    state = TRACKING_START;
                 }
                 else
                 {
@@ -85,7 +87,7 @@ void Main::process()
                     ROS_INFO("Waiting for a BB");
                 }
               break;
-              case TRACKING:
+              case TRACKING_START:
                 if(newImageReceived())
                 {
                   ros::Time tic = ros::Time::now();
@@ -128,6 +130,7 @@ void Main::process()
 
         semaphore.unlock();
     }
+  
 
   void Main::hpec_process(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr, double rate_double)
   {
@@ -176,7 +179,7 @@ void Main::process()
 
                     tld->readFromFile(modelImportFile.c_str());
                     tld->learningEnabled = false;
-                    state = TRACKING;
+                    state = TRACKING_START;
                 }
                 else if(autoFaceDetection || correctBB)
                 {
@@ -192,7 +195,7 @@ void Main::process()
 
                     tld->selectObject(target_image, &target_bb);
                     tld->learningEnabled = true;
-                    state = TRACKING;
+                    state = TRACKING_START;
                 }
                 else
                 {
@@ -200,7 +203,7 @@ void Main::process()
                     ROS_INFO("Waiting for a BB");
                 }
               break;
-              case TRACKING:
+              case TRACKING_START:
                 //EM, Add a test in the case the camera topic is not activated
                 if(img_buffer_ptr->image.rows != 0 && img_buffer_ptr->image.rows != 0)
                 {
@@ -266,7 +269,7 @@ void Main::process()
   }
 
 
-    void Main::imageReceivedCB(const sensor_msgs::ImageConstPtr & msg)
+  void Main::imageReceivedCB(const sensor_msgs::ImageConstPtr & msg)
     {
       bool empty = false;
       mutex.lock();
@@ -298,8 +301,6 @@ void Main::process()
       }
       mutex.unlock();
     }
-
-
 
     void Main::hpecImageReceivedCB(const sensor_msgs::ImageConstPtr & msg)
     {
@@ -371,9 +372,6 @@ void Main::process()
 
       img_buffer_ptr.reset();
     }
-
-
-
 
 
 
@@ -483,7 +481,7 @@ void Main::process()
     void Main::stopTracking()
     {
       if(state == STOPPED)
-        state = TRACKING;
+        state = TRACKING_START;
       else
         state = STOPPED;
     }
@@ -538,31 +536,4 @@ void Main::process()
 
       return faces[0];
     }
-
-
-    /*************************************************** 
-     *  EM, Attempt to use pthread with mutexes by using
-     *  pthread cleanup and push in hpec_process()
-     * 
-     * 	static void cleanup_handler(void *arg); (in main.hpp)
-     * 
-     *  pthread_cleanup_push(cleanup_handler,this);
-     *  pthread_cleanup_pop(1);
-     * 
-		void Main::cleanup_handler(void *arg)
-		{
-    	printf("Called clean-up handlers\n");
-
-      Main * my_main;
-      my_main = (Main *) arg;
-
-      printf("Here we go\n");
-    	my_main->mutex.unlock();
-      printf("CRASH SEMAPHORE\n");
-			my_main->semaphore.unlock();
-      printf("CRASH MUTEX\n");
-
-      //delete my_main;
-		}
-    ***************************************************/
 
