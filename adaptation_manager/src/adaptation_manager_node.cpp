@@ -571,12 +571,19 @@ void	wait_release(int app, int region_id, vector<Map_app_out> const& prev_map_co
 void sequence_exec_routine(const App_scheduler seq_app[2], MemoryCoordinator & shared_memory)
 {
     int current_app = 0;
+    std_msgs::Int32 msg;
+    //EM, notify the Tile reservation in sh mem
+    shared_memory.busy_tile_Write(1, seq_app[0].region_id-1); //-1 because sh_vector index starts at 0
+    
     while(true)
     {
         secured_load_BTS();
-        //Start app
+        msg.data = 2; //Start app
+        activate_desactivate_task(seq_app[current_app].app_index, msg);	
         while(!shared_memory.done_Read(seq_app[current_app].app_index));
-        //Stop app
+        
+        msg.data = 0; //Stop app
+        activate_desactivate_task(seq_app[current_app].app_index, msg);	
         while(!shared_memory.release_hw_Read(seq_app[current_app].app_index));
 
         current_app = 1 - current_app; //EM, to alternate between 1 and 0
@@ -585,17 +592,17 @@ void sequence_exec_routine(const App_scheduler seq_app[2], MemoryCoordinator & s
 
 void secured_load_BTS()
 {
-    {
-    boost::this_thread::disable_interruption di; //EM, disable interrupt for this thread
     bip::named_mutex bts_load_mutex{ //EM, add mutex for secured bitsream load
                     bip::open_or_create
                     , MUTEX_NAME_BTS_LOAD};
     //EM, lock access for BTS load in FPGA
     bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); 
+    {
+    boost::this_thread::disable_interruption di; //EM, disable interrupt for this thread
+
 
     //EM, TODO: PUT here bitstream loading
     ROS_INFO("Bitstream loaded in FPGA!");
-
     }
 }
 
