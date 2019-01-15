@@ -165,7 +165,7 @@ void 	task_mapping(vector<Map_app_out> const& map_config_app
 				, vector<Bitstream_map> const& bitstream_map
 				, MemoryCoordinator & shared_memory);
 
-void sequence_exec_routine(const App_scheduler seq_app[2], MemoryCoordinator & shared_memory);
+void sequence_exec_routine(const App_scheduler seq_app[2]);
 void secured_load_BTS();
 
 //##### Functions to check if it exists a configuration that satisfies the whole requests #####
@@ -180,6 +180,7 @@ void 	compare_data_access_speed(MemoryCoordinator & shared_memory);
 extern vector<Map_app_out> prev_app_output_config;
 extern vector<Map_app_out> app_output_config;
 extern int	verbose;
+extern boost::shared_ptr<boost::thread> sequence_thread[TILE_NUMBER];
 #endif
 
 

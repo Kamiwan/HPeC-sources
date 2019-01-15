@@ -35,6 +35,7 @@ vector<Map_app_out> prev_app_output_config;
 vector<Map_app_out> app_output_config;
 bool MM_request = false;
 int verbose;
+boost::shared_ptr<boost::thread> sequence_thread[TILE_NUMBER];
 
 boost::shared_ptr<ros::Publisher> search_land_pub = NULL;
 boost::shared_ptr<ros::Publisher> contrast_img_pub = NULL;
@@ -462,8 +463,12 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         cout << "\033[1;31m Disable Task no: " << scheduler_array[i].app_index << "\033[0m"  << endl;
 
         //EM, write in shared memory the state of each Tile that are released thanks to HW tasks shutdown
-        if(scheduler_array[i].region_id != 0 && scheduler_array[i].active ==0) 
+        if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 0) 
             shared_memory.busy_tile_Write(0, scheduler_array[i].region_id-1); //EM, -1 because sh_vector index starts at 0
+
+        //EM, Stop the ongoing sequence process
+        if(scheduler_array[i].active == 0 && scheduler_array[i].fusion_sequence == "s")
+        {}
     }
 
     //EM, Second loop: Ensure that all Tiles that are gonna be configured are freed.
@@ -514,7 +519,29 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         }
     }
     cout << endl;
-    //EM, TODO: work on sequence HW tasks "s"
+    
+    //EM, Forth loop: activation of routines for sequence "s"
+    int tile_used[TILE_NUMBER] = {0,0,0};
+    for(size_t i = 0; i < scheduler_array.size(); i++)
+    {
+        if(scheduler_array[i].region_id != 0 
+            && scheduler_array[i].active == 1
+            && scheduler_array[i].fusion_sequence == "s" 
+            && tile_used[scheduler_array[i].region_id-1] == 0)
+        {
+            App_scheduler sequence_apps[2];
+            sequence_apps[0] = scheduler_array[i];
+            for(int j = i+1; j < scheduler_array.size(); j++)
+                if(scheduler_array[j].region_id == scheduler_array[i].region_id)
+                {
+                    sequence_apps[1] = scheduler_array[j];
+                    tile_used[scheduler_array[j].region_id-1] = 1;
+                }
+            //LAUNCH SEQUENCE THREAD 
+            sequence_thread[scheduler_array[i].region_id-1] = 
+                boost::make_shared<boost::thread>(&sequence_exec_routine, sequence_apps);
+        }
+    }
 }
 
 
@@ -568,13 +595,15 @@ void	wait_release(int app, int region_id, vector<Map_app_out> const& prev_map_co
 }
 
 
-void sequence_exec_routine(const App_scheduler seq_app[2], MemoryCoordinator & shared_memory)
+void sequence_exec_routine(const App_scheduler seq_app[2])
 {
     int current_app = 0;
     std_msgs::Int32 msg;
+    MemoryCoordinator shared_memory("User");
+
     //EM, notify the Tile reservation in sh mem
     shared_memory.busy_tile_Write(1, seq_app[0].region_id-1); //-1 because sh_vector index starts at 0
-    
+
     while(true)
     {
         secured_load_BTS();
@@ -597,13 +626,28 @@ void secured_load_BTS()
                     , MUTEX_NAME_BTS_LOAD};
     //EM, lock access for BTS load in FPGA
     bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); 
+
     {
-    boost::this_thread::disable_interruption di; //EM, disable interrupt for this thread
+        boost::this_thread::disable_interruption di; //EM, disable interrupt for this thread
 
 
-    //EM, TODO: PUT here bitstream loading
-    ROS_INFO("Bitstream loaded in FPGA!");
+        //EM, TODO: PUT here bitstream loading
+
+
+        ROS_INFO("Bitstream loaded in FPGA!");
     }
+}
+
+
+void stop()
+{
+	if (sequence_thread[0] != NULL)
+	{
+		//TODO SOMETHING
+        sequence_thread[0]->interrupt();
+        sequence_thread[0]->timed_join(boost::posix_time::milliseconds(500));
+        //sequence_thread[0]->join();
+	}
 }
 
 
