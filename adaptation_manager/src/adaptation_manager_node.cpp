@@ -28,6 +28,7 @@
 
 using namespace std; 
 using namespace cv;
+namespace bip = boost::interprocess;
 
 /****** GLOBAL VARIABLES ********/
 vector<Map_app_out> prev_app_output_config;
@@ -247,6 +248,7 @@ int main (int argc, char ** argv)
     //EM, Shared Memory setup
     MemoryCoordinator sh_mem_access("Admin");
     sh_mem_setup(sh_mem_access, C3_init);
+    
 
     //EM, First Step use with start configuration
     automaton_out = do1(automaton_in); //Call reconfiguration automaton
@@ -551,7 +553,6 @@ vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config
     return res;
 }
 
-
 void	wait_release(int app, int region_id, vector<Map_app_out> const& prev_map_config_app
                     , MemoryCoordinator & shared_memory)
 {
@@ -564,6 +565,38 @@ void	wait_release(int app, int region_id, vector<Map_app_out> const& prev_map_co
                 while(!shared_memory.release_hw_Read(app_index));
                 cout << "\033[1;33m Tile no: " << region_id  << " released !!! \033[0m"  << endl;
             }
+}
+
+
+void sequence_exec_routine(const App_scheduler seq_app[2], MemoryCoordinator & shared_memory)
+{
+    int current_app = 0;
+    while(true)
+    {
+        secured_load_BTS();
+        //Start app
+        while(!shared_memory.done_Read(seq_app[current_app].app_index));
+        //Stop app
+        while(!shared_memory.release_hw_Read(seq_app[current_app].app_index));
+
+        current_app = 1 - current_app; //EM, to alternate between 1 and 0
+    }
+}
+
+void secured_load_BTS()
+{
+    {
+    boost::this_thread::disable_interruption di; //EM, disable interrupt for this thread
+    bip::named_mutex bts_load_mutex{ //EM, add mutex for secured bitsream load
+                    bip::open_or_create
+                    , MUTEX_NAME_BTS_LOAD};
+    //EM, lock access for BTS load in FPGA
+    bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); 
+
+    //EM, TODO: PUT here bitstream loading
+    ROS_INFO("Bitstream loaded in FPGA!");
+
+    }
 }
 
 

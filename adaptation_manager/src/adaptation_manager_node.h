@@ -51,6 +51,7 @@
 #include <string>
 
 #include <boost/thread.hpp>
+#include <boost/interprocess/sync/named_mutex.hpp>
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
@@ -73,6 +74,8 @@ extern"C"{
 #include "reconfig.h"
 
 #include "CommSharedMemory.hpp" //EM, shared_memory_lib header
+
+#define MUTEX_NAME_BTS_LOAD		"Mutex_BTS_load"
 
 //EM, namespaces use from previous developers...
 using namespace std; 
@@ -161,6 +164,9 @@ void 	task_mapping(vector<Map_app_out> const& map_config_app
 				, vector<Map_app_out> const& prev_map_config_app
 				, vector<Bitstream_map> const& bitstream_map
 				, MemoryCoordinator & shared_memory);
+
+void sequence_exec_routine(const App_scheduler seq_app[2], MemoryCoordinator & shared_memory);
+void secured_load_BTS();
 
 //##### Functions to check if it exists a configuration that satisfies the whole requests #####
 bool 	check_achievable(MemoryCoordinator & shared_memory, Step_out s);
