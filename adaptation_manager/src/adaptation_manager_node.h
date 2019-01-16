@@ -37,6 +37,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <ctime>
+#include <chrono>
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
@@ -167,6 +168,7 @@ void 	task_mapping(vector<Map_app_out> const& map_config_app
 
 void sequence_exec_routine(const App_scheduler seq_app[2]);
 void secured_load_BTS();
+void stop_sequence(int tile_index);
 
 //##### Functions to check if it exists a configuration that satisfies the whole requests #####
 bool 	check_achievable(MemoryCoordinator & shared_memory, Step_out s);
