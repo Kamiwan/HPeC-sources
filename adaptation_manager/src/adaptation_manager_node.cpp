@@ -670,17 +670,18 @@ void secured_load_BTS()
 {
     ROS_INFO("Try to load bts");
     bip::named_mutex bts_load_mutex{ //EM, add mutex for secured bitsream load
-                    bip::open_or_create
-                    , MUTEX_NAME_BTS_LOAD};
-    //EM, lock access for BTS load in FPGA
-    bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); 
+        bip::open_or_create
+        , MUTEX_NAME_BTS_LOAD};
     {
         boost::this_thread::disable_interruption di; //EM, disable interrupt for this thread
+        {
+            //EM, lock access for BTS load in FPGA
+            bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); 
 
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(3));
         //EM, TODO: PUT here bitstream loading
 
-
+        }
         ROS_INFO("Bitstream loaded in FPGA!");
     }
 }
