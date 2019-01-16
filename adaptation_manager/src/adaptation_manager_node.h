@@ -51,6 +51,7 @@
 #include <fstream>
 #include <string>
 
+#include <thread>
 #include <boost/thread.hpp>
 #include <boost/interprocess/sync/named_mutex.hpp>
 
@@ -166,7 +167,7 @@ void 	task_mapping(vector<Map_app_out> const& map_config_app
 				, vector<Bitstream_map> const& bitstream_map
 				, MemoryCoordinator & shared_memory);
 
-void sequence_exec_routine(const App_scheduler seq_app[2]);
+void sequence_exec_routine(App_scheduler seq_app[2]);
 void secured_load_BTS();
 void stop_sequence(int tile_index);
 
@@ -183,6 +184,8 @@ extern vector<Map_app_out> prev_app_output_config;
 extern vector<Map_app_out> app_output_config;
 extern int	verbose;
 extern boost::shared_ptr<boost::thread> sequence_thread[TILE_NUMBER];
+extern bool active_thread[TILE_NUMBER];
+extern App_scheduler sequence_apps[2];
 #endif
 
 

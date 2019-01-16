@@ -36,6 +36,9 @@ vector<Map_app_out> app_output_config;
 bool MM_request = false;
 int verbose;
 boost::shared_ptr<boost::thread> sequence_thread[TILE_NUMBER];
+bool active_thread[TILE_NUMBER];
+App_scheduler sequence_apps[2];
+/****** GLOBAL VARIABLES ********/
 
 boost::shared_ptr<ros::Publisher> search_land_pub = NULL;
 boost::shared_ptr<ros::Publisher> contrast_img_pub = NULL;
@@ -250,6 +253,10 @@ int main (int argc, char ** argv)
     MemoryCoordinator sh_mem_access("Admin");
     sh_mem_setup(sh_mem_access, C3_init);
     
+    for(int i = 0; i < TILE_NUMBER; i++)
+        active_thread[i] = false;
+    
+    
 
     //EM, First Step use with start configuration
     automaton_out = do1(automaton_in); //Call reconfiguration automaton
@@ -267,12 +274,15 @@ int main (int argc, char ** argv)
     vector<App_timing_qos>  time_qos_data;
     vector<Task_in>         C3_current = sh_mem_read_C3(sh_mem_access);
     ros::Rate loop_rate(1); //10hz = 100ms, 0.1hz=10s
+
+    int count_test = 0;
+
     while(ros::ok())
     { 
         ros::spinOnce();
 
         time_qos_data = sh_mem_read_time_qos(sh_mem_access);
-        if(!compare(time_qos_data,C3_current) || MM_request)
+        if(!compare(time_qos_data,C3_current) || MM_request || count_test == 10 || count_test == 30 )
         {
             if(MM_request) //EM, When the reconfiguration is asked from Mission Manager
             {
@@ -281,7 +291,10 @@ int main (int argc, char ** argv)
                 MM_request = false;
             }
             automaton_in.update_timing_qos(time_qos_data);
-            automaton_out = do1(automaton_in); //Call reconfiguration automaton
+            if(count_test ==10)
+                automaton_out = fake_output2();
+            else
+                automaton_out = do1(automaton_in); //Call reconfiguration automaton
 
             prev_app_output_config = app_output_config; 
             app_output_config = init_output(automaton_out);
@@ -289,8 +302,9 @@ int main (int argc, char ** argv)
 
             task_mapping(app_output_config, prev_app_output_config, bts_map, sh_mem_access);
         }
-        std::cout << "DONE app Check, Time to sleep" << std::endl;
+        std::cout << "DONE app Check, Time to sleep " << count_test << std::endl;
         loop_rate.sleep();
+        count_test++;
     }
 }
 
@@ -396,12 +410,12 @@ void check_sequence(vector<Map_app_out> & map_config_app)
     //EM, check if 2 active apps have the same HW Tile location 
     //	  => meaning sequence execution
     for(int i=0; i < (APPLICATION_NUMBER - 1); i++)
-        if(map_config_app[i].active != 0 
+        if( map_config_app[i].active == 1
             && map_config_app[i].version_code < MULTI_APP_THRESHOLD_CODE
             && map_config_app[i].region_id != 0)
             for(int j=i+1; j < APPLICATION_NUMBER; j++)
                 if(map_config_app[i].region_id == map_config_app[j].region_id
-                    && map_config_app[j].active != 0)
+                    && map_config_app[j].active == 1)
                 {
                     map_config_app[i].fusion_sequence = "s";
                     map_config_app[j].fusion_sequence = "s";
@@ -462,13 +476,22 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         activate_desactivate_task(scheduler_array[i].app_index, msg);	
         cout << "\033[1;31m Disable Task no: " << scheduler_array[i].app_index << "\033[0m"  << endl;
 
-        //EM, write in shared memory the state of each Tile that are released thanks to HW tasks shutdown
-        if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 0) 
+        if(i == scheduler_array.size()-1 || i == scheduler_array.size()-2)
+            scheduler_array[i].print();
+
+        if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 0)
+        { 
+            //EM, write in shared memory the state of each Tile that are released thanks to HW tasks shutdown
             shared_memory.busy_tile_Write(0, scheduler_array[i].region_id-1); //EM, -1 because sh_vector index starts at 0
 
-        //EM, Stop the ongoing sequence process
-        if(scheduler_array[i].active == 0 && scheduler_array[i].fusion_sequence == "s")
-            stop_sequence(scheduler_array[i].region_id-1);
+            //EM, Stop the ongoing sequence process
+            if(active_thread[scheduler_array[i].region_id-1])
+            {
+                cout << " Disable thread of Tile no: " << scheduler_array[i].region_id << endl;
+                stop_sequence(scheduler_array[i].region_id-1);
+                active_thread[scheduler_array[i].region_id-1] = false;
+            }
+        }
     }
 
     //EM, Second loop: Ensure that all Tiles that are gonna be configured are freed.
@@ -529,7 +552,6 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             && scheduler_array[i].fusion_sequence == "s" 
             && tile_used[scheduler_array[i].region_id-1] == 0)
         {
-            App_scheduler sequence_apps[2];
             sequence_apps[0] = scheduler_array[i];
             for(int j = i+1; j < scheduler_array.size(); j++)
                 if(scheduler_array[j].region_id == scheduler_array[i].region_id)
@@ -537,7 +559,13 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
                     sequence_apps[1] = scheduler_array[j];
                     tile_used[scheduler_array[j].region_id-1] = 1;
                 }
+            cout << "\033[1;34m Enable Sequence version of Tasks no: " << sequence_apps[0].app_index 
+                    << " and no " << sequence_apps[1].app_index 
+                    << " in Tile no: " << sequence_apps[0].region_id << "\033[0m" << endl;
+            sequence_apps[0].print();
+            sequence_apps[1].print();
             //LAUNCH SEQUENCE THREAD 
+            active_thread[scheduler_array[i].region_id-1] = true;
             sequence_thread[scheduler_array[i].region_id-1] = 
                 boost::make_shared<boost::thread>(&sequence_exec_routine, sequence_apps);
         }
@@ -595,30 +623,34 @@ void	wait_release(int app, int region_id, vector<Map_app_out> const& prev_map_co
 }
 
 
-void sequence_exec_routine(const App_scheduler seq_app[2])
+void sequence_exec_routine(App_scheduler seq_app[2])
 {
     int current_app = 0;
     std_msgs::Int32 msg;
     MemoryCoordinator shared_memory("User");
+
+    seq_app[0].print();
+    seq_app[1].print();
 
     //EM, notify the Tile reservation in sh mem
     shared_memory.busy_tile_Write(1, seq_app[0].region_id-1); //-1 because sh_vector index starts at 0
 
     std::chrono::seconds ms(5);
     std::chrono::time_point<std::chrono::system_clock> end;
-    end = std::chrono::system_clock::now() + ms;
-
+   
     while(true)
     {
         secured_load_BTS();
         msg.data = 2; //Start app
         activate_desactivate_task(seq_app[current_app].app_index, msg);	
-        ROS_INFO("Wait DONE");
+        ROS_INFO("Wait DONE, app_index = ", seq_app[current_app].app_index);
+        end = std::chrono::system_clock::now() + ms;
         while(!shared_memory.done_Read(seq_app[current_app].app_index)
                 && std::chrono::system_clock::now() < end);
         
         msg.data = 0; //Stop app
-        ROS_INFO("Wait app END");
+        ROS_INFO("Wait app END, app_index = ", seq_app[current_app].app_index);
+        end = std::chrono::system_clock::now() + ms;
         activate_desactivate_task(seq_app[current_app].app_index, msg);	
         while(!shared_memory.release_hw_Read(seq_app[current_app].app_index)
                 && std::chrono::system_clock::now() < end);
@@ -630,12 +662,11 @@ void sequence_exec_routine(const App_scheduler seq_app[2])
 void secured_load_BTS()
 {
     ROS_INFO("Try to load bts");
-    bip::named_mutex bts_load_mutex{ //EM, add mutex for secured bitsream load
+    /*bip::named_mutex bts_load_mutex{ //EM, add mutex for secured bitsream load
                     bip::open_or_create
                     , MUTEX_NAME_BTS_LOAD};
     //EM, lock access for BTS load in FPGA
-    bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); 
-
+    bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); */
     {
         boost::this_thread::disable_interruption di; //EM, disable interrupt for this thread
 
@@ -650,13 +681,14 @@ void secured_load_BTS()
 
 void stop_sequence(int tile_index)
 {
-    ROS_INFO("Try to stop sequence in tile %d!", tile_index);
+    ROS_INFO("Try to stop sequence in tile %d!", tile_index+1);
 	if (sequence_thread[tile_index] != NULL)
 	{
 		//TODO SOMETHING
         sequence_thread[tile_index]->interrupt();
         sequence_thread[tile_index]->timed_join(boost::posix_time::milliseconds(500));
         //sequence_thread[tile_index]->join();
+        pthread_cancel(sequence_thread[tile_index]->native_handle());
         ROS_INFO("Thread Stopped");
 	} 
     else
