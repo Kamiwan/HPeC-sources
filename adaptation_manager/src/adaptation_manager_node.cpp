@@ -282,7 +282,7 @@ int main (int argc, char ** argv)
         ros::spinOnce();
 
         time_qos_data = sh_mem_read_time_qos(sh_mem_access);
-        if(!compare(time_qos_data,C3_current) || MM_request || count_test == 10 || count_test == 30 )
+        if(!compare(time_qos_data,C3_current) || MM_request || count_test == 10 || count_test == 20 || count_test == 30 )
         {
             if(MM_request) //EM, When the reconfiguration is asked from Mission Manager
             {
@@ -294,7 +294,12 @@ int main (int argc, char ** argv)
             if(count_test ==10)
                 automaton_out = fake_output2();
             else
-                automaton_out = do1(automaton_in); //Call reconfiguration automaton
+            {
+                if(count_test ==20)
+                    automaton_out = fake_output3();
+                else
+                    automaton_out = do1(automaton_in); //Call reconfiguration automaton
+            }                
 
             prev_app_output_config = app_output_config; 
             app_output_config = init_output(automaton_out);
@@ -519,6 +524,7 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             && scheduler_array[i].fusion_sequence != "f" && scheduler_array[i].fusion_sequence != "s") 
         {
             //EM, TODO: LOAD bitstream in FPGA!!! 
+            secured_load_BTS();
             msg.data = 2; 
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[1;36m Enable HW version of Task no: " << scheduler_array[i].app_index 
@@ -532,6 +538,7 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             && scheduler_array[i].fusion_sequence == "f")
         {
             //EM, TODO: LOAD bitstream in FPGA!!! 
+            secured_load_BTS();
             msg.data = scheduler_array[i].version_code - scheduler_array[i].region_id; 
             //The 2 fusionned tasks will be activated, only one ROS node can understand the msg.data and launch the fusion
             activate_desactivate_task(scheduler_array[i].app_index, msg);
@@ -662,15 +669,15 @@ void sequence_exec_routine(App_scheduler seq_app[2])
 void secured_load_BTS()
 {
     ROS_INFO("Try to load bts");
-    /*bip::named_mutex bts_load_mutex{ //EM, add mutex for secured bitsream load
+    bip::named_mutex bts_load_mutex{ //EM, add mutex for secured bitsream load
                     bip::open_or_create
                     , MUTEX_NAME_BTS_LOAD};
     //EM, lock access for BTS load in FPGA
-    bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); */
+    bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); 
     {
         boost::this_thread::disable_interruption di; //EM, disable interrupt for this thread
 
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         //EM, TODO: PUT here bitstream loading
 
 
