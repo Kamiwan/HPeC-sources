@@ -104,63 +104,6 @@
       </link>
     </model>
 
-<!-- FOR GAZEBO 8 OR HIGHER  -->
-<!--actor name="animated_box"> 
-        <link name="link">
-          <visual name="visual">
-            <geometry>
-              <box>
-                <size>.2 .2 .2</size>
-              </box>
-            </geometry>
-          </visual>
-        </link>
-        <script>
-          <loop>true</loop>
-          <delay_start>0.000000</delay_start>
-          <auto_start>true</auto_start>
-        <trajectory id="0" type="square">
-          <waypoint>
-            <time>0.0</time>
-            <pose>-10 -10 1 0 0 0</pose>
-          </waypoint>
-          <waypoint>
-            <time>0.5</time>
-            <pose>-10 -9 1 0 0 0</pose>
-          </waypoint>
-          <waypoint>
-            <time>1.0</time>
-            <pose>-10 -8 1 0 0 0</pose>
-          </waypoint>
-          <waypoint>
-            <time>1.5</time>
-            <pose>-9 -8 1 0 0 0</pose>
-          </waypoint>
-          <waypoint>
-            <time>2.0</time>
-            <pose>-8 -8 1 0 0 0</pose>
-          </waypoint>
-          <waypoint>
-            <time>2.5</time>
-            <pose>-8 -9 1 0 0 0</pose>
-          </waypoint>
-          <waypoint>
-            <time>3.0</time>
-            <pose>-8 -10 1 0 0 0</pose>
-          </waypoint>
-          <waypoint>
-            <time>3.5</time>
-            <pose>-9 -10 1 0 0 0</pose>
-          </waypoint>
-          <waypoint>
-            <time>4.0</time>
-            <pose>-10 -10 1 0 0 0</pose>
-          </waypoint>
-        </trajectory>
-      </script>
-</actor-->
-<!-- FOR GAZEBO 8 OR HIGHER  -->
-
     <model name="T_zone">
       <include>
         <uri>model:///Gazebo/T_zone</uri>
@@ -478,6 +421,7 @@
             <time>8</time>
             <pose>6 6 1 0 0 0</pose>
           </waypoint-->
+    <!-- FOR GAZEBO 8 OR HIGHER  -->
 
     <wind>
       <linear_velocity>0 1 0</linear_velocity>
@@ -523,8 +467,30 @@
       </include>
     </model>
 
+    <model name="box">
+      <static>true</static>
+      <pose>3 3 3 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1 1 1</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1 1 1</size>
+            </box>
+          </geometry>
+        </visual>
+      </link>
+      <plugin name="sample" filename="libgazebo_target_plugin.so"/>
+    </model>
+
     <!-- reference to your world plugin -->
-    <!--plugin name="gazebo_plugin" filename="libgazebo_plugin.so"/-->
+    <plugin name="gazebo_plugin" filename="libgazebo_plugin.so"/>
 
     <!-- light sensor plugin test -->
     <!--model name='camera3'>

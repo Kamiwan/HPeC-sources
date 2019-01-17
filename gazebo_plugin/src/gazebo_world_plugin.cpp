@@ -182,30 +182,3 @@ class WorldPluginTutorial : public WorldPlugin
 } // namespace gazebo
 
 
- /* EM
-    #include <boost/filesystem.hpp>
-    #include <sstream>
-    #include <unistd.h>
-    boost::filesystem::path find_executable()
-    {
-        unsigned int bufferSize = 512;
-        std::vector<char> buffer(bufferSize + 1);
-
-        // Get the process ID.
-        int pid = getpid();
-
-        // Construct a path to the symbolic link pointing to the process executable.
-        // This is at /proc/<pid>/exe on Linux systems (we hope).
-        std::ostringstream oss;
-        oss << "/proc/" << pid << "/exe";
-        std::string link = oss.str();
-
-        // Read the contents of the link.
-        int count = readlink(link.c_str(), &buffer[0], bufferSize);
-        if(count == -1) throw std::runtime_error("Could not read symbolic link");
-        buffer[count] = '\0';
-
-        std::string s = &buffer[0];
-        return s;
-    }*/
-
