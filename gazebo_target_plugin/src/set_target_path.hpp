@@ -20,8 +20,16 @@
  * 
  * Main file header of gazebo target model plugin.
  *  This program allow to move a model by setting its coordinates by following a script
+ *  Code based on this tutorial 
+ * https://bitbucket.org/chapulina/gazebo_plugins/src/dd9c7d7e7291/SetStaticPose/?at=default
  *************************************************************************************/
+#ifndef SET_TARGET_PATH_PLUGIN_HPP_
+#define SET_TARGET_PATH_PLUGIN_HPP_
+
 #include <gazebo/common/Plugin.hh>
+#include <gazebo/physics/Model.hh>
+#include <gazebo/transport/transport.hh>
+#include <gazebo/msgs/msgs.hh>
 
 namespace gazebo
 {
@@ -29,6 +37,8 @@ namespace gazebo
   {
     // Documentation inherited
     public: virtual void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
+
+    public: void SetDynPose(const ignition::math::Pose3d pose);
 
     /// \brief Main loop to update the pose
     private: void OnUpdate();
@@ -38,6 +48,16 @@ namespace gazebo
 
     /// \brief Pointer to the model
     private: physics::ModelPtr model;
+
+
+    private: void OnMsg(ConstVector3dPtr &_msg);
+
+    /// \brief A node used for transport
+    private: transport::NodePtr node;
+
+    /// \brief A subscriber to a named topic.
+    private: transport::SubscriberPtr sub;
   };
 }
 
+#endif //SET_TARGET_PATH_PLUGIN_HPP_

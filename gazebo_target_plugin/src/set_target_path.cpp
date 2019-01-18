@@ -20,6 +20,8 @@
  * 
  * Main file of gazebo target model plugin.
  *  This program allow to move a model by setting its coordinates by following a script
+ *  Code based on this tutorial 
+ * https://bitbucket.org/chapulina/gazebo_plugins/src/dd9c7d7e7291/SetStaticPose/?at=default
  *************************************************************************************/
 
 #include <ignition/math/Pose3.hh>
@@ -30,7 +32,7 @@
 using namespace gazebo;
 
 // Register this plugin with the simulator
-GZ_REGISTER_MODEL_PLUGIN(set_target_plugin)
+GZ_REGISTER_MODEL_PLUGIN(SetStaticPose)
 
 /////////////////////////////////////////////////
 void SetStaticPose::Load(physics::ModelPtr _model, sdf::ElementPtr /*_sdf*/)
@@ -39,6 +41,22 @@ void SetStaticPose::Load(physics::ModelPtr _model, sdf::ElementPtr /*_sdf*/)
 
   this->connections.push_back(event::Events::ConnectWorldUpdateEnd(
       std::bind(&SetStaticPose::OnUpdate, this)));
+
+    // Create the node
+    this->node = transport::NodePtr(new transport::Node());
+    
+    #if GAZEBO_MAJOR_VERSION < 8
+        this->node->Init(this->model->GetWorld()->GetName());
+    #else
+        this->node->Init(this->model->GetWorld()->Name());
+    #endif
+
+    // Create a topic name
+    std::string topicName = "~/" + this->model->GetName() + "/pose_cmd";
+
+    // Subscribe to the topic, and register a callback
+    this->sub = this->node->Subscribe(topicName,
+    &SetStaticPose::OnMsg, this);
 }
 
 /////////////////////////////////////////////
@@ -59,3 +77,23 @@ void SetStaticPose::OnUpdate()
 
   this->model->SetWorldPose(pose);
 }
+
+/// \brief Set the velocity of the Velodyne
+/// \param[in] _vel New target velocity
+void SetStaticPose::SetDynPose(const ignition::math::Pose3d pose)
+{
+  this->model->SetWorldPose(pose);
+}
+
+/// \brief Handle incoming message
+/// \param[in] _msg Repurpose a vector3 message. This function will
+/// only use the x component.
+void SetStaticPose::OnMsg(ConstVector3dPtr &_msg)
+{
+  ignition::math::Pose3d new_pose( _msg->x(),
+                                    _msg->y(),
+                                    _msg->z(),
+                                    0,0,0);
+  this->SetDynPose(new_pose);
+}
+

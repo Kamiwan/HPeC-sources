@@ -34,6 +34,9 @@
 #include "gazebo/gazebo.hh"
 #include <ros/ros.h>
 
+#include <gazebo/transport/transport.hh>
+#include <gazebo/msgs/msgs.hh>
+
 #include <chrono>
 #include <thread>
 #include <boost/thread.hpp>
@@ -63,24 +66,33 @@ class WorldPluginTutorial : public WorldPlugin
         // Initialize the node with the world name
         node->Init(_world->Name());
 
+
+
+
         // Create a publisher on the ~/factory topic
         transport::PublisherPtr factoryPub =
             node->Advertise<msgs::Factory>("~/factory");
-
         // Create the message
         msgs::Factory msg;
-
         // Model file to load
         msg.set_sdf_filename("model:///Gazebo/Cylinder");
-
         // Pose to initialize the model to
         msgs::Set(msg.mutable_pose(),
                   ignition::math::Pose3d(
                       ignition::math::Vector3d(2, 2, 0),
                       ignition::math::Quaterniond(0, 0, 0)));
-
         // Send the message
         factoryPub->Publish(msg);
+
+
+        transport::PublisherPtr targetPub =
+            node->Advertise<msgs::Vector3d>("~/box/pose_cmd");
+        msgs::Vector3d msg_pose;
+        msg_pose.set_x(-4);
+        msg_pose.set_y(-4);
+        msg_pose.set_z(4);
+        targetPub->Publish(msg_pose);
+
 
         // Create a publisher on the ~/light/modify
         transport::PublisherPtr lightPub =
