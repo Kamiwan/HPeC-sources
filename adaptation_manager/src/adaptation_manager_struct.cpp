@@ -1,4 +1,25 @@
-//TODO Insert header comment
+/* 
+ * This file is part of the HPeC distribution (https://github.com/Kamiwan/HPeC-sources).
+ * Copyright (c) 2018 Lab-STICC Laboratory.
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
+/*************************************************************************************
+ * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
+ * Created on: September 17, 2018
+ * 
+ * Main file of the Adaptation Manager structure.
+ *************************************************************************************/
 
 #include "adaptation_manager_struct.h"
 
@@ -105,6 +126,7 @@ void Step_in::load_C3(std::vector<Task_in> const& C3)
 		return; //EM, to leave a void function
 	}
 	//EM, I know it's dirty, it would have been better with an array of attributes...
+	//Operator overload = with Step_in and Task_in
 	contrast_img 		= C3[0];
 	motion_estim_imu 	= C3[1];
 	motion_estim_img 	= C3[2];
@@ -126,6 +148,7 @@ void Step_in::update_timing_qos(std::vector<App_timing_qos> time_qos)
 		return; //EM, to leave a void function
 	}
 	//EM, I know it's dirty, it would have been better with an array of attributes...
+	//Operator overload = with Step_in and App_timing_qos
 	contrast_img 		= time_qos[0];
 	motion_estim_imu 	= time_qos[1];
 	motion_estim_img 	= time_qos[2];

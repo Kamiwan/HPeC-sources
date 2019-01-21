@@ -77,6 +77,7 @@ typedef std::vector<int, ShmemAllocator> SharedVector;
 #define C3_PRIORITY         7
 
 //EM, App index
+#define APP_NUMBER         11  
 #define CONTRAST_IMG       0  
 #define MOTION_ESTIM_IMU   1     
 #define MOTION_ESTIM_IMG   2    

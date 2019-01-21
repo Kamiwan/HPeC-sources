@@ -37,6 +37,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <ctime>
+#include <chrono>
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
@@ -50,7 +51,9 @@
 #include <fstream>
 #include <string>
 
+#include <thread>
 #include <boost/thread.hpp>
+#include <boost/interprocess/sync/named_mutex.hpp>
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
@@ -68,11 +71,12 @@ extern"C"{
 #include "adaptation_manager_struct.h"
 
 #include "utils.h"
-#include "handle_applications.h"
 #include "reconfiguration_automate.h"
 #include "reconfig.h"
 
 #include "CommSharedMemory.hpp" //EM, shared_memory_lib header
+
+#define MUTEX_NAME_BTS_LOAD		"Mutex_BTS_load"
 
 //EM, namespaces use from previous developers...
 using namespace std; 
@@ -162,6 +166,23 @@ void 	task_mapping(vector<Map_app_out> const& map_config_app
 				, vector<Bitstream_map> const& bitstream_map
 				, MemoryCoordinator & shared_memory);
 
+
+/* sequence_exec_routine
+Launch a thread which performs the sequence execution of 2 apps in the same Tile
+@param seq_app[2]		The two application configuration		
+*/
+void sequence_exec_routine(App_scheduler seq_app[2]);
+/* secured_load_BTS
+Function wrapper to allow user to perform 
+@param ? TODO: complete it
+*/
+void secured_reconfiguration();
+/* stop_sequence
+Stop the thread which executes the routine execution
+@param tile_index		The index of the tile used for the sequence routine
+*/
+void stop_sequence(int tile_index);
+
 //##### Functions to check if it exists a configuration that satisfies the whole requests #####
 bool 	check_achievable(MemoryCoordinator & shared_memory, Step_out s);
 void	sh_mem_write_achievable(MemoryCoordinator & shared_memory, Step_out s);
@@ -174,6 +195,9 @@ void 	compare_data_access_speed(MemoryCoordinator & shared_memory);
 extern vector<Map_app_out> prev_app_output_config;
 extern vector<Map_app_out> app_output_config;
 extern int	verbose;
+extern boost::shared_ptr<boost::thread> sequence_thread[TILE_NUMBER];
+extern bool active_thread[TILE_NUMBER];
+extern App_scheduler sequence_apps[2];
 #endif
 
 
