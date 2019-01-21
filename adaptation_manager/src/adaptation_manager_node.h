@@ -71,7 +71,6 @@ extern"C"{
 #include "adaptation_manager_struct.h"
 
 #include "utils.h"
-#include "handle_applications.h"
 #include "reconfiguration_automate.h"
 #include "reconfig.h"
 
@@ -167,8 +166,21 @@ void 	task_mapping(vector<Map_app_out> const& map_config_app
 				, vector<Bitstream_map> const& bitstream_map
 				, MemoryCoordinator & shared_memory);
 
+
+/* sequence_exec_routine
+Launch a thread which performs the sequence execution of 2 apps in the same Tile
+@param seq_app[2]		The two application configuration		
+*/
 void sequence_exec_routine(App_scheduler seq_app[2]);
-void secured_load_BTS();
+/* secured_load_BTS
+Function wrapper to allow user to perform 
+@param ? TODO: complete it
+*/
+void secured_reconfiguration();
+/* stop_sequence
+Stop the thread which executes the routine execution
+@param tile_index		The index of the tile used for the sequence routine
+*/
 void stop_sequence(int tile_index);
 
 //##### Functions to check if it exists a configuration that satisfies the whole requests #####

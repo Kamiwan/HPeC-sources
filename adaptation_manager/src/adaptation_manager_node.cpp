@@ -388,6 +388,7 @@ vector<Map_app_out>	init_output(Step_out const& step_output)
         res.push_back(tmp);
 
     //EM, I know it's dirty, it would have been better with an array of attributes...
+    //Operator overload = with Map_app_out and Step_out
     res[0] 	= step_output.contrast_img;
     res[1] 	= step_output.motion_estim_imu;
     res[2] 	= step_output.motion_estim_img;
@@ -523,8 +524,8 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 1
             && scheduler_array[i].fusion_sequence != "f" && scheduler_array[i].fusion_sequence != "s") 
         {
-            //EM, TODO: LOAD bitstream in FPGA!!! 
-            secured_load_BTS();
+            //EM, TODO: finish reconfiguration FPGA!!! 
+            secured_reconfiguration();
             msg.data = 2; 
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[1;36m Enable HW version of Task no: " << scheduler_array[i].app_index 
@@ -537,8 +538,8 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 1
             && scheduler_array[i].fusion_sequence == "f")
         {
-            //EM, TODO: LOAD bitstream in FPGA!!! 
-            secured_load_BTS();
+            //EM, TODO: finish reconfiguration FPGA!!! 
+            secured_reconfiguration();
             msg.data = scheduler_array[i].version_code - scheduler_array[i].region_id; 
             //The 2 fusionned tasks will be activated, only one ROS node can understand the msg.data and launch the fusion
             activate_desactivate_task(scheduler_array[i].app_index, msg);
@@ -647,7 +648,7 @@ void sequence_exec_routine(App_scheduler seq_app[2])
    
     while(true)
     {
-        secured_load_BTS();
+        secured_reconfiguration();
         msg.data = 2; //Start app
         activate_desactivate_task(seq_app[current_app].app_index, msg);	
         ROS_INFO("Wait DONE, app_index = ", seq_app[current_app].app_index);
@@ -666,7 +667,7 @@ void sequence_exec_routine(App_scheduler seq_app[2])
     }
 }
 
-void secured_load_BTS()
+void secured_reconfiguration()
 {
     ROS_INFO("Try to load bts");
     bip::named_mutex bts_load_mutex{ //EM, add mutex for secured bitsream load
@@ -678,8 +679,8 @@ void secured_load_BTS()
             //EM, lock access for BTS load in FPGA
             bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); 
 
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-        //EM, TODO: PUT here bitstream loading
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+            //EM, TODO: PUT here FPGA reconfiguration
 
         }
         ROS_INFO("Bitstream loaded in FPGA!");
@@ -692,7 +693,6 @@ void stop_sequence(int tile_index)
     ROS_INFO("Try to stop sequence in tile %d!", tile_index+1);
 	if (sequence_thread[tile_index] != NULL)
 	{
-		//TODO SOMETHING
         sequence_thread[tile_index]->interrupt();
         sequence_thread[tile_index]->timed_join(boost::posix_time::milliseconds(500));
         //sequence_thread[tile_index]->join();

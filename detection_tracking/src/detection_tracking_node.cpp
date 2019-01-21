@@ -1,8 +1,25 @@
-/*************************************************************************************
- * File   : detection_tracking.cpp, tracker opentld ros node for HPeC
- * Copyright (C) 2018 Lab-STICC Laboratory
- * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
+/* 
+ * This file is part of the HPeC distribution (https://github.com/Kamiwan/HPeC-sources).
+ * Copyright (c) 2018 Lab-STICC Laboratory.
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
  *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
+/*************************************************************************************
+ * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
+ * Created on: November, 2018
+ *
+ * Main file of Detection and Tracking ROS node. Use OpenTLD for the software version.
+ * 
  *  1. Use roslaunch with .launch file to execte this app
  *  2. on another terminal, run the command 
  *     "rostopic pub -1 /detection_tracking_mgt_topic std_msgs/Int32 "0" or "1" or "2""

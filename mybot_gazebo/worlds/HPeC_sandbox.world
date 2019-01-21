@@ -467,7 +467,7 @@
       </include>
     </model>
 
-    <model name="box">
+    <!--model name="box">
       <static>true</static>
       <pose>3 3 3 0 0 0</pose>
       <link name="link">
@@ -487,10 +487,10 @@
         </visual>
       </link>
       <plugin name="sample" filename="libgazebo_target_plugin.so"/>
-    </model>
+    </model-->
 
     <!-- reference to your world plugin -->
-    <plugin name="gazebo_plugin" filename="libgazebo_plugin.so"/>
+    <!--plugin name="gazebo_plugin" filename="libgazebo_plugin.so"/-->
 
     <!-- light sensor plugin test -->
     <!--model name='camera3'>

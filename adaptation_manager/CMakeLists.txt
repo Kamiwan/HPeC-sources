@@ -160,7 +160,6 @@ add_executable(adaptation_manager_node
 	src/math.c
 	src/initimg.cpp
 	src/utils.cpp
-	src/handle_applications.cpp
 	src/reconfig.cpp
 	src/adaptation_manager_struct.cpp
 	src/reconfiguration_automate.cpp
