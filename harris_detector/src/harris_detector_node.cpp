@@ -310,7 +310,7 @@ void harris_detector_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 
 			printf("Reference image keypoints count %d\n",refKpCount);
 			//debug 
-			save_keypoints( "keypoints.ref", refKeyPoints,refKpCount);
+			//save_keypoints( "keypoints.ref", refKeyPoints,refKpCount);
 
 			ends = clock();
 
