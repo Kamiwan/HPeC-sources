@@ -276,8 +276,6 @@ int main(int argc, char **argv)
 
 	ROS_INFO("[TASK WRAPPER][RUNNING] TRACKING ONLINE");
 	ros::spin();
-
-	//delete main_node;
 }
 
 
