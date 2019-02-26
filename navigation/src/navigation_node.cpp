@@ -83,9 +83,11 @@ int main(int argc, char **argv)
     mavros_msgs::CommandBool arm_cmd;
     arm_cmd.request.value = true;
 	mavros_msgs::CommandTOL takeoff_cmd;
-	takeoff_cmd.request.altitude 	= 613.448;
-	takeoff_cmd.request.latitude 	= -35.363;
-	takeoff_cmd.request.longitude 	= 149.165;
+	takeoff_cmd.request.altitude 	= 10; //613.448;
+	takeoff_cmd.request.latitude 	= 0; //-35.363;
+	takeoff_cmd.request.longitude 	= 0; //149.165;
+	takeoff_cmd.request.yaw			= 0;
+	takeoff_cmd.request.min_pitch	= 0;
 	mavros_msgs::CommandTOL landing_cmd;
 	landing_cmd.request.altitude 	= 0;
 	landing_cmd.request.latitude 	= 0;
@@ -164,10 +166,24 @@ int main(int argc, char **argv)
 
         }
 
-		/*if(ros::Time::now() - test_pose > ros::Duration(20.0))
-        	local_pos_pub.publish(positest);
-		else*/
-			local_pos_pub.publish(pose);
+		if(ros::Time::now() - test_pose > ros::Duration(30.0) && flying)
+		{
+            if( landing_client.call(landing_cmd) &&
+                landing_cmd.response.success)
+			{
+                ROS_INFO("Landing started");
+				ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
+				flying = false;
+				pose.pose.position.x = 0;
+    			pose.pose.position.y = 0;
+    			pose.pose.position.z = 0;
+            }
+            last_request = ros::Time::now();
+        }
+
+        	//local_pos_pub.publish(positest);
+		//else
+			//local_pos_pub.publish(pose);
 
         ros::spinOnce();
         rate.sleep();
