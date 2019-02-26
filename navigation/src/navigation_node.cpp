@@ -15,32 +15,14 @@
  *************************************************************************************/
 #include "navigation_node.h"
 
-long elapse_time_u(struct timeval *end, struct timeval *start)
-{
-	long seconds = end->tv_sec - start->tv_sec;
-	long micro_seconds = end->tv_usec - start->tv_usec;
-	if (micro_seconds < 0)
-	{
-		seconds -= 1;
-	}
-	return (seconds * 1000000) + abs(micro_seconds);
+
+void state_cb(const mavros_msgs::State::ConstPtr& msg){
+    current_state = *msg;
 }
-
-long time_micros(struct timeval *end, struct timeval *start)
-{
-	if (end != NULL && start != NULL)
-		return (((double)elapse_time_u(end, start)) / 1000);
-	return -1;
-}
-
-
-
 
 /**##################################################################
  * MAIN
  * Author : EM 
- * @param argc, number of argument of the execution
- * @param argv, execution arguments
  * 
  * Launch the ROS node and subscribe to topics in order to wait 
  * for orders.
@@ -49,9 +31,149 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "navigation_node");
 	ros::NodeHandle nh;
+
+	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>
+            ("mavros/state", 10, state_cb);
+    ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
+            ("mavros/setpoint_position/local", 10);
+    ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>
+            ("mavros/cmd/arming");
+	ros::ServiceClient takeoff_client = nh.serviceClient<mavros_msgs::CommandTOL>
+            ("/mavros/cmd/takeoff");
+	ros::ServiceClient landing_client = nh.serviceClient<mavros_msgs::CommandTOL>
+            ("/mavros/cmd/land");
+    ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>
+            ("mavros/set_mode");
+
+	ros::Subscriber pos_sub = nh.subscribe("mavros/global_position/global", 
+								1000, 
+								gps_callback);
+	
+	//the setpoint publishing rate MUST be faster than 2Hz
+    ros::Rate rate(20.0);
+
+
+	ROS_INFO("Wait 1 second!");
+
+	ros::Duration(1).sleep(); // sleep for 1 second
+
+    // wait for FCU connection
+    while(ros::ok() && !current_state.connected){
+        ros::spinOnce();
+        rate.sleep();
+    }
+
+	ROS_INFO("Navigation connected!");
+
+    geometry_msgs::PoseStamped pose;
+    pose.pose.position.x = 0;
+    pose.pose.position.y = 0;
+    pose.pose.position.z = 2;
+
+    //send a few setpoints before starting
+    for(int i = 50; ros::ok() && i > 0; --i){
+        local_pos_pub.publish(pose);
+        ros::spinOnce();
+        rate.sleep();
+    }
+	
+	mavros_msgs::SetMode offb_set_mode;
+    offb_set_mode.request.custom_mode = "GUIDED";
+
+    mavros_msgs::CommandBool arm_cmd;
+    arm_cmd.request.value = true;
+	mavros_msgs::CommandTOL takeoff_cmd;
+	takeoff_cmd.request.altitude 	= 613.448;
+	takeoff_cmd.request.latitude 	= -35.363;
+	takeoff_cmd.request.longitude 	= 149.165;
+	mavros_msgs::CommandTOL landing_cmd;
+	landing_cmd.request.altitude 	= 0;
+	landing_cmd.request.latitude 	= 0;
+	landing_cmd.request.longitude 	= 0;
 	
 
-	ros::spin();
+	bool flying = false;
+
+    ros::Time last_request = ros::Time::now();
+	ros::Time test_pose    = ros::Time::now();
+
+	geometry_msgs::PoseStamped positest;
+    positest.pose.position.x = 10;
+    positest.pose.position.y = 10;
+    positest.pose.position.z = 20;
+
+    while(ros::ok()){
+        if( current_state.mode != "GUIDED" &&
+            (ros::Time::now() - last_request > ros::Duration(5.0)))
+		{
+            if( set_mode_client.call(offb_set_mode) &&
+                offb_set_mode.response.mode_sent)
+			{
+                ROS_INFO("GUIDED enabled");
+				ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
+            }
+            last_request = ros::Time::now();
+        } 
+		else
+		{
+            if( !current_state.armed &&
+                (ros::Time::now() - last_request > ros::Duration(5.0)))
+			{
+                if( arming_client.call(arm_cmd) &&
+                    arm_cmd.response.success)
+				{
+                    ROS_INFO("Vehicle armed");
+					ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
+                }
+                last_request = ros::Time::now();
+            }
+
+			if( current_state.armed &&  altitude < (DEFAULT_HEIGHT + 2) &&
+				current_state.mode == "GUIDED" &&
+                (ros::Time::now() - last_request > ros::Duration(0.2)))
+			{
+                if( takeoff_client.call(takeoff_cmd) &&
+                    takeoff_cmd.response.success)
+				{
+                    ROS_INFO("Takeoff started");
+					ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
+					flying = true;
+					pose.pose.position.x = 0;
+    				pose.pose.position.y = 0;
+    				pose.pose.position.z = 10;
+                }
+                last_request = ros::Time::now();
+            }
+
+			/*if( current_state.armed && flying &&
+                (ros::Time::now() - last_request > ros::Duration(10.0)))
+			{
+                if( landing_client.call(landing_cmd) &&
+                    landing_cmd.response.success)
+				{
+                    ROS_INFO("Landing started");
+					ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
+					flying = false;
+					pose.pose.position.x = 0;
+    				pose.pose.position.y = 0;
+    				pose.pose.position.z = 0;
+                }
+                last_request = ros::Time::now();
+            }*/
+
+
+        }
+
+		/*if(ros::Time::now() - test_pose > ros::Duration(20.0))
+        	local_pos_pub.publish(positest);
+		else*/
+			local_pos_pub.publish(pose);
+
+        ros::spinOnce();
+        rate.sleep();
+    }
+
+    return 0;
 }
 
 
@@ -96,6 +218,8 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 *******************************************************************/
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 {
-	altitude = position->altitude;
+   altitude  = position->altitude;
+   latitude  = position->latitude;
+   longitude = position->longitude;
 }
 

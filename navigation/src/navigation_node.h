@@ -16,6 +16,11 @@
  *************************************************************************************/
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <mavros_msgs/CommandBool.h>
+#include <mavros_msgs/CommandTOL.h>
+#include <mavros_msgs/SetMode.h>
+#include <mavros_msgs/State.h>
 
 #include <iostream>
 
@@ -29,19 +34,15 @@
 #include "sensor_msgs/Imu.h"
 
 
-time_t start, ends;
-time_t imcpy_start,imcpy_end;
-struct timeval beginning, current, end;
+#define DEFAULT_HEIGHT 603
 
-bool run = false;
-int current_ver = 0;
-int hardware = 0;
 double altitude;
+double latitude;
+double longitude;
+mavros_msgs::State current_state;
 
-boost::shared_ptr<ros::Publisher> node_model_pub;
 
-long elapse_time_u(struct timeval *end, struct timeval *start);
-long time_micros(struct timeval *end, struct timeval *start);
 
+void state_cb(const mavros_msgs::State::ConstPtr& msg);
 void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
