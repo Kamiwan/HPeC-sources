@@ -22,6 +22,8 @@
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 
+#include <mavros_msgs/GlobalPositionTarget.h>
+
 #include <iostream>
 
 #include "std_msgs/Int32.h"
@@ -34,7 +36,7 @@
 #include "sensor_msgs/Imu.h"
 
 
-#define DEFAULT_HEIGHT 603
+#define DEFAULT_HEIGHT 603.450
 
 double altitude;
 double latitude;

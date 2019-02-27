@@ -48,6 +48,9 @@ int main(int argc, char **argv)
 	ros::Subscriber pos_sub = nh.subscribe("mavros/global_position/global", 
 								1000, 
 								gps_callback);
+
+	ros::Publisher global_pos_pub = nh.advertise<mavros_msgs::GlobalPositionTarget>
+            ("mavros/setpoint_position/global", 10);
 	
 	//the setpoint publishing rate MUST be faster than 2Hz
     ros::Rate rate(20.0);
@@ -83,7 +86,7 @@ int main(int argc, char **argv)
     mavros_msgs::CommandBool arm_cmd;
     arm_cmd.request.value = true;
 	mavros_msgs::CommandTOL takeoff_cmd;
-	takeoff_cmd.request.altitude 	= 10; //613.448;
+	takeoff_cmd.request.altitude 	= 10;//613.448;
 	takeoff_cmd.request.latitude 	= 0; //-35.363;
 	takeoff_cmd.request.longitude 	= 0; //149.165;
 	takeoff_cmd.request.yaw			= 0;
@@ -104,8 +107,26 @@ int main(int argc, char **argv)
     positest.pose.position.y = 10;
     positest.pose.position.z = 20;
 
+	//EM, test with global position
+	mavros_msgs::GlobalPositionTarget target;
+	target.header.stamp	= ros::Time::now();
+    target.altitude 	= 623.448;
+    target.latitude 	= -35.3633;
+    target.longitude 	= 149.165;
+	target.type_mask	= 0; //consider binary value
+
+	for(int i = 100; ros::ok() && i > 0; --i){
+        //local_pos_pub.publish(pose);
+        global_pos_pub.publish(target);
+        ros::spinOnce();
+        rate.sleep();
+    }
+
+	ROS_INFO("NEW GLOBAL position published");
+
+	/*
     while(ros::ok()){
-        if( current_state.mode != "GUIDED" &&
+        if( current_state.mode != "GUIDED" && altitude <= DEFAULT_HEIGHT  && 
             (ros::Time::now() - last_request > ros::Duration(5.0)))
 		{
             if( set_mode_client.call(offb_set_mode) &&
@@ -147,47 +168,26 @@ int main(int argc, char **argv)
                 last_request = ros::Time::now();
             }
 
-			/*if( current_state.armed && flying &&
-                (ros::Time::now() - last_request > ros::Duration(10.0)))
+			
+			if(ros::Time::now() - test_pose > ros::Duration(30.0) && flying)
 			{
-                if( landing_client.call(landing_cmd) &&
-                    landing_cmd.response.success)
+				if( landing_client.call(landing_cmd) &&
+					landing_cmd.response.success)
 				{
-                    ROS_INFO("Landing started");
+					ROS_INFO("Landing started");
 					ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
 					flying = false;
 					pose.pose.position.x = 0;
-    				pose.pose.position.y = 0;
-    				pose.pose.position.z = 0;
-                }
-                last_request = ros::Time::now();
-            }*/
-
-
+					pose.pose.position.y = 0;
+					pose.pose.position.z = 0;
+				}
+				last_request = ros::Time::now();
+			}
         }
-
-		if(ros::Time::now() - test_pose > ros::Duration(30.0) && flying)
-		{
-            if( landing_client.call(landing_cmd) &&
-                landing_cmd.response.success)
-			{
-                ROS_INFO("Landing started");
-				ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
-				flying = false;
-				pose.pose.position.x = 0;
-    			pose.pose.position.y = 0;
-    			pose.pose.position.z = 0;
-            }
-            last_request = ros::Time::now();
-        }
-
-        	//local_pos_pub.publish(positest);
-		//else
-			//local_pos_pub.publish(pose);
-
+		
         ros::spinOnce();
         rate.sleep();
-    }
+    }*/
 
     return 0;
 }
