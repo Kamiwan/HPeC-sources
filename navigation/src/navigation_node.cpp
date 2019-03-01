@@ -63,10 +63,11 @@ int main(int argc, char **argv)
 
 	ros::Publisher global_pos_pub = nh.advertise<mavros_msgs::GlobalPositionTarget>
             ("mavros/setpoint_position/global", 10);
-	//ros::Publisher global_pos_pub = nh.advertise<mavros_msgs::GlobalPositionTarget>
-    //        ("mavros/setpoint_raw/global", 10);
 
 	
+	ros::Publisher cmd_vel_pub = nh.advertise<geometry_msgs::TwistStamped>
+			("/mavros/setpoint_velocity/cmd_vel",10);
+
 	//the setpoint publishing rate MUST be faster than 2Hz
     ros::Rate rate(20.0);
 
@@ -193,13 +194,15 @@ int main(int argc, char **argv)
 	mavros_msgs::GlobalPositionTarget target;
 	target.header.stamp	= ros::Time::now();
 	target.header.frame_id = "fcu";
-    target.altitude 	= 613.448;
+    
+	/* EM, GLOBAL position with GPS and compute desired YAW 
+	target.altitude 	= 613.448;
     target.latitude 	= -35.3631;
     target.longitude 	= 149.1648;
 
 	double d_lat, d_long;
-	d_lat = current_latitude - target.altitude;
-	d_long = current_longitude - target.longitude;
+	d_lat 	= current_latitude - target.altitude;
+	d_long 	= current_longitude - target.longitude;
 	
 	double x, y, heading;
 	x = std::cos(target.latitude) * std::sin(d_long);
@@ -207,24 +210,28 @@ int main(int argc, char **argv)
 		(std::sin(current_latitude) * std::cos(target.latitude) * std::cos(d_long) );
 	heading = std::atan2(x,y);
 
-	double new_heading = current_heading.data*0.0174532925 - heading; //current_heading DEG TO RAD
+	double new_heading = current_heading.data * DEG_TO_RAD - heading; //current_heading DEG TO RAD
 	ROS_INFO_STREAM("NEW HEADING = " << new_heading);
 
 	ROS_INFO_STREAM( "COMPUTED HEADING = " << (heading * (180/PI))); 
 	ROS_INFO_STREAM("  NEW_HEADING" << (new_heading * (180/PI)));
 	target.yaw			= new_heading;
-	//current_heading.data *0.0174532925; //DEG to RAD
-	target.yaw_rate		= 1;
-	target.type_mask	= 0; //consider binary value
+	target.yaw_rate		= 1;*/
 
+	//EM, Move UAV with velocity commands
+	geometry_msgs::TwistStamped vel_msg;
+	vel_msg.header.stamp = ros::Time::now();
+	vel_msg.header.frame_id = "fcu";
+    vel_msg.twist.linear.y = 2;
 
-
-	
-
-
+	ROS_INFO("SENDING VELOCITY COMMANDS");
 	for(int i = 100; ros::ok() && i > 0; --i){
         //local_pos_pub.publish(pose);
-        global_pos_pub.publish(target);
+        //global_pos_pub.publish(target);
+		if(i<50)
+			vel_msg.twist.linear.y = -2;
+
+		cmd_vel_pub.publish(vel_msg);
         ros::spinOnce();
         rate.sleep();
     }

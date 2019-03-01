@@ -30,24 +30,29 @@
 #include "std_msgs/Float32.h"
 #include "std_msgs/Float64.h"
 #include "std_msgs/String.h"
+#include "geometry_msgs/TwistStamped.h"
 
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/image_encodings.h>
 #include <tf/transform_datatypes.h>
 #include "sensor_msgs/Imu.h"
 
-#include <math.h>       /* atan2 */
-#define PI      3.14159265
-#define RAD_360 6.28319
+#include <math.h>   /* atan2 */
+#define PI          3.14159265
+#define RAD_360     6.28319
+#define DEG_TO_RAD  0.0174532925
 #define DEFAULT_HEIGHT 603.450
+#define MASK_IGNORE_LLA_YAW_RATE 3079
+#define MASK_IGNORE_VXYZ_AFXYZ_F 1016
 
 double current_altitude;
 double current_latitude;
 double current_longitude;
+
 mavros_msgs::State current_state;
 std_msgs::Float64 current_heading;
 
-
 void state_cb(const mavros_msgs::State::ConstPtr& msg);
+void compass_cb(const std_msgs::Float64::ConstPtr& msg);
 void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
