@@ -20,6 +20,11 @@ void state_cb(const mavros_msgs::State::ConstPtr& msg){
     current_state = *msg;
 }
 
+void compass_cb(const std_msgs::Float64::ConstPtr& msg){
+    current_heading = *msg;
+	ROS_INFO_STREAM("Current heading" << current_heading.data);
+}
+
 /**##################################################################
  * MAIN
  * Author : EM 
@@ -36,6 +41,11 @@ int main(int argc, char **argv)
             ("mavros/state", 10, state_cb);
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
             ("mavros/setpoint_position/local", 10);
+
+
+	ros::Subscriber compass_heading = nh.subscribe<std_msgs::Float64>
+            ("mavros/global_position/compass_hdg", 10, compass_cb);
+
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>
             ("mavros/cmd/arming");
 	ros::ServiceClient takeoff_client = nh.serviceClient<mavros_msgs::CommandTOL>
@@ -45,19 +55,22 @@ int main(int argc, char **argv)
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>
             ("mavros/set_mode");
 
+			
+
 	ros::Subscriber pos_sub = nh.subscribe("mavros/global_position/global", 
 								1000, 
 								gps_callback);
 
 	ros::Publisher global_pos_pub = nh.advertise<mavros_msgs::GlobalPositionTarget>
             ("mavros/setpoint_position/global", 10);
+	//ros::Publisher global_pos_pub = nh.advertise<mavros_msgs::GlobalPositionTarget>
+    //        ("mavros/setpoint_raw/global", 10);
+
 	
 	//the setpoint publishing rate MUST be faster than 2Hz
     ros::Rate rate(20.0);
 
-
 	ROS_INFO("Wait 1 second!");
-
 	ros::Duration(1).sleep(); // sleep for 1 second
 
     // wait for FCU connection
@@ -69,9 +82,12 @@ int main(int argc, char **argv)
 	ROS_INFO("Navigation connected!");
 
     geometry_msgs::PoseStamped pose;
+	pose.header.stamp = ros::Time::now();
     pose.pose.position.x = 0;
     pose.pose.position.y = 0;
-    pose.pose.position.z = 2;
+    pose.pose.position.z = 10;
+	pose.header.stamp = ros::Time::now();
+	pose.header.frame_id = "fcu";
 
     //send a few setpoints before starting
     for(int i = 50; ros::ok() && i > 0; --i){
@@ -107,13 +123,104 @@ int main(int argc, char **argv)
     positest.pose.position.y = 10;
     positest.pose.position.z = 20;
 
+
+	//pose.header.stamp = ros::Time::now();
+	//pose.pose.position.x = -2;
+    //pose.pose.position.y = 5;
+    //pose.pose.position.z = 10;
+
+	if( current_state.mode != "GUIDED")
+		{
+            if( set_mode_client.call(offb_set_mode) &&
+                offb_set_mode.response.mode_sent)
+			{
+                ROS_INFO("GUIDED enabled");
+				ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",current_altitude, current_longitude, current_latitude);
+            }
+        last_request = ros::Time::now();
+    } 
+
+	ros::spinOnce();
+	rate.sleep();
+
+	if(!current_state.armed )
+	{
+        if( arming_client.call(arm_cmd) &&
+            arm_cmd.response.success)
+		{
+            ROS_INFO("Vehicle armed");
+			ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",current_altitude, current_longitude, current_latitude);
+        }
+        last_request = ros::Time::now();
+    }
+
+	ROS_INFO("Wait 1 second!");
+	ros::Duration(1).sleep(); // sleep for 1 second
+
+	ros::spinOnce();
+	rate.sleep();
+
+	if( current_state.armed &&  current_state.mode == "GUIDED" )
+	{
+      if( takeoff_client.call(takeoff_cmd) &&
+          takeoff_cmd.response.success)
+		{	
+			ROS_INFO("Takeoff started");
+			ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",current_altitude, current_longitude, current_latitude);
+			flying = true;
+			pose.pose.position.x = 3;
+    		pose.pose.position.y = 3;
+    		pose.pose.position.z = 10;
+    	}
+    	last_request = ros::Time::now();
+    }
+
+	ROS_INFO("Wait 2 seconds!");
+	ros::Duration(2).sleep(); // sleep for 2 seconds
+
+	ros::spinOnce();
+	rate.sleep();
+
+	pose.pose.position.x = -2;
+    pose.pose.position.y = 5;
+    pose.pose.position.z = 10;
+	pose.header.stamp = ros::Time::now();
+	pose.header.frame_id = "fcu";
+	pose.pose.orientation.w = 1;
+
+
 	//EM, test with global position
 	mavros_msgs::GlobalPositionTarget target;
 	target.header.stamp	= ros::Time::now();
-    target.altitude 	= 623.448;
-    target.latitude 	= -35.3633;
-    target.longitude 	= 149.165;
+	target.header.frame_id = "fcu";
+    target.altitude 	= 613.448;
+    target.latitude 	= -35.3631;
+    target.longitude 	= 149.1648;
+
+	double d_lat, d_long;
+	d_lat = current_latitude - target.altitude;
+	d_long = current_longitude - target.longitude;
+	
+	double x, y, heading;
+	x = std::cos(target.latitude) * std::sin(d_long);
+	y = (std::cos(current_latitude) * std::sin(target.latitude))  - 
+		(std::sin(current_latitude) * std::cos(target.latitude) * std::cos(d_long) );
+	heading = std::atan2(x,y);
+
+	double new_heading = current_heading.data*0.0174532925 - heading; //current_heading DEG TO RAD
+	ROS_INFO_STREAM("NEW HEADING = " << new_heading);
+
+	ROS_INFO_STREAM( "COMPUTED HEADING = " << (heading * (180/PI))); 
+	ROS_INFO_STREAM("  NEW_HEADING" << (new_heading * (180/PI)));
+	target.yaw			= new_heading;
+	//current_heading.data *0.0174532925; //DEG to RAD
+	target.yaw_rate		= 1;
 	target.type_mask	= 0; //consider binary value
+
+
+
+	
+
 
 	for(int i = 100; ros::ok() && i > 0; --i){
         //local_pos_pub.publish(pose);
@@ -234,8 +341,8 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 *******************************************************************/
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 {
-   altitude  = position->altitude;
-   latitude  = position->latitude;
-   longitude = position->longitude;
+   current_altitude  = position->altitude;
+   current_latitude  = position->latitude;
+   current_longitude = position->longitude;
 }
 
