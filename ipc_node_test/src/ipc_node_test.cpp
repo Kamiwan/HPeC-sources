@@ -59,7 +59,7 @@ extern "C" {
 #include "sensor_msgs/Imu.h"
 #include <tf/transform_datatypes.h>
 
-#include "CommSharedMemory.hpp" 
+#include "comm_shared_memory.hpp" 
 
 //Erwan Moréac, 05/03/18 : Setup #define
 #define HIL				 //Code modifications for Hardware In the Loop
@@ -187,15 +187,15 @@ void appname_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	std::vector<int> machin;
     for(int i = 0; i < 11; i++)
 	{
-		machin = shMemAccess.C3_table_Read(i);
+		machin = shMemAccess.C3_Table_Read(i);
 		for(int j = 0; j < 8; j++)
        		std::cout << "App " << i << " value [" << j << "] = " << machin[j] << std::endl;
 	}
 
 	//EM, HW reservation from app 2 , 3 , 5
-	shMemAccess.release_hw_Write(0,2);
-	shMemAccess.release_hw_Write(0,3);
-	shMemAccess.release_hw_Write(0,5);
+	shMemAccess.Release_HW_Write(0,2);
+	shMemAccess.Release_HW_Write(0,3);
+	shMemAccess.Release_HW_Write(0,5);
 
 	std_msgs::Float32 elapsed_time;
 	while (workerHandle_ptr->ok()) //Main processing loop
@@ -227,9 +227,9 @@ void appname_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	ROS_INFO("[THREAD][STOPPED]");
 
 	//EM, HW reservation from app 2 , 3 , 5
-	shMemAccess.release_hw_Write(1,2);
-	shMemAccess.release_hw_Write(1,3);
-	shMemAccess.release_hw_Write(1,5);
+	shMemAccess.Release_HW_Write(1,2);
+	shMemAccess.Release_HW_Write(1,3);
+	shMemAccess.Release_HW_Write(1,5);
 	ROS_INFO("[THREAD][RELEASE HW FROM APP 2,3,5]");
 }
 
@@ -281,7 +281,7 @@ void appname_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 	std::vector<int> machin;
     for(int i = 0; i < 11; i++)
 	{
-		machin = shMemAccess.C3_table_Read(i);
+		machin = shMemAccess.C3_Table_Read(i);
 		for(int j = 0; j < 8; j++)
        		std::cout << "App " << i << " value [" << j << "] = " << machin[j] << std::endl;
 	}

@@ -47,7 +47,7 @@
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/image_encodings.h>
 
-#include "CommSharedMemory.hpp" //EM, shared_memory_lib header
+#include "comm_shared_memory.hpp" //EM, shared_memory_lib header
 
 //EM, Verbosity levels
 #define VERBOSITY_DEFAULT   0

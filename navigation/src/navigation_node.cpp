@@ -13,7 +13,7 @@
  * 	1. run on a terminal "roscore" to get a ROS master
  *  2. on another terminal, run the command "rosrun navigation_nodel navigation_nodel_node"
  *************************************************************************************/
-#include "navigation_node.h"
+#include "navigation_node.hpp"
 
 
 void state_cb(const mavros_msgs::State::ConstPtr& msg){
@@ -39,34 +39,28 @@ int main(int argc, char **argv)
 
 	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>
             ("mavros/state", 10, state_cb);
-    ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
-            ("mavros/setpoint_position/local", 10);
-
-
+	ros::Subscriber pos_sub = nh.subscribe<sensor_msgs::NavSatFix>
+			("mavros/global_position/global", 10, gps_callback);
 	ros::Subscriber compass_heading = nh.subscribe<std_msgs::Float64>
             ("mavros/global_position/compass_hdg", 10, compass_cb);
+
+
+    ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
+            ("mavros/setpoint_position/local", 10);
+	ros::Publisher cmd_vel_pub = nh.advertise<geometry_msgs::TwistStamped>
+			("mavros/setpoint_velocity/cmd_vel",10);
+	ros::Publisher global_pos_pub = nh.advertise<mavros_msgs::GlobalPositionTarget>
+            ("mavros/setpoint_position/global", 10);
+
 
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>
             ("mavros/cmd/arming");
 	ros::ServiceClient takeoff_client = nh.serviceClient<mavros_msgs::CommandTOL>
-            ("/mavros/cmd/takeoff");
+            ("mavros/cmd/takeoff");
 	ros::ServiceClient landing_client = nh.serviceClient<mavros_msgs::CommandTOL>
-            ("/mavros/cmd/land");
+            ("mavros/cmd/land");
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>
             ("mavros/set_mode");
-
-			
-
-	ros::Subscriber pos_sub = nh.subscribe("mavros/global_position/global", 
-								1000, 
-								gps_callback);
-
-	ros::Publisher global_pos_pub = nh.advertise<mavros_msgs::GlobalPositionTarget>
-            ("mavros/setpoint_position/global", 10);
-
-	
-	ros::Publisher cmd_vel_pub = nh.advertise<geometry_msgs::TwistStamped>
-			("/mavros/setpoint_velocity/cmd_vel",10);
 
 	//the setpoint publishing rate MUST be faster than 2Hz
     ros::Rate rate(20.0);
@@ -110,8 +104,8 @@ int main(int argc, char **argv)
 	takeoff_cmd.request.min_pitch	= 0;
 	mavros_msgs::CommandTOL landing_cmd;
 	landing_cmd.request.altitude 	= 0;
-	landing_cmd.request.latitude 	= 0;
-	landing_cmd.request.longitude 	= 0;
+	//landing_cmd.request.latitude 	= 0;
+	//landing_cmd.request.longitude 	= 0;
 	
 
 	bool flying = false;
@@ -342,9 +336,7 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
  * Author : EM 
  * @param position, UAV GPS position from topic listened
  * 
- * Callback function to get GPS position
- * Here, only altitude is used but there are other data on position
- * (i) Sample code, you can erase if useless
+ * Callback function to get GPS data position
 *******************************************************************/
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 {
@@ -353,3 +345,16 @@ void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
    current_longitude = position->longitude;
 }
 
+/*******************************************************************
+ * gps_callback
+ * Author : EM 
+ * @param position, UAV GPS position from topic listened
+ * 
+ * Callback function to get GPS data position
+*******************************************************************/
+/*void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
+{
+   current_altitude  = position->altitude;
+   current_latitude  = position->latitude;
+   current_longitude = position->longitude;
+}*/

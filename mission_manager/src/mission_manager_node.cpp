@@ -334,9 +334,9 @@ int main(int argc, char **argv)
       ros::spinOnce();
 
       std::cout << "Current CPU load = " << current_cpu_value() << " %" << std::endl;
-      std::cout << "Current Tiles used, Tile 1 = " << sh_mem_access.busy_tile_Read(TILE_1)
-                  <<   ", Tile 2 = " << sh_mem_access.busy_tile_Read(TILE_2)
-                  <<   ", Tile 3 = " << sh_mem_access.busy_tile_Read(TILE_3)
+      std::cout << "Current Tiles used, Tile 1 = " << sh_mem_access.Busy_Tile_Read(TILE_1)
+                  <<   ", Tile 2 = " << sh_mem_access.Busy_Tile_Read(TILE_2)
+                  <<   ", Tile 3 = " << sh_mem_access.Busy_Tile_Read(TILE_3)
                   << std::endl;
       std::cout << "Current Detection exec time = " << sh_mem_access.Read_ExecTime(DETECTION) << std::endl
                <<  "Current Tracking  exec time = " << sh_mem_access.Read_ExecTime(TRACKING) << std::endl

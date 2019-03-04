@@ -73,17 +73,17 @@ bool check_achievable(MemoryCoordinator & shared_memory, Step_out s){
 
 void sh_mem_write_achievable(MemoryCoordinator & shared_memory, Step_out s)
 {
-    shared_memory.achievable_Write(s.contrast_img.achievable, CONTRAST_IMG);
-    shared_memory.achievable_Write(s.motion_estim_imu.achievable, MOTION_ESTIM_IMU);
-    shared_memory.achievable_Write(s.motion_estim_img.achievable, MOTION_ESTIM_IMG);
-    shared_memory.achievable_Write(s.search_landing.achievable, SEARCH_LANDING);
-    shared_memory.achievable_Write(s.obstacle_avoidance.achievable, OBSTACLE_AVOIDANCE);
-    shared_memory.achievable_Write(s.t_landing.achievable, T_LANDING);
-    shared_memory.achievable_Write(s.rotoz_s.achievable, ROTOZ_S);
-    shared_memory.achievable_Write(s.rotoz_b.achievable, ROTOZ_B);
-    shared_memory.achievable_Write(s.replanning.achievable, REPLANNING);
-    shared_memory.achievable_Write(s.detection.achievable, DETECTION);
-    shared_memory.achievable_Write(s.tracking.achievable, TRACKING);
+    shared_memory.Achievable_Write(s.contrast_img.achievable, CONTRAST_IMG);
+    shared_memory.Achievable_Write(s.motion_estim_imu.achievable, MOTION_ESTIM_IMU);
+    shared_memory.Achievable_Write(s.motion_estim_img.achievable, MOTION_ESTIM_IMG);
+    shared_memory.Achievable_Write(s.search_landing.achievable, SEARCH_LANDING);
+    shared_memory.Achievable_Write(s.obstacle_avoidance.achievable, OBSTACLE_AVOIDANCE);
+    shared_memory.Achievable_Write(s.t_landing.achievable, T_LANDING);
+    shared_memory.Achievable_Write(s.rotoz_s.achievable, ROTOZ_S);
+    shared_memory.Achievable_Write(s.rotoz_b.achievable, ROTOZ_B);
+    shared_memory.Achievable_Write(s.replanning.achievable, REPLANNING);
+    shared_memory.Achievable_Write(s.detection.achievable, DETECTION);
+    shared_memory.Achievable_Write(s.tracking.achievable, TRACKING);
 }
 
 //********************* Send Alert to Mission Manager if needed
@@ -488,7 +488,7 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 0)
         { 
             //EM, write in shared memory the state of each Tile that are released thanks to HW tasks shutdown
-            shared_memory.busy_tile_Write(0, scheduler_array[i].region_id-1); //EM, -1 because sh_vector index starts at 0
+            shared_memory.Busy_Tile_Write(0, scheduler_array[i].region_id-1); //EM, -1 because sh_vector index starts at 0
 
             //EM, Stop the ongoing sequence process
             if(active_thread[scheduler_array[i].region_id-1])
@@ -530,7 +530,7 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[1;36m Enable HW version of Task no: " << scheduler_array[i].app_index 
                     << " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
-            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id-1); //EM, notify the Tile reservation in sh mem
+            shared_memory.Busy_Tile_Write(1, scheduler_array[i].region_id-1); //EM, notify the Tile reservation in sh mem
             //EM, -1 because sh_vector index starts at 0
         }
 
@@ -545,7 +545,7 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[36m Enable HW FUSION version of Task no: " << scheduler_array[i].app_index 
                     << " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
-            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id-1); //EM, notify the Tile reservation in sh mem
+            shared_memory.Busy_Tile_Write(1, scheduler_array[i].region_id-1); //EM, notify the Tile reservation in sh mem
             //EM, -1 because sh_vector index starts at 0
         }
     }
@@ -625,7 +625,7 @@ void	wait_release(int app, int region_id, vector<Map_app_out> const& prev_map_co
             {
                 cout << "\033[0;33m Wait END for HW Task no: " << app << "\033[0m"  << endl;
                 cout << "SIGNAL WAIT App : " << app_index << endl;
-                while(!shared_memory.release_hw_Read(app_index));
+                while(!shared_memory.Release_HW_Read(app_index));
                 cout << "\033[1;33m Tile no: " << region_id  << " released !!! \033[0m"  << endl;
             }
 }
@@ -641,7 +641,7 @@ void sequence_exec_routine(App_scheduler seq_app[2])
     seq_app[1].print();
 
     //EM, notify the Tile reservation in sh mem
-    shared_memory.busy_tile_Write(1, seq_app[0].region_id-1); //-1 because sh_vector index starts at 0
+    shared_memory.Busy_Tile_Write(1, seq_app[0].region_id-1); //-1 because sh_vector index starts at 0
 
     std::chrono::seconds ms(5);
     std::chrono::time_point<std::chrono::system_clock> end;
@@ -653,14 +653,14 @@ void sequence_exec_routine(App_scheduler seq_app[2])
         activate_desactivate_task(seq_app[current_app].app_index, msg);	
         ROS_INFO("Wait DONE, app_index = ", seq_app[current_app].app_index);
         end = std::chrono::system_clock::now() + ms;
-        while(!shared_memory.done_Read(seq_app[current_app].app_index)
+        while(!shared_memory.Done_Read(seq_app[current_app].app_index)
                 && std::chrono::system_clock::now() < end);
         
         msg.data = 0; //Stop app
         ROS_INFO("Wait app END, app_index = ", seq_app[current_app].app_index);
         end = std::chrono::system_clock::now() + ms;
         activate_desactivate_task(seq_app[current_app].app_index, msg);	
-        while(!shared_memory.release_hw_Read(seq_app[current_app].app_index)
+        while(!shared_memory.Release_HW_Read(seq_app[current_app].app_index)
                 && std::chrono::system_clock::now() < end);
 
         current_app = 1 - current_app; //EM, to alternate between 1 and 0
@@ -715,14 +715,14 @@ void compare_data_access_speed(MemoryCoordinator & shared_memory)
                 << res << std::endl;
 
     start = clock();
-        int foo = shared_memory.release_hw_Read(2);
+        int foo = shared_memory.Release_HW_Read(2);
     ends = clock();
     res =  double(ends - start) * 1000 / CLOCKS_PER_SEC;
     std::cout 	<< "READ DATA IN A SHARED MEMORY : " 
                 << res << std::endl;
 
     start = clock();
-        shared_memory.release_hw_Write(0,2);
+        shared_memory.Release_HW_Write(0,2);
     ends = clock();
     res =  double(ends - start) * 1000 / CLOCKS_PER_SEC;
     std::cout 	<< "WRITE DATA IN A SHARED MEMORY : " 
@@ -757,11 +757,11 @@ void sh_mem_setup(MemoryCoordinator & shared_memory, vector<Task_in> C3)
         Sh_C3_init.push_back(C3[i].maxqos);
         Sh_C3_init.push_back(C3[i].priority);
     }
-    shared_memory.Fill_ShMem_C3_table(Sh_C3_init);
-    shared_memory.Fill_ShMem_achievable(achievable_init);
-    shared_memory.Fill_ShMem_release_hw(release_hw_init);
-    shared_memory.Fill_ShMem_done(done_init);
-    shared_memory.Fill_ShMem_busy_tile(busy_tile_init);
+    shared_memory.Fill_ShMem_C3_Table(Sh_C3_init);
+    shared_memory.Fill_ShMem_Achievable(achievable_init);
+    shared_memory.Fill_ShMem_Release_HW(release_hw_init);
+    shared_memory.Fill_ShMem_Done(done_init);
+    shared_memory.Fill_ShMem_Busy_Tile(busy_tile_init);
     std::cout << "Fill shared memories, done! " << std::endl;
 }
 
@@ -772,7 +772,7 @@ vector<Task_in>	sh_mem_read_C3(MemoryCoordinator & shared_memory)
     vector<int> shared_data;
     for(int i=0; i<APPLICATION_NUMBER; i++)
     {
-        shared_data = shared_memory.C3_table_Read(i);
+        shared_data = shared_memory.C3_Table_Read(i);
         tmp.req			= shared_data[C3_ACTIVE_REQUEST];
         tmp.texec	    = shared_data[C3_CURRENT_TEXEC];
         tmp.mintexec	= shared_data[C3_MIN_TEXEC];
