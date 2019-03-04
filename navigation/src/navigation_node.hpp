@@ -17,11 +17,6 @@
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <mavros_msgs/CommandBool.h>
-#include <mavros_msgs/CommandTOL.h>
-#include <mavros_msgs/SetMode.h>
-#include <mavros_msgs/State.h>
-#include <mavros_msgs/GlobalPositionTarget.h>
 
 #include <iostream>
 #include <math.h>   /* atan2 */
@@ -31,11 +26,18 @@
 #include "std_msgs/Float64.h"
 #include "std_msgs/String.h"
 #include "geometry_msgs/TwistStamped.h"
-
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/image_encodings.h>
-#include <tf/transform_datatypes.h>
 #include "sensor_msgs/Imu.h"
+#include <tf/transform_datatypes.h>
+
+#include <mavros_msgs/CommandBool.h>
+#include <mavros_msgs/CommandTOL.h>
+#include <mavros_msgs/SetMode.h>
+#include <mavros_msgs/State.h>
+#include <mavros_msgs/GlobalPositionTarget.h>
+
+#include "communication/nav_control.h"
 
 
 #define PI          3.14159265
@@ -50,6 +52,10 @@ double current_altitude;
 double current_latitude;
 double current_longitude;
 
+double destination_altitude;
+double destination_latitude;
+double destination_longitude;
+
 mavros_msgs::State current_state;
 std_msgs::Float64 current_heading;
 
@@ -57,3 +63,4 @@ void state_cb(const mavros_msgs::State::ConstPtr& msg);
 void compass_cb(const std_msgs::Float64::ConstPtr& msg);
 void imu_callback(const sensor_msgs::Imu::ConstPtr& imu_msg);
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr& position);
+void control_callback(const communication::nav_control::ConstPtr& next_order);
