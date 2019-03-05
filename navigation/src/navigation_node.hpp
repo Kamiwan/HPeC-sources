@@ -48,6 +48,17 @@
 #define MASK_IGNORE_LLA_YAW_RATE 3079
 #define DEFAULT_HEIGHT 603.450
 
+enum NavOrder {
+    LAND = 0,
+    TAKEOFF,
+    GPS_MOVE,
+    VELOCITY_MOVE,
+    OBS_AVOIDANCE_MOVE,
+    TRACKING_MOVE,
+    INVALID_ORDER
+};
+
+
 double current_altitude;
 double current_latitude;
 double current_longitude;
@@ -59,8 +70,10 @@ double destination_longitude;
 mavros_msgs::State current_state;
 std_msgs::Float64 current_heading;
 
-void state_cb(const mavros_msgs::State::ConstPtr& msg);
-void compass_cb(const std_msgs::Float64::ConstPtr& msg);
-void imu_callback(const sensor_msgs::Imu::ConstPtr& imu_msg);
-void gps_callback(const sensor_msgs::NavSatFix::ConstPtr& position);
-void control_callback(const communication::nav_control::ConstPtr& next_order);
+NavOrder ResolveNavOrder(std::string input);
+
+void StateCallback(const mavros_msgs::State::ConstPtr& msg);
+void CompassCallback(const std_msgs::Float64::ConstPtr& msg);
+void ImuCallback(const sensor_msgs::Imu::ConstPtr& imu_msg);
+void GpsCallback(const sensor_msgs::NavSatFix::ConstPtr& position);
+void ControlCallback(const communication::nav_control::ConstPtr& next_order);

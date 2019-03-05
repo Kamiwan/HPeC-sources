@@ -16,11 +16,11 @@
 #include "navigation_node.hpp"
 
 
-void state_cb(const mavros_msgs::State::ConstPtr& msg){
+void StateCallback(const mavros_msgs::State::ConstPtr& msg){
     current_state = *msg;
 }
 
-void compass_cb(const std_msgs::Float64::ConstPtr& msg){
+void CompassCallback(const std_msgs::Float64::ConstPtr& msg){
     current_heading = *msg;
     ROS_INFO_STREAM("Current heading" << current_heading.data);
 }
@@ -38,11 +38,11 @@ int main(int argc, char **argv)
     ros::NodeHandle nh;
 
     ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>
-            ("mavros/state", 10, state_cb);
+            ("mavros/state", 10, StateCallback);
     ros::Subscriber pos_sub = nh.subscribe<sensor_msgs::NavSatFix>
-            ("mavros/global_position/global", 10, gps_callback);
+            ("mavros/global_position/global", 10, GpsCallback);
     ros::Subscriber compass_heading = nh.subscribe<std_msgs::Float64>
-            ("mavros/global_position/compass_hdg", 10, compass_cb);
+            ("mavros/global_position/compass_hdg", 10, CompassCallback);
 
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
             ("mavros/setpoint_position/local", 10);
@@ -301,13 +301,13 @@ int main(int argc, char **argv)
 
 
 /*******************************************************************
- * imu_callback
+ * ImuCallback
  * Author : EM 
  * @param imu_msg, UAV GPS position from topic listened
  * 
  * Callback function to get IMU data
 *******************************************************************/
-void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
+void ImuCallback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 {
     printf("\nSeq: [%d]", imu_msg->header.seq);
     printf("\nOrientation-> x: [%f], y: [%f], z: [%f], w: [%f]",
@@ -330,13 +330,13 @@ void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg)
 }
 
 /*******************************************************************
- * gps_callback
+ * GpsCallback
  * Author : EM 
  * @param position, UAV GPS position from topic listened
  * 
  * Callback function to get GPS data position
 *******************************************************************/
-void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
+void GpsCallback(const sensor_msgs::NavSatFix::ConstPtr &position)
 {
    current_altitude  = position->altitude;
    current_latitude  = position->latitude;
@@ -344,26 +344,64 @@ void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 }
 
 /*******************************************************************
- * control_callback
+ * ControlCallback
  * Author : EM 
  * @param next_order, order from Mission Manager node
  * 
  * Callback function to execute the next order from Mission Manager
 *******************************************************************/
-void control_callback(const communication::nav_control::ConstPtr& next_order)
+void ControlCallback(const communication::nav_control::ConstPtr& next_order)
 {
    
 
-    switch (expression)
+    switch (ResolveNavOrder(next_order->order))
     {
-        case /* constant-expression */:
+        case LAND:
             /* code */
             break;
-    
+
+        case TAKEOFF:
+            /* code */
+            break;
+
+        case GPS_MOVE:
+            /* code */
+            break;
+
+        case VELOCITY_MOVE:
+            /* code */
+            break;
+
+        case OBS_AVOIDANCE_MOVE:
+            /* code */
+            break;
+
+        case TRACKING_MOVE:
+            /* code */
+            break;
+
+        // handles INVALID_MOVE and any other missing/unmapped cases
         default:
             break;
     }
 
+}
 
 
+/*******************************************************************
+ * ResolveNavOrder
+ * Author : EM 
+ * @param input, order from Mission Manager node
+ * 
+ * Convert an input string into a NavOrder enum argument
+*******************************************************************/
+NavOrder ResolveNavOrder(std::string input)
+{
+    if( input == "LAND"               ) return LAND;
+    if( input == "TAKEOFF"            ) return TAKEOFF;
+    if( input == "GPS_MOVE"           ) return GPS_MOVE;
+    if( input == "VELOCITY_MOVE"      ) return VELOCITY_MOVE;
+    if( input == "OBS_AVOIDANCE_MOVE" ) return OBS_AVOIDANCE_MOVE;
+    if( input == "TRACKING_MOVE"      ) return TRACKING_MOVE;
+    return INVALID_ORDER;
 }

@@ -1,5 +1,5 @@
 # This message contains useful arguments for the following nav orders:
-#   LAND, TAKEOFF, GPS_MOVE, VELOCITY_MOVE, OBS_AVOIDANCE, TRACKING
+#   LAND, TAKEOFF, GPS_MOVE, VELOCITY_MOVE, OBS_AVOIDANCE_MOVE, TRACKING_MOVE
 #
 # Parameters use case:
 #   order           ->  used for all orders
