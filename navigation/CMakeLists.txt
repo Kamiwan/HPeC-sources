@@ -12,12 +12,12 @@ add_definitions(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
-  cv_bridge
+  #cv_bridge
   message_generation
   communication REQUIRED
 )
 
-find_package(OpenCV REQUIRED)
+#find_package(OpenCV REQUIRED)
 
 
 
@@ -129,7 +129,7 @@ communication
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS} 
-  ${OpenCV_INCLUDE_DIRS}
+  #${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -147,6 +147,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(navigation_node
 			src/navigation_node.cpp
+      src/nav_command.cpp
 )
 
 ## Rename C++ executable without prefix
@@ -164,7 +165,7 @@ add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 ## Specify libraries to link a library or executable target against
  target_link_libraries(navigation_node
    ${catkin_LIBRARIES}
-   ${OpenCV_LIBRARIES}
+   #${OpenCV_LIBRARIES}
  )
 
 #############

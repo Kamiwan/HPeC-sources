@@ -1,17 +1,25 @@
+/* 
+ * This file is part of the HPeC distribution (https://github.com/Kamiwan/HPeC-sources).
+ * Copyright (c) 2018 Lab-STICC Laboratory.
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 /*************************************************************************************
  * File   : navigation_nodel.cpp, file to create easily ros nodes for HPeC
  * Copyright (C) 2018 Lab-STICC Laboratory
  * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
+ * Created on: February 21, 2019 
  *
- * This model allows the user to create an application ros node that 
- * the adaptation manager can handle in the HPeC project.
- * 
- * This model must be used by copying the folder, then rename the package and files
- * according to your needs.
- * 
- * You can test this program:
- * 	1. run on a terminal "roscore" to get a ROS master
- *  2. on another terminal, run the command "rosrun navigation_nodel navigation_nodel_node"
  *************************************************************************************/
 #include "navigation_node.hpp"
 
@@ -89,24 +97,26 @@ int main(int argc, char **argv)
         rate.sleep();
     }
     
-    mavros_msgs::SetMode offb_set_mode;
-    offb_set_mode.request.custom_mode = "GUIDED";
+    
+    guided_set_mode.request.custom_mode = "GUIDED";
 
-    mavros_msgs::CommandBool arm_cmd;
+    
     arm_cmd.request.value = true;
-    mavros_msgs::CommandTOL takeoff_cmd;
+
+
+    
     takeoff_cmd.request.altitude 	= 10;//613.448;
     takeoff_cmd.request.latitude 	= 0; //-35.363;
     takeoff_cmd.request.longitude 	= 0; //149.165;
     takeoff_cmd.request.yaw			= 0;
     takeoff_cmd.request.min_pitch	= 0;
-    mavros_msgs::CommandTOL landing_cmd;
+    
     landing_cmd.request.altitude 	= 0;
     //landing_cmd.request.latitude 	= 0;
     //landing_cmd.request.longitude = 0;
     
 
-    bool flying = false;
+    flying = false;
 
     ros::Time last_request = ros::Time::now();
     ros::Time test_pose    = ros::Time::now();
@@ -124,8 +134,8 @@ int main(int argc, char **argv)
 
     if( current_state.mode != "GUIDED")
         {
-            if( set_mode_client.call(offb_set_mode) &&
-                offb_set_mode.response.mode_sent)
+            if( set_mode_client.call(guided_set_mode) &&
+                guided_set_mode.response.mode_sent)
             {
                 ROS_INFO("GUIDED enabled");
                 ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",current_altitude, current_longitude, current_latitude);
@@ -235,8 +245,8 @@ int main(int argc, char **argv)
         if( current_state.mode != "GUIDED" && altitude <= DEFAULT_HEIGHT  && 
             (ros::Time::now() - last_request > ros::Duration(5.0)))
         {
-            if( set_mode_client.call(offb_set_mode) &&
-                offb_set_mode.response.mode_sent)
+            if( set_mode_client.call(guided_set_mode) &&
+                guided_set_mode.response.mode_sent)
             {
                 ROS_INFO("GUIDED enabled");
                 ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
@@ -357,7 +367,20 @@ void ControlCallback(const communication::nav_control::ConstPtr& next_order)
     switch (ResolveNavOrder(next_order->order))
     {
         case LAND:
-            /* code */
+            /*if( current_state.armed &&  current_state.mode == "GUIDED")
+            {
+                if( takeoff_client.call(takeoff_cmd) &&
+                    takeoff_cmd.response.success)
+                {
+                    ROS_INFO("Takeoff started");
+                    ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
+                    flying = true;
+                    pose.pose.position.x = 0;
+                    pose.pose.position.y = 0;
+                    pose.pose.position.z = 10;
+                }
+                last_request = ros::Time::now();
+            }*/
             break;
 
         case TAKEOFF:
@@ -405,3 +428,38 @@ NavOrder ResolveNavOrder(std::string input)
     if( input == "TRACKING_MOVE"      ) return TRACKING_MOVE;
     return INVALID_ORDER;
 }
+
+
+void SetGuidedArmThrottle()
+{
+    /*if( current_state.mode != "GUIDED" )
+    {
+        if( set_mode_client.call(guided_set_mode) &&
+            guided_set_mode.response.mode_sent)
+        {
+            ROS_INFO("GUIDED enabled");
+            ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",
+                    current_altitude, current_longitude, current_latitude);
+
+
+            while(ros::ok() && current_state.mode != "GUIDED")
+            {
+                ros::spinOnce();
+                rate.sleep();
+            }
+        }
+    } 
+    
+
+
+    if(!current_state.armed && current_state.mode != "GUIDED")
+            {
+                if( arming_client.call(arm_cmd) && arm_cmd.response.success)
+                {
+                    ROS_INFO("Vehicle armed");
+                    ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
+                }
+    }*/
+}
+
+    
