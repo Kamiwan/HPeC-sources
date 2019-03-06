@@ -105,7 +105,7 @@ int main(int argc, char **argv)
     geometry_msgs::PoseStamped positest;
     positest.pose.position.x = 10;
     positest.pose.position.y = 10;
-    positest.pose.position.z = 20;
+    positest.pose.position.z = ;
 
 
     //pose.header.stamp = ros::Time::now();
@@ -285,3 +285,22 @@ int main(int argc, char **argv)
         ros::spinOnce();
         rate.sleep();
     }*/
+
+
+ /*if( current_state.armed &&  current_state.mode == "GUIDED")
+            {
+                if( takeoff_client.call(takeoff_cmd) &&
+                    takeoff_cmd.response.success)
+                {
+                    ROS_INFO("Takeoff started");
+                    ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
+                    flying = true;
+                    pose.pose.position.x = 0;
+                    pose.pose.position.y = 0;
+                    pose.pose.position.z = 10;
+                }
+                last_request = ros::Time::now();
+            }*/
+
+
+            

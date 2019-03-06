@@ -70,6 +70,8 @@ void achievable_callback(const std_msgs::Int32::ConstPtr &msg1);
 void   init_cpu_load();
 double current_cpu_value();
 
+void StaticScenario_1();
+
 /*********** Global variables ***********/ 
 extern int	    verbose;
 extern double   roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw, delta_roll, delta_pitch, delta_yaw;
@@ -77,6 +79,9 @@ extern double   altitude, longitude, latitude, illuminance;
 extern double   ang_vel_x, ang_vel_y, ang_vel_z, lin_vel_x, lin_vel_y, lin_vel_z;
 extern float    battery_level;
 extern bool     first_time_imu;
+
+ros::Time scenario_ref_time;
+ros::Time scenario_current_time;   
 
 
 

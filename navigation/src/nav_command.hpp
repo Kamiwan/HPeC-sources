@@ -68,6 +68,9 @@ class NavCommand
     ros::Subscriber pos_sub_;
     ros::Subscriber compass_heading_sub_;
 
+    //Topic subscriber to get orders from the navigation USER
+    ros::Subscriber nav_order_sub_;
+
     // Topic publishers to send new movement order
     ros::Publisher local_pos_pub_;
     ros::Publisher global_pos_pub_;
@@ -123,6 +126,8 @@ class NavCommand
     void ControlCallback(const communication::nav_control::ConstPtr& next_order);
 
     NavOrder ResolveNavOrder(std::string input);
+
+    void LandOrder();
 
 };
 

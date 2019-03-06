@@ -65,7 +65,7 @@ void init_cpu_load()
  * Author : EM 
  * @return percent
  * 
- * Callback function to the current cpu load in % 
+ * Function to the current cpu load in % 
 *******************************************************************/
 double current_cpu_value()
 {
@@ -327,7 +327,14 @@ int main(int argc, char **argv)
    MemoryCoordinator sh_mem_access("User"); //EM, may MM able to use the shared memory
 
    ROS_INFO("[MISSION_MANAGER]: listening");
+   ros::spinOnce();
+   ROS_INFO("Wait 1 second!");
+   ros::Duration(1).sleep(); // sleep needed to get the right time with scenario_ref_time
 
+
+   scenario_ref_time       = ros::Time::now();
+   scenario_current_time   = ros::Time::now();
+   ROS_INFO_STREAM("[MISSION_MANAGER]: Reference time = " << scenario_ref_time);
    ros::Rate loop_rate(1); //10hz = 100ms, 0.1hz=10s
    while (ros::ok())
    {
@@ -343,9 +350,31 @@ int main(int argc, char **argv)
                <<  "Current Detection       qos = " << sh_mem_access.Read_QoS(DETECTION) << std::endl
                <<  "Current Tracking        qos = " << sh_mem_access.Read_QoS(TRACKING)
                << std::endl;
+
+      StaticScenario_1();
+
+
       ROS_INFO("TIME TO SLEEP");
       loop_rate.sleep();
    }
 }
 
+
+
+/******************************************************************************
+ * StaticScenario_1
+ * Author : EM 
+ * 
+ * Script which emulates Mission Manager orders for the UAV Mission
+ * This function gives orders to the UAV FCU with navigation ROS node
+ * It also turn on/off other applications
+******************************************************************************/
+void StaticScenario_1()
+{
+   scenario_current_time            = ros::Time::now();
+   ros::Duration scenario_duration  = scenario_current_time - scenario_ref_time;
+   
+   ROS_INFO_STREAM("Scenario Duration = " << scenario_duration.toSec());
+
+}
 

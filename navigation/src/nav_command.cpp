@@ -38,13 +38,20 @@ NavCommand::NavCommand(ros::NodeHandle* nodehandle):nh_(*nodehandle)
     destination_altitude_  = 0.0;
     destination_latitude_  = 0.0;
     destination_longitude_ = 0.0;
+    
+    ros::Rate rate(20.0);
+
+    // wait for FCU connection
+    while(ros::ok() && !current_state_.connected){
+        ros::spinOnce();
+        rate.sleep();
+    }
+    ROS_INFO("NavCommand object connected to FCU!");
 }
 
 NavCommand::~NavCommand()
 {
 }
-
-
 
 // member helper function to set up subscribers;
 // note odd syntax: &NavCommand::subscriberCallback is a pointer to a member function of NavCommand 
@@ -57,6 +64,8 @@ void NavCommand::InitializeSubscribers()
             ("mavros/global_position/global", 10, &NavCommand::GpsCallback, this);
     compass_heading_sub_ = nh_.subscribe<std_msgs::Float64>
             ("mavros/global_position/compass_hdg", 10, &NavCommand::CompassCallback, this);
+    nav_order_sub_ = nh_.subscribe<communication::nav_control>
+            ("navigation/order", 10, &NavCommand::ControlCallback, this);     
 }
 
 void NavCommand::InitializePublishers()
@@ -87,7 +96,11 @@ void NavCommand::InitializeServices()
  * Author : EM 
  * @param msg, UAV current state
  * 
- * The heading is in degree 
+ * Known modes listed here:
+ * http://wiki.ros.org/mavros/CustomModes
+ *
+ * For system_status values
+ * see https://mavlink.io/en/messages/common.html#MAV_STATE
 *******************************************************************/
 void NavCommand::StateCallback(const mavros_msgs::State::ConstPtr& msg)
 {
@@ -115,7 +128,6 @@ void NavCommand::CompassCallback(const std_msgs::Float64::ConstPtr& msg)
  * Author : EM 
  * @param position, UAV GPS position from topic listened
  * 
- * Callback function to get GPS data position
 *******************************************************************/
 void NavCommand::GpsCallback(const sensor_msgs::NavSatFix::ConstPtr &position)
 {
@@ -135,24 +147,14 @@ void NavCommand::GpsCallback(const sensor_msgs::NavSatFix::ConstPtr &position)
 *******************************************************************/
 void NavCommand::ControlCallback(const communication::nav_control::ConstPtr& next_order)
 {
-   
     switch (ResolveNavOrder(next_order->order))
     {
         case LAND:
-            /*if( current_state.armed &&  current_state.mode == "GUIDED")
+            if(flying_)
             {
-                if( takeoff_client.call(takeoff_cmd) &&
-                    takeoff_cmd.response.success)
-                {
-                    ROS_INFO("Takeoff started");
-                    ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
-                    flying = true;
-                    pose.pose.position.x = 0;
-                    pose.pose.position.y = 0;
-                    pose.pose.position.z = 10;
-                }
-                last_request = ros::Time::now();
-            }*/
+                LandOrder();
+            }
+
             break;
 
         case TAKEOFF:
@@ -168,15 +170,16 @@ void NavCommand::ControlCallback(const communication::nav_control::ConstPtr& nex
             break;
 
         case OBS_AVOIDANCE_MOVE:
-            /* code */
+            /* TODO: think of how this function will be stopped */
             break;
 
         case TRACKING_MOVE:
-            /* code */
+            /* TODO: think of how this function will be stopped */
             break;
 
         // handles INVALID_MOVE and any other missing/unmapped cases
         default:
+            ROS_ERROR_STREAM("Wrong order given to NavCommand: " << next_order->order);
             break;
     }
 
@@ -203,3 +206,15 @@ NavCommand::NavOrder NavCommand::ResolveNavOrder(std::string input)
 
 
 
+void NavCommand::LandOrder()
+{
+    landing_cmd_.request.altitude 	= 0; //local value in meters
+    if( landing_client_.call(landing_cmd_) &&
+        landing_cmd_.response.success)
+    {
+        ROS_INFO("Landing started");
+        ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",
+            current_altitude_, current_longitude_, current_latitude_);
+    }
+    flying_ = false;
+}
