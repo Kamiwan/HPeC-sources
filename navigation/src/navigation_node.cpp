@@ -24,14 +24,6 @@
 #include "navigation_node.hpp"
 
 
-void StateCallback(const mavros_msgs::State::ConstPtr& msg){
-    current_state = *msg;
-}
-
-void CompassCallback(const std_msgs::Float64::ConstPtr& msg){
-    current_heading = *msg;
-    ROS_INFO_STREAM("Current heading" << current_heading.data);
-}
 
 /**##################################################################
  * MAIN
@@ -45,37 +37,26 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "navigation_node");
     ros::NodeHandle nh;
 
-    ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>
-            ("mavros/state", 10, StateCallback);
-    ros::Subscriber pos_sub = nh.subscribe<sensor_msgs::NavSatFix>
-            ("mavros/global_position/global", 10, GpsCallback);
-    ros::Subscriber compass_heading = nh.subscribe<std_msgs::Float64>
-            ("mavros/global_position/compass_hdg", 10, CompassCallback);
-
-    ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
-            ("mavros/setpoint_position/local", 10);
-    ros::Publisher cmd_vel_pub = nh.advertise<geometry_msgs::TwistStamped>
-            ("mavros/setpoint_velocity/cmd_vel",10);
-    ros::Publisher global_pos_pub = nh.advertise<mavros_msgs::GlobalPositionTarget>
-            ("mavros/setpoint_position/global", 10);
-
-    ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>
-            ("mavros/cmd/arming");
-    ros::ServiceClient takeoff_client = nh.serviceClient<mavros_msgs::CommandTOL>
-            ("mavros/cmd/takeoff");
-    ros::ServiceClient landing_client = nh.serviceClient<mavros_msgs::CommandTOL>
-            ("mavros/cmd/land");
-    ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>
-            ("mavros/set_mode");
-
     //the setpoint publishing rate MUST be faster than 2Hz
     ros::Rate rate(20.0);
 
-    ROS_INFO("Wait 1 second!");
-    ros::Duration(1).sleep(); // sleep for 1 second
+    NavCommand my_nav_command(&nh);
+    
+    while(ros::ok())
+    {
+        ros::spinOnce();
+        rate.sleep();
+    }
 
-    // wait for FCU connection
-    while(ros::ok() && !current_state.connected){
+    return 0;
+}
+
+
+
+
+
+   // wait for FCU connection
+    /*while(ros::ok() && !current_state.connected){
         ros::spinOnce();
         rate.sleep();
     }
@@ -196,7 +177,7 @@ int main(int argc, char **argv)
     mavros_msgs::GlobalPositionTarget target;
     target.header.stamp	= ros::Time::now();
     target.header.frame_id = "fcu";
-    
+    */
     /* EM, GLOBAL position with GPS and compute desired YAW 
     target.altitude 	= 613.448;
     target.latitude 	= -35.3631;
@@ -221,7 +202,7 @@ int main(int argc, char **argv)
     target.yaw_rate		= 1;*/
 
     //EM, Move UAV with velocity commands
-    geometry_msgs::TwistStamped vel_msg;
+    /*geometry_msgs::TwistStamped vel_msg;
     vel_msg.header.stamp = ros::Time::now();
     vel_msg.header.frame_id = "fcu";
     vel_msg.twist.linear.y = 2;
@@ -238,7 +219,7 @@ int main(int argc, char **argv)
         rate.sleep();
     }
 
-    ROS_INFO("NEW GLOBAL position published");
+    ROS_INFO("NEW GLOBAL position published");*/
 
     /*
     while(ros::ok()){
@@ -304,162 +285,3 @@ int main(int argc, char **argv)
         ros::spinOnce();
         rate.sleep();
     }*/
-
-    return 0;
-}
-
-
-
-/*******************************************************************
- * ImuCallback
- * Author : EM 
- * @param imu_msg, UAV GPS position from topic listened
- * 
- * Callback function to get IMU data
-*******************************************************************/
-void ImuCallback(const sensor_msgs::Imu::ConstPtr &imu_msg)
-{
-    printf("\nSeq: [%d]", imu_msg->header.seq);
-    printf("\nOrientation-> x: [%f], y: [%f], z: [%f], w: [%f]",
-            imu_msg->orientation.x, imu_msg->orientation.y, 
-            imu_msg->orientation.z, imu_msg->orientation.w);
-
-       double quatx= imu_msg->orientation.x;
-       double quaty= imu_msg->orientation.y;
-       double quatz= imu_msg->orientation.z;
-       double quatw= imu_msg->orientation.w;
-
-    tf::Quaternion q(quatx, quaty, quatz, quatw);
-    tf::Matrix3x3 m(q);
-    double roll, pitch, yaw;
-    m.getRPY(roll, pitch, yaw);
-
-    printf("\nRoll: [%f],Pitch: [%f],Yaw: [%f]",roll,pitch,yaw);
-    return ;
-
-}
-
-/*******************************************************************
- * GpsCallback
- * Author : EM 
- * @param position, UAV GPS position from topic listened
- * 
- * Callback function to get GPS data position
-*******************************************************************/
-void GpsCallback(const sensor_msgs::NavSatFix::ConstPtr &position)
-{
-   current_altitude  = position->altitude;
-   current_latitude  = position->latitude;
-   current_longitude = position->longitude;
-}
-
-/*******************************************************************
- * ControlCallback
- * Author : EM 
- * @param next_order, order from Mission Manager node
- * 
- * Callback function to execute the next order from Mission Manager
-*******************************************************************/
-void ControlCallback(const communication::nav_control::ConstPtr& next_order)
-{
-   
-
-    switch (ResolveNavOrder(next_order->order))
-    {
-        case LAND:
-            /*if( current_state.armed &&  current_state.mode == "GUIDED")
-            {
-                if( takeoff_client.call(takeoff_cmd) &&
-                    takeoff_cmd.response.success)
-                {
-                    ROS_INFO("Takeoff started");
-                    ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
-                    flying = true;
-                    pose.pose.position.x = 0;
-                    pose.pose.position.y = 0;
-                    pose.pose.position.z = 10;
-                }
-                last_request = ros::Time::now();
-            }*/
-            break;
-
-        case TAKEOFF:
-            /* code */
-            break;
-
-        case GPS_MOVE:
-            /* code */
-            break;
-
-        case VELOCITY_MOVE:
-            /* code */
-            break;
-
-        case OBS_AVOIDANCE_MOVE:
-            /* code */
-            break;
-
-        case TRACKING_MOVE:
-            /* code */
-            break;
-
-        // handles INVALID_MOVE and any other missing/unmapped cases
-        default:
-            break;
-    }
-
-}
-
-
-/*******************************************************************
- * ResolveNavOrder
- * Author : EM 
- * @param input, order from Mission Manager node
- * 
- * Convert an input string into a NavOrder enum argument
-*******************************************************************/
-NavOrder ResolveNavOrder(std::string input)
-{
-    if( input == "LAND"               ) return LAND;
-    if( input == "TAKEOFF"            ) return TAKEOFF;
-    if( input == "GPS_MOVE"           ) return GPS_MOVE;
-    if( input == "VELOCITY_MOVE"      ) return VELOCITY_MOVE;
-    if( input == "OBS_AVOIDANCE_MOVE" ) return OBS_AVOIDANCE_MOVE;
-    if( input == "TRACKING_MOVE"      ) return TRACKING_MOVE;
-    return INVALID_ORDER;
-}
-
-
-void SetGuidedArmThrottle()
-{
-    /*if( current_state.mode != "GUIDED" )
-    {
-        if( set_mode_client.call(guided_set_mode) &&
-            guided_set_mode.response.mode_sent)
-        {
-            ROS_INFO("GUIDED enabled");
-            ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",
-                    current_altitude, current_longitude, current_latitude);
-
-
-            while(ros::ok() && current_state.mode != "GUIDED")
-            {
-                ros::spinOnce();
-                rate.sleep();
-            }
-        }
-    } 
-    
-
-
-    if(!current_state.armed && current_state.mode != "GUIDED")
-            {
-                if( arming_client.call(arm_cmd) && arm_cmd.response.success)
-                {
-                    ROS_INFO("Vehicle armed");
-                    ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",altitude, longitude, latitude);
-                }
-    }*/
-}
-
-    
