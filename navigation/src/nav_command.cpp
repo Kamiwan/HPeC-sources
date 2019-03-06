@@ -150,10 +150,10 @@ void NavCommand::ControlCallback(const communication::nav_control::ConstPtr& nex
     switch (ResolveNavOrder(next_order->order))
     {
         case LAND:
-            if(flying_)
-            {
+            //if(flying_)
+            //{
                 LandOrder();
-            }
+            //}
 
             break;
 

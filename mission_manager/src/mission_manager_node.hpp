@@ -29,25 +29,28 @@
 
 #include <ros/ros.h>
 #include <boost/thread.hpp>
+#include <image_transport/image_transport.h>
+
 #include <iostream>
 #include <string>
 
-#include <tf/transform_datatypes.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <geometry_msgs/TwistStamped.h>
-#include <geometry_msgs/TwistWithCovarianceStamped.h>
-#include "sensor_msgs/Imu.h"
-#include "sensor_msgs/BatteryState.h"
 #include "std_msgs/String.h"
 #include "std_msgs/Int32.h"
 #include "std_msgs/Float32.h"
-#include "communication/obstacle_detection_msg.h"
-
-#include <sensor_msgs/Illuminance.h>
-#include <image_transport/image_transport.h>
+#include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/Illuminance.h>
+#include "sensor_msgs/Imu.h"
+#include "sensor_msgs/BatteryState.h"
+#include <sensor_msgs/NavSatFix.h>
+#include <tf/transform_datatypes.h>
+
+#include "communication/obstacle_detection_msg.h"
+#include "communication/nav_control.h"
 
 #include "comm_shared_memory.hpp" //EM, shared_memory_lib header
+
 
 //EM, Verbosity levels
 #define VERBOSITY_DEFAULT   0
@@ -80,9 +83,21 @@ extern double   ang_vel_x, ang_vel_y, ang_vel_z, lin_vel_x, lin_vel_y, lin_vel_z
 extern float    battery_level;
 extern bool     first_time_imu;
 
-ros::Time scenario_ref_time;
-ros::Time scenario_current_time;   
+extern ros::Time scenario_ref_time;
+extern ros::Time scenario_current_time;
 
+extern ros::Subscriber cam_light_sub;
+extern ros::Subscriber light_sub;
+extern ros::Subscriber imu_sub;
+extern ros::Subscriber bat_sub;
+extern ros::Subscriber vel_sub;
+extern ros::Subscriber pos_sub;
+extern ros::Subscriber achievable_sub;
+extern ros::Subscriber obstacle_sub;
+
+extern ros::Publisher  nav_order_pub;
+
+bool    step_1;
 
 
 #endif

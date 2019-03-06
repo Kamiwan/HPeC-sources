@@ -40,6 +40,20 @@ float  battery_level;
 bool   first_time_imu;
 boost::shared_ptr<ros::Publisher> notify_from_MM_pub;
 static unsigned long long lastTotalUser, lastTotalUserLow, lastTotalSys, lastTotalIdle; //EM, CPU load
+
+ros::Time scenario_ref_time;
+ros::Time scenario_current_time;
+
+ros::Subscriber cam_light_sub;
+ros::Subscriber light_sub;
+ros::Subscriber imu_sub;
+ros::Subscriber bat_sub;
+ros::Subscriber vel_sub;
+ros::Subscriber pos_sub;
+ros::Subscriber achievable_sub;
+ros::Subscriber obstacle_sub;
+
+ros::Publisher  nav_order_pub;
 /*********** Global variables ***********/ 
 
 
@@ -310,19 +324,20 @@ int main(int argc, char **argv)
       verbose = VERBOSITY_DEFAULT;
    }
 
-   ros::Subscriber cam_light_sub  = nh.subscribe("iris/light_sensor/rgb/image_raw", 1000, sensor_cam_callback);
-   ros::Subscriber light_sub      = nh.subscribe("light_sensor_plugin/lightSensor", 1000, light_sensor_callback);
-
-   ros::Subscriber imu_sub        = nh.subscribe("mavros/imu/data", 1000, imu_callback);
-   ros::Subscriber bat_sub        = nh.subscribe("mavros/battery", 1000, battery_callback);
-   ros::Subscriber vel_sub        = nh.subscribe("mavros/global_position/raw/gps_vel", 1000, gps_vel_callback);
-   ros::Subscriber pos_sub        = nh.subscribe("mavros/global_position/global", 1000, gps_pos_callback);
-   
-   ros::Subscriber achievable_sub = nh.subscribe("/achievable_topic", 1000, achievable_callback);
-   ros::Subscriber obstacle_sub   = nh.subscribe("obstacle_detection_topic", 1000, obstacle_callback);
+   cam_light_sub  = nh.subscribe("iris/light_sensor/rgb/image_raw", 1000, sensor_cam_callback);
+   light_sub      = nh.subscribe("light_sensor_plugin/lightSensor", 1000, light_sensor_callback);
+   imu_sub        = nh.subscribe("mavros/imu/data", 1000, imu_callback);
+   bat_sub        = nh.subscribe("mavros/battery", 1000, battery_callback);
+   vel_sub        = nh.subscribe("mavros/global_position/raw/gps_vel", 1000, gps_vel_callback);
+   pos_sub        = nh.subscribe("mavros/global_position/global", 1000, gps_pos_callback);
+   achievable_sub = nh.subscribe("/achievable_topic", 1000, achievable_callback);
+   obstacle_sub   = nh.subscribe("obstacle_detection_topic", 1000, obstacle_callback);
    
    notify_from_MM_pub = boost::make_shared<ros::Publisher>(
       nh.advertise<std_msgs::Int32>("/notify_from_MM_topic", 1000));
+
+   nav_order_pub = nh.advertise<communication::nav_control>
+            ("navigation/order", 10);
 
    MemoryCoordinator sh_mem_access("User"); //EM, may MM able to use the shared memory
 
@@ -335,6 +350,9 @@ int main(int argc, char **argv)
    scenario_ref_time       = ros::Time::now();
    scenario_current_time   = ros::Time::now();
    ROS_INFO_STREAM("[MISSION_MANAGER]: Reference time = " << scenario_ref_time);
+
+   step_1 = false;
+
    ros::Rate loop_rate(1); //10hz = 100ms, 0.1hz=10s
    while (ros::ok())
    {
@@ -375,6 +393,15 @@ void StaticScenario_1()
    ros::Duration scenario_duration  = scenario_current_time - scenario_ref_time;
    
    ROS_INFO_STREAM("Scenario Duration = " << scenario_duration.toSec());
+
+   if(scenario_duration.toSec() > 10 && !step_1)
+   {
+      ROS_INFO("Send LAND order!");
+      communication::nav_control nav_order_msg;
+      nav_order_msg.order = "LAND"; //Other parameters not needed for LAND order
+      nav_order_pub.publish(nav_order_msg);
+      step_1 = true;
+   }
 
 }
 
