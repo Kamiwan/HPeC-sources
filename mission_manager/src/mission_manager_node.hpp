@@ -98,6 +98,7 @@ extern ros::Subscriber obstacle_sub;
 extern ros::Publisher  nav_order_pub;
 
 bool    step_1;
+bool    step_2;
 
 
 #endif

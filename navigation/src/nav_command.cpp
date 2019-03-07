@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 /*************************************************************************************
- * File   : navigation_node.h, file to create easily ros nodes for HPeC
+ * File   : nav_command.cpp, 
  * Copyright (C) 2018 Lab-STICC Laboratory
  * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
  * Created on: February 21, 2019
@@ -105,8 +105,8 @@ void NavCommand::InitializeServices()
 void NavCommand::StateCallback(const mavros_msgs::State::ConstPtr& msg)
 {
     current_state_ = *msg;
-    ROS_INFO_STREAM("Current UAV mode = " << current_state_.mode <<
-                    " , status = " << (int)current_state_.system_status);
+    //ROS_INFO_STREAM("Current UAV mode = " << current_state_.mode <<
+    //                " , status = " << (int)current_state_.system_status);
 }
 
 /*******************************************************************
@@ -119,7 +119,7 @@ void NavCommand::StateCallback(const mavros_msgs::State::ConstPtr& msg)
 void NavCommand::CompassCallback(const std_msgs::Float64::ConstPtr& msg)
 {
     current_heading_ = *msg;
-    ROS_INFO_STREAM("Current heading" << current_heading_.data);
+    //ROS_INFO_STREAM("Current heading" << current_heading_.data);
 }
 
 
@@ -134,7 +134,7 @@ void NavCommand::GpsCallback(const sensor_msgs::NavSatFix::ConstPtr &position)
    current_altitude_  = position->altitude;
    current_latitude_  = position->latitude;
    current_longitude_ = position->longitude;
-   ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",current_altitude_, current_longitude_, current_latitude_);
+   //ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",current_altitude_, current_longitude_, current_latitude_);
 }
 
 
@@ -150,15 +150,18 @@ void NavCommand::ControlCallback(const communication::nav_control::ConstPtr& nex
     switch (ResolveNavOrder(next_order->order))
     {
         case LAND:
-            //if(flying_)
-            //{
+            if(flying_)
+            {
                 LandOrder();
-            //}
+            }
 
             break;
 
         case TAKEOFF:
-            /* code */
+            if(!flying_)
+            {
+                TakeoffOrder(next_order->altitude);
+            }
             break;
 
         case GPS_MOVE:
@@ -205,7 +208,12 @@ NavCommand::NavOrder NavCommand::ResolveNavOrder(std::string input)
 }
 
 
-
+/*******************************************************************
+ * LandOrder
+ * Author : EM 
+ * 
+ * Send LAND Order to the FCU
+*******************************************************************/
 void NavCommand::LandOrder()
 {
     landing_cmd_.request.altitude 	= 0; //local value in meters
@@ -215,6 +223,82 @@ void NavCommand::LandOrder()
         ROS_INFO("Landing started");
         ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",
             current_altitude_, current_longitude_, current_latitude_);
+        flying_ = false;
     }
-    flying_ = false;
 }
+
+
+
+/*******************************************************************
+ * TakeoffOrder
+ * Author : EM 
+ * 
+ * Send Takeoff order to the FCU
+ * This function also checks if the UAV is in GUIDED mode
+ * If not, GUIDED mode is set and it arms throttles
+*******************************************************************/
+void NavCommand::TakeoffOrder(int target_altitude)
+{
+    setGuidedMode();
+    setArmThrottle();
+
+    takeoff_cmd_.request.altitude = target_altitude - current_altitude_;  //local value in meters
+    if( takeoff_client_.call(takeoff_cmd_) &&
+       takeoff_cmd_.response.success)
+    {	
+        ROS_INFO("Takeoff started");
+        ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",
+            current_altitude_, current_longitude_, current_latitude_);
+        flying_ = true;
+    }
+}
+
+/*******************************************************************
+ * setGuidedMode
+ * Author : EM 
+ * 
+ * Set ardupilot GUIDED mode to control the UAV
+*******************************************************************/
+void NavCommand::setGuidedMode()
+{
+    set_mode_cmd_.request.custom_mode = "GUIDED";
+    if( current_state_.mode != "GUIDED")
+        {
+            if( set_mode_client_.call(set_mode_cmd_) &&
+                set_mode_cmd_.response.mode_sent)
+            {
+                ROS_INFO("GUIDED enabled");
+            } else
+            {
+                ROS_ERROR("Set GUIDED mode FAILED");
+            }
+    } 
+}
+
+
+/*******************************************************************
+ * setArmThrottle
+ * Author : EM 
+ * 
+ * Arm UAV throttles
+*******************************************************************/
+void NavCommand::setArmThrottle()
+{
+    arm_cmd_.request.value = true;
+    if(!current_state_.armed)
+    {
+        if( arming_client_.call(arm_cmd_) &&
+            arm_cmd_.response.success)
+        {
+            ROS_INFO("Vehicle armed");
+        } else
+        {
+            ROS_ERROR("Vehicle arming FAILED");
+        }
+        
+    }
+}
+
+
+
+

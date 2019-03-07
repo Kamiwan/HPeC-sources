@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 /*************************************************************************************
- * File   : navigation_nodel.cpp, file to create easily ros nodes for HPeC
+ * File   : navigation_node.cpp,
  * Copyright (C) 2018 Lab-STICC Laboratory
  * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
  * Created on: February 21, 2019 
@@ -303,4 +303,4 @@ int main(int argc, char **argv)
             }*/
 
 
-            
+

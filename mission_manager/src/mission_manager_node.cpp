@@ -352,6 +352,7 @@ int main(int argc, char **argv)
    ROS_INFO_STREAM("[MISSION_MANAGER]: Reference time = " << scenario_ref_time);
 
    step_1 = false;
+   step_2 = false;
 
    ros::Rate loop_rate(1); //10hz = 100ms, 0.1hz=10s
    while (ros::ok())
@@ -385,7 +386,7 @@ int main(int argc, char **argv)
  * 
  * Script which emulates Mission Manager orders for the UAV Mission
  * This function gives orders to the UAV FCU with navigation ROS node
- * It also turn on/off other applications
+ * It is also able to turn on/off other applications
 ******************************************************************************/
 void StaticScenario_1()
 {
@@ -396,11 +397,21 @@ void StaticScenario_1()
 
    if(scenario_duration.toSec() > 10 && !step_1)
    {
+      ROS_INFO("Send TAKEOFF order!");
+      communication::nav_control nav_order_msg;
+      nav_order_msg.order = "TAKEOFF"; 
+      nav_order_msg.altitude = altitude + 10;
+      nav_order_pub.publish(nav_order_msg);
+      step_1 = true;
+   }
+
+   if(scenario_duration.toSec() > 30 && !step_2)
+   {
       ROS_INFO("Send LAND order!");
       communication::nav_control nav_order_msg;
       nav_order_msg.order = "LAND"; //Other parameters not needed for LAND order
       nav_order_pub.publish(nav_order_msg);
-      step_1 = true;
+      step_2 = true;
    }
 
 }
