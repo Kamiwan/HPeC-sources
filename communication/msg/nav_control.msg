@@ -18,7 +18,7 @@ float64 altitude
 float64 latitude
 float64 longitude
 float64 yaw
-int32   vel_linear_x
-int32   vel_linear_y
-int32   vel_linear_z
+float64 vel_linear_x
+float64 vel_linear_y
+float64 vel_linear_z
 int32   distance 

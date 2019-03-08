@@ -50,6 +50,10 @@
 
 #include "communication/nav_control.h"
 
+#define PI          3.14159265
+#define RAD_360     6.28319
+#define DEG_TO_RAD  0.0174532925
+#define RAD_90      1.57079
 
 class NavCommand
 {
@@ -83,10 +87,11 @@ class NavCommand
     ros::ServiceClient set_mode_client_;
 
     // Messages attributes for services
-    mavros_msgs::SetMode     set_mode_cmd_;
-    mavros_msgs::CommandBool arm_cmd_;
-    mavros_msgs::CommandTOL  takeoff_cmd_;
-    mavros_msgs::CommandTOL  landing_cmd_;
+    mavros_msgs::SetMode              set_mode_cmd_;
+    mavros_msgs::CommandBool          arm_cmd_;
+    mavros_msgs::CommandTOL           takeoff_cmd_;
+    mavros_msgs::CommandTOL           landing_cmd_;
+    mavros_msgs::GlobalPositionTarget next_gps_position_;
 
     // Attributes to store current and destination data
     mavros_msgs::State  current_state_;
@@ -110,6 +115,10 @@ class NavCommand
         INVALID_ORDER
     };
 
+    //Yaw is in radian, so I give a default value outside -3.14 < val < 3.14
+    //Because values 0 and -1 can be relevant
+    static constexpr double kDefaultNoYaw = 42.0;
+
     //!\ You must adapt these values to your context
     static constexpr double kHomeAltitude  = 603.4486;
     static constexpr double kHomeLatitude  = -35.363261;
@@ -125,13 +134,15 @@ class NavCommand
     void GpsCallback(const sensor_msgs::NavSatFix::ConstPtr& position);
     void ControlCallback(const communication::nav_control::ConstPtr& next_order);
 
-    NavOrder ResolveNavOrder(std::string input);
-
     void LandOrder();
-    void TakeoffOrder(int target_altitude);
-
+    void TakeoffOrder(double target_altitude);
+    void GpsMoveOrder(double target_altitude, double target_latitude, double target_longitude,  double yaw = kDefaultNoYaw);
+    
     void setGuidedMode();
     void setArmThrottle();
+
+    double ComputeHeadingYaw(double target_altitude, double target_latitude, double target_longitude);
+    NavOrder ResolveNavOrder(std::string input);
 
 };
 

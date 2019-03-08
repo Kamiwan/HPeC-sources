@@ -353,6 +353,8 @@ int main(int argc, char **argv)
 
    step_1 = false;
    step_2 = false;
+   step_3 = false;
+   step_4 = false;
 
    ros::Rate loop_rate(1); //10hz = 100ms, 0.1hz=10s
    while (ros::ok())
@@ -399,19 +401,60 @@ void StaticScenario_1()
    {
       ROS_INFO("Send TAKEOFF order!");
       communication::nav_control nav_order_msg;
-      nav_order_msg.order = "TAKEOFF"; 
-      nav_order_msg.altitude = altitude + 10;
+      nav_order_msg.order     = "TAKEOFF"; 
+      nav_order_msg.altitude  = altitude + 10;
+
       nav_order_pub.publish(nav_order_msg);
       step_1 = true;
    }
 
    if(scenario_duration.toSec() > 30 && !step_2)
    {
+      ROS_INFO("Send GPS_MOVE order!");
+      communication::nav_control nav_order_msg;
+      nav_order_msg.order     = "GPS_MOVE"; 
+      nav_order_msg.altitude  = altitude;
+      nav_order_msg.latitude  = -35.363661;
+      nav_order_msg.longitude = 149.165030;
+
+      //wpTemp.lat=-35.362661; wpTemp.lon=149.165830;
+	   //vectTemp.push_back(wpTemp);
+	   //wpTemp.lat=-35.363261; wpTemp.lon=149.165830;
+	   //vectTemp.push_back(wpTemp);
+	   //wpTemp.lat=-35.363261; wpTemp.lon=149.165230;
+
+      nav_order_pub.publish(nav_order_msg);
+      step_2 = true;
+   }
+
+   if(scenario_duration.toSec() > 50 && !step_3)
+   {
+      ROS_INFO("Send GPS_MOVE order!");
+      communication::nav_control nav_order_msg;
+      nav_order_msg.order     = "GPS_MOVE"; 
+      nav_order_msg.altitude  = altitude;
+      nav_order_msg.latitude  = -35.363261;
+      nav_order_msg.longitude = 149.165030;
+
+      //wpTemp.lat=-35.362661; wpTemp.lon=149.165830;
+	   //vectTemp.push_back(wpTemp);
+	   //wpTemp.lat=-35.363261; wpTemp.lon=149.165830;
+	   //vectTemp.push_back(wpTemp);
+	   //wpTemp.lat=-35.363261; wpTemp.lon=149.165230;
+
+      nav_order_pub.publish(nav_order_msg);
+      step_3 = true;
+   }
+
+
+   if(scenario_duration.toSec() > 70 && !step_4)
+   {
       ROS_INFO("Send LAND order!");
       communication::nav_control nav_order_msg;
       nav_order_msg.order = "LAND"; //Other parameters not needed for LAND order
+
       nav_order_pub.publish(nav_order_msg);
-      step_2 = true;
+      step_4 = true;
    }
 
 }

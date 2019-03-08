@@ -147,6 +147,8 @@ void NavCommand::GpsCallback(const sensor_msgs::NavSatFix::ConstPtr &position)
 *******************************************************************/
 void NavCommand::ControlCallback(const communication::nav_control::ConstPtr& next_order)
 {
+    ROS_INFO("[NAV_COMMAND]: New command received!");
+
     switch (ResolveNavOrder(next_order->order))
     {
         case LAND:
@@ -165,11 +167,27 @@ void NavCommand::ControlCallback(const communication::nav_control::ConstPtr& nex
             break;
 
         case GPS_MOVE:
-            /* code */
+            if(flying_)
+            {
+                GpsMoveOrder(next_order->altitude, next_order->latitude, next_order->longitude);
+            } else
+            {
+                ROS_ERROR("The UAV is not flying!");
+                //TakeoffOrder(next_order->altitude);
+                //GpsMoveOrder(next_order->altitude, next_order->latitude, next_order->longitude);
+            }
             break;
 
         case VELOCITY_MOVE:
-            /* code */
+            if(flying_)
+            {
+                
+            } else
+            {
+                ROS_ERROR("The UAV is not flying!");
+                //TakeoffOrder(next_order->altitude);
+                
+            }
             break;
 
         case OBS_AVOIDANCE_MOVE:
@@ -237,7 +255,7 @@ void NavCommand::LandOrder()
  * This function also checks if the UAV is in GUIDED mode
  * If not, GUIDED mode is set and it arms throttles
 *******************************************************************/
-void NavCommand::TakeoffOrder(int target_altitude)
+void NavCommand::TakeoffOrder(double target_altitude)
 {
     setGuidedMode();
     setArmThrottle();
@@ -252,6 +270,38 @@ void NavCommand::TakeoffOrder(int target_altitude)
         flying_ = true;
     }
 }
+
+
+/*******************************************************************
+ * GpsMoveOrder
+ * Author : EM 
+ * 
+ * Ask to the FCU to move to the given GPS position
+*******************************************************************/
+void NavCommand::GpsMoveOrder(double target_altitude, 
+        double target_latitude, double target_longitude, double yaw)
+{
+    next_gps_position_.header.stamp	= ros::Time::now();
+    next_gps_position_.header.frame_id = "fcu";
+    next_gps_position_.altitude 	= target_altitude;
+    next_gps_position_.latitude 	= target_latitude;
+    next_gps_position_.longitude 	= target_longitude;
+    next_gps_position_.yaw_rate     = 1;
+
+    if(yaw == kDefaultNoYaw)
+        yaw = ComputeHeadingYaw(target_altitude, target_latitude, target_longitude);
+
+    next_gps_position_.yaw = yaw;
+    ROS_INFO_STREAM("Next Yaw = " << next_gps_position_.yaw);
+
+    //Update Class Attributes
+    destination_altitude_   = target_altitude;
+    destination_latitude_   = target_latitude;
+    destination_longitude_  = target_longitude;
+
+    global_pos_pub_.publish(next_gps_position_);
+}
+
 
 /*******************************************************************
  * setGuidedMode
@@ -301,4 +351,37 @@ void NavCommand::setArmThrottle()
 
 
 
+/*******************************************************************
+ * ComputeHeadingYaw
+ * Author : EM 
+ * 
+ * target_latitude and target_longitude must be in degree
+ * 
+ * Compute the angle the UAV has to rotate to move in the right 
+ * direction, the head forward
+ * https://www.igismap.com/formula-to-find-bearing-or-heading-angle-between-two-points-latitude-longitude/
+*******************************************************************/
+double NavCommand::ComputeHeadingYaw(double target_altitude, 
+        double target_latitude, double target_longitude)
+{
+    //Conv degrees to radians
+    target_latitude  = target_latitude  * (PI / 180);
+    target_longitude = target_longitude * (PI / 180);
+    double rad_curr_lat  = current_latitude_  * (PI / 180);
+    double rad_curr_long = current_longitude_ * (PI / 180);
 
+    double d_lat, d_long;
+    d_lat 	= target_altitude - rad_curr_lat;
+    d_long 	= target_longitude - rad_curr_long;
+    
+    double x, y, absolute_yaw;
+    x = std::cos(target_latitude) * std::sin(d_long);
+    y = (std::cos(rad_curr_lat) * std::sin(target_latitude))  - 
+        (std::sin(rad_curr_lat) * std::cos(target_latitude) * std::cos(d_long) );
+    absolute_yaw = std::atan2(y,x);
+    
+    ROS_INFO_STREAM("ABSOLUTE YAW (rad) = " << absolute_yaw); 
+    ROS_INFO_STREAM("CURRENT HEADING (deg) = " << current_heading_.data);
+
+    return absolute_yaw;
+}

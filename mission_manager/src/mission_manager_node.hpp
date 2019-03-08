@@ -99,6 +99,8 @@ extern ros::Publisher  nav_order_pub;
 
 bool    step_1;
 bool    step_2;
+bool    step_3;
+bool    step_4;
 
 
 #endif
