@@ -355,6 +355,7 @@ int main(int argc, char **argv)
    step_2 = false;
    step_3 = false;
    step_4 = false;
+   step_5 = false;
 
    ros::Rate loop_rate(1); //10hz = 100ms, 0.1hz=10s
    while (ros::ok())
@@ -412,6 +413,18 @@ void StaticScenario_1()
    {
       ROS_INFO("Send GPS_MOVE order!");
       communication::nav_control nav_order_msg;
+      nav_order_msg.order        = "VELOCITY_MOVE"; 
+      nav_order_msg.vel_linear_x = 2;
+      nav_order_msg.distance     = 30;
+ 
+      nav_order_pub.publish(nav_order_msg);
+      step_2 = true;
+   }
+
+   if(scenario_duration.toSec() > 50 && !step_3)
+   {
+      ROS_INFO("Send GPS_MOVE order!");
+      communication::nav_control nav_order_msg;
       nav_order_msg.order     = "GPS_MOVE"; 
       nav_order_msg.altitude  = altitude;
       nav_order_msg.latitude  = -35.363661;
@@ -424,10 +437,10 @@ void StaticScenario_1()
 	   //wpTemp.lat=-35.363261; wpTemp.lon=149.165230;
 
       nav_order_pub.publish(nav_order_msg);
-      step_2 = true;
+      step_3 = true;
    }
 
-   if(scenario_duration.toSec() > 50 && !step_3)
+   if(scenario_duration.toSec() > 70 && !step_4)
    {
       ROS_INFO("Send GPS_MOVE order!");
       communication::nav_control nav_order_msg;
@@ -443,18 +456,18 @@ void StaticScenario_1()
 	   //wpTemp.lat=-35.363261; wpTemp.lon=149.165230;
 
       nav_order_pub.publish(nav_order_msg);
-      step_3 = true;
+      step_4 = true;
    }
 
 
-   if(scenario_duration.toSec() > 70 && !step_4)
+   if(scenario_duration.toSec() > 90 && !step_5)
    {
       ROS_INFO("Send LAND order!");
       communication::nav_control nav_order_msg;
       nav_order_msg.order = "LAND"; //Other parameters not needed for LAND order
 
       nav_order_pub.publish(nav_order_msg);
-      step_4 = true;
+      step_5 = true;
    }
 
 }

@@ -86,7 +86,7 @@ class NavCommand
     ros::ServiceClient landing_client_;
     ros::ServiceClient set_mode_client_;
 
-    // Messages attributes for services
+    // Messages attributes for services and topics
     mavros_msgs::SetMode              set_mode_cmd_;
     mavros_msgs::CommandBool          arm_cmd_;
     mavros_msgs::CommandTOL           takeoff_cmd_;
@@ -137,6 +137,7 @@ class NavCommand
     void LandOrder();
     void TakeoffOrder(double target_altitude);
     void GpsMoveOrder(double target_altitude, double target_latitude, double target_longitude,  double yaw = kDefaultNoYaw);
+    void VelMoveOrder(double vel_linear_x, double vel_linear_y, double vel_linear_z, int distance);
     
     void setGuidedMode();
     void setArmThrottle();

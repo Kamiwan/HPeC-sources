@@ -181,7 +181,7 @@ void NavCommand::ControlCallback(const communication::nav_control::ConstPtr& nex
         case VELOCITY_MOVE:
             if(flying_)
             {
-                
+                VelMoveOrder(next_order->vel_linear_x, next_order->vel_linear_y, next_order->vel_linear_z, next_order->distance);
             } else
             {
                 ROS_ERROR("The UAV is not flying!");
@@ -303,6 +303,54 @@ void NavCommand::GpsMoveOrder(double target_altitude,
 }
 
 
+
+/*******************************************************************
+ * VelMoveOrder
+ * Author : EM 
+ * 
+ * Ask to the FCU to move to the given distance at the given speed
+ * We must know the distance to estimate the time we need to send
+ * the velocity command
+ * 
+ * We simplify the computation by choosing the highest speed among
+ * the 3 axis velocities
+*******************************************************************/
+void NavCommand::VelMoveOrder(double vel_linear_x, 
+        double vel_linear_y, double vel_linear_z, int distance)
+{
+    geometry_msgs::TwistStamped vel_msg;
+    vel_msg.header.stamp     = ros::Time::now();
+    vel_msg.header.frame_id  = "fcu";
+    vel_msg.twist.linear.x   = vel_linear_x;
+    vel_msg.twist.linear.y   = vel_linear_y;
+    vel_msg.twist.linear.z   = vel_linear_z;
+
+    double highest_vel;
+    if(vel_linear_x >= vel_linear_y && vel_linear_x >= vel_linear_z)
+        highest_vel = vel_linear_x;
+    else
+    {
+        if(vel_linear_y >= vel_linear_x && vel_linear_y >= vel_linear_z)
+            highest_vel = vel_linear_y;
+        else
+            highest_vel = vel_linear_z;
+    }
+
+    double time_to_send = distance / highest_vel;
+    ros::Rate rate(20.0);
+    int count = (int)time_to_send * 20;
+
+    ROS_INFO_STREAM("Send Vel command for " << time_to_send << 
+                    " seconds to move " << distance << " meters." );
+    for(int i = 0; i < count && ros::ok(); i++)
+    {
+        cmd_vel_pub_.publish(vel_msg);
+        rate.sleep();
+    }
+    ROS_INFO_STREAM("Velocity command COMPLETE");
+
+}
+
 /*******************************************************************
  * setGuidedMode
  * Author : EM 
@@ -370,15 +418,13 @@ double NavCommand::ComputeHeadingYaw(double target_altitude,
     double rad_curr_lat  = current_latitude_  * (PI / 180);
     double rad_curr_long = current_longitude_ * (PI / 180);
 
-    double d_lat, d_long;
-    d_lat 	= target_altitude - rad_curr_lat;
-    d_long 	= target_longitude - rad_curr_long;
+    double d_lat 	= target_altitude - rad_curr_lat;
+    double d_long 	= target_longitude - rad_curr_long;
     
-    double x, y, absolute_yaw;
-    x = std::cos(target_latitude) * std::sin(d_long);
-    y = (std::cos(rad_curr_lat) * std::sin(target_latitude))  - 
+    double x = std::cos(target_latitude) * std::sin(d_long);
+    double y = (std::cos(rad_curr_lat) * std::sin(target_latitude))  - 
         (std::sin(rad_curr_lat) * std::cos(target_latitude) * std::cos(d_long) );
-    absolute_yaw = std::atan2(y,x);
+    double absolute_yaw = std::atan2(y,x);
     
     ROS_INFO_STREAM("ABSOLUTE YAW (rad) = " << absolute_yaw); 
     ROS_INFO_STREAM("CURRENT HEADING (deg) = " << current_heading_.data);

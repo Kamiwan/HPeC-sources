@@ -101,6 +101,7 @@ bool    step_1;
 bool    step_2;
 bool    step_3;
 bool    step_4;
+bool    step_5;
 
 
 #endif
