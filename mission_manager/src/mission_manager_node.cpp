@@ -54,6 +54,11 @@ ros::Subscriber achievable_sub;
 ros::Subscriber obstacle_sub;
 
 ros::Publisher  nav_order_pub;
+
+ros::Publisher search_land_pub;
+ros::Publisher motion_estim_imu_pub;
+ros::Publisher obstacle_avoidance_pub;
+ros::Publisher detection_pub;
 /*********** Global variables ***********/ 
 
 
@@ -336,8 +341,18 @@ int main(int argc, char **argv)
    notify_from_MM_pub = boost::make_shared<ros::Publisher>(
       nh.advertise<std_msgs::Int32>("/notify_from_MM_topic", 1000));
 
-   nav_order_pub = nh.advertise<communication::nav_control>
+   nav_order_pub = nh.advertise<std_msgs::Int32>
             ("navigation/order", 10);
+
+   search_land_pub = nh.advertise<std_msgs::Int32>
+            ("/search_landing_area_mgt_topic", 10);
+   motion_estim_imu_pub = nh.advertise<std_msgs::Int32>
+            ("/motion_estim_imu_mgt_topic", 10);
+   obstacle_avoidance_pub = nh.advertise<std_msgs::Int32>
+            ("/obstacle_avoidance_mgt_topic", 10);
+   detection_pub = nh.advertise<std_msgs::Int32>
+            ("/detection_tracking_mgt_topic", 10);
+
 
    MemoryCoordinator sh_mem_access("User"); //EM, may MM able to use the shared memory
 
@@ -374,7 +389,6 @@ int main(int argc, char **argv)
                << std::endl;
 
       StaticScenario_1();
-
 
       ROS_INFO("TIME TO SLEEP");
       loop_rate.sleep();
@@ -419,6 +433,13 @@ void StaticScenario_1()
  
       nav_order_pub.publish(nav_order_msg);
       step_2 = true;
+
+      std_msgs::Int32 activation_msg;
+      activation_msg.data = 1;
+      search_land_pub.publish(activation_msg);
+      motion_estim_imu_pub.publish(activation_msg);
+      obstacle_avoidance_pub.publish(activation_msg);
+      detection_pub.publish(activation_msg);
    }
 
    if(scenario_duration.toSec() > 50 && !step_3)

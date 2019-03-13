@@ -97,6 +97,12 @@ extern ros::Subscriber obstacle_sub;
 
 extern ros::Publisher  nav_order_pub;
 
+extern ros::Publisher search_land_pub;
+extern ros::Publisher motion_estim_imu_pub;
+extern ros::Publisher obstacle_avoidance_pub;
+extern ros::Publisher detection_pub;
+
+
 bool    step_1;
 bool    step_2;
 bool    step_3;
