@@ -1,6 +1,6 @@
-/* --- Generated the 30/10/2018 at 9:38 --- */
-/* --- heptagon compiler, version 1.05.00 (compiled sun. oct. 7 16:30:53 CET 2018) --- */
-/* --- Command line: /home/gwen/.opam/4.04.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
+/* --- Generated the 15/3/2019 at 16:20 --- */
+/* --- heptagon compiler, version 1.05.00 (compiled mon. mar. 11 14:26:46 CET 2019) --- */
+/* --- Command line: /home/gwen/.opam/4.05.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
 
 #ifndef MAIN_TYPES_H
 #define MAIN_TYPES_H
@@ -9,6 +9,33 @@
 #include "assert.h"
 #include "pervasives.h"
 #include "main_controller_types.h"
+typedef enum {
+  Main__St_18_Idle,
+  Main__St_18_Active
+} Main__st_18;
+
+Main__st_18 Main__st_18_of_string(char* s);
+
+char* string_of_Main__st_18(Main__st_18 x, char* buf);
+
+typedef enum {
+  Main__St_17_Idle,
+  Main__St_17_Active
+} Main__st_17;
+
+Main__st_17 Main__st_17_of_string(char* s);
+
+char* string_of_Main__st_17(Main__st_17 x, char* buf);
+
+typedef enum {
+  Main__St_16_Idle,
+  Main__St_16_Active
+} Main__st_16;
+
+Main__st_16 Main__st_16_of_string(char* s);
+
+char* string_of_Main__st_16(Main__st_16 x, char* buf);
+
 typedef enum {
   Main__St_15_Idle,
   Main__St_15_Active
@@ -82,8 +109,8 @@ Main__st_8 Main__st_8_of_string(char* s);
 char* string_of_Main__st_8(Main__st_8 x, char* buf);
 
 typedef enum {
-  Main__St_7_Idle,
-  Main__St_7_Active
+  Main__St_7_Free,
+  Main__St_7_Fail
 } Main__st_7;
 
 Main__st_7 Main__st_7_of_string(char* s);
@@ -91,8 +118,8 @@ Main__st_7 Main__st_7_of_string(char* s);
 char* string_of_Main__st_7(Main__st_7 x, char* buf);
 
 typedef enum {
-  Main__St_6_Idle,
-  Main__St_6_Active
+  Main__St_6_Free,
+  Main__St_6_Fail
 } Main__st_6;
 
 Main__st_6 Main__st_6_of_string(char* s);
@@ -100,8 +127,8 @@ Main__st_6 Main__st_6_of_string(char* s);
 char* string_of_Main__st_6(Main__st_6 x, char* buf);
 
 typedef enum {
-  Main__St_5_Idle,
-  Main__St_5_Active
+  Main__St_5_Free,
+  Main__St_5_Fail
 } Main__st_5;
 
 Main__st_5 Main__st_5_of_string(char* s);
@@ -109,8 +136,8 @@ Main__st_5 Main__st_5_of_string(char* s);
 char* string_of_Main__st_5(Main__st_5 x, char* buf);
 
 typedef enum {
-  Main__St_4_Free,
-  Main__St_4_Fail
+  Main__St_4_Idle,
+  Main__St_4_Active
 } Main__st_4;
 
 Main__st_4 Main__st_4_of_string(char* s);
@@ -118,8 +145,9 @@ Main__st_4 Main__st_4_of_string(char* s);
 char* string_of_Main__st_4(Main__st_4 x, char* buf);
 
 typedef enum {
-  Main__St_3_Free,
-  Main__St_3_Fail
+  Main__St_3_T,
+  Main__St_3_DT,
+  Main__St_3_D
 } Main__st_3;
 
 Main__st_3 Main__st_3_of_string(char* s);
@@ -127,8 +155,8 @@ Main__st_3 Main__st_3_of_string(char* s);
 char* string_of_Main__st_3(Main__st_3 x, char* buf);
 
 typedef enum {
-  Main__St_2_Free,
-  Main__St_2_Fail
+  Main__St_2_Idle,
+  Main__St_2_Active
 } Main__st_2;
 
 Main__st_2 Main__st_2_of_string(char* s);

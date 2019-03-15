@@ -1,11 +1,80 @@
-/* --- Generated the 30/10/2018 at 9:38 --- */
-/* --- heptagon compiler, version 1.05.00 (compiled sun. oct. 7 16:30:53 CET 2018) --- */
-/* --- Command line: /home/gwen/.opam/4.04.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
+/* --- Generated the 15/3/2019 at 16:20 --- */
+/* --- heptagon compiler, version 1.05.00 (compiled mon. mar. 11 14:26:46 CET 2019) --- */
+/* --- Command line: /home/gwen/.opam/4.05.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "main_types.h"
+
+Main__st_18 Main__st_18_of_string(char* s) {
+  if ((strcmp(s, "St_18_Idle")==0)) {
+    return Main__St_18_Idle;
+  };
+  if ((strcmp(s, "St_18_Active")==0)) {
+    return Main__St_18_Active;
+  };
+}
+
+char* string_of_Main__st_18(Main__st_18 x, char* buf) {
+  switch (x) {
+    case Main__St_18_Idle:
+      strcpy(buf, "St_18_Idle");
+      break;
+    case Main__St_18_Active:
+      strcpy(buf, "St_18_Active");
+      break;
+    default:
+      break;
+  };
+  return buf;
+}
+
+Main__st_17 Main__st_17_of_string(char* s) {
+  if ((strcmp(s, "St_17_Idle")==0)) {
+    return Main__St_17_Idle;
+  };
+  if ((strcmp(s, "St_17_Active")==0)) {
+    return Main__St_17_Active;
+  };
+}
+
+char* string_of_Main__st_17(Main__st_17 x, char* buf) {
+  switch (x) {
+    case Main__St_17_Idle:
+      strcpy(buf, "St_17_Idle");
+      break;
+    case Main__St_17_Active:
+      strcpy(buf, "St_17_Active");
+      break;
+    default:
+      break;
+  };
+  return buf;
+}
+
+Main__st_16 Main__st_16_of_string(char* s) {
+  if ((strcmp(s, "St_16_Idle")==0)) {
+    return Main__St_16_Idle;
+  };
+  if ((strcmp(s, "St_16_Active")==0)) {
+    return Main__St_16_Active;
+  };
+}
+
+char* string_of_Main__st_16(Main__st_16 x, char* buf) {
+  switch (x) {
+    case Main__St_16_Idle:
+      strcpy(buf, "St_16_Idle");
+      break;
+    case Main__St_16_Active:
+      strcpy(buf, "St_16_Active");
+      break;
+    default:
+      break;
+  };
+  return buf;
+}
 
 Main__st_15 Main__st_15_of_string(char* s) {
   if ((strcmp(s, "St_15_Idle")==0)) {
@@ -192,21 +261,21 @@ char* string_of_Main__st_8(Main__st_8 x, char* buf) {
 }
 
 Main__st_7 Main__st_7_of_string(char* s) {
-  if ((strcmp(s, "St_7_Idle")==0)) {
-    return Main__St_7_Idle;
+  if ((strcmp(s, "St_7_Free")==0)) {
+    return Main__St_7_Free;
   };
-  if ((strcmp(s, "St_7_Active")==0)) {
-    return Main__St_7_Active;
+  if ((strcmp(s, "St_7_Fail")==0)) {
+    return Main__St_7_Fail;
   };
 }
 
 char* string_of_Main__st_7(Main__st_7 x, char* buf) {
   switch (x) {
-    case Main__St_7_Idle:
-      strcpy(buf, "St_7_Idle");
+    case Main__St_7_Free:
+      strcpy(buf, "St_7_Free");
       break;
-    case Main__St_7_Active:
-      strcpy(buf, "St_7_Active");
+    case Main__St_7_Fail:
+      strcpy(buf, "St_7_Fail");
       break;
     default:
       break;
@@ -215,21 +284,21 @@ char* string_of_Main__st_7(Main__st_7 x, char* buf) {
 }
 
 Main__st_6 Main__st_6_of_string(char* s) {
-  if ((strcmp(s, "St_6_Idle")==0)) {
-    return Main__St_6_Idle;
+  if ((strcmp(s, "St_6_Free")==0)) {
+    return Main__St_6_Free;
   };
-  if ((strcmp(s, "St_6_Active")==0)) {
-    return Main__St_6_Active;
+  if ((strcmp(s, "St_6_Fail")==0)) {
+    return Main__St_6_Fail;
   };
 }
 
 char* string_of_Main__st_6(Main__st_6 x, char* buf) {
   switch (x) {
-    case Main__St_6_Idle:
-      strcpy(buf, "St_6_Idle");
+    case Main__St_6_Free:
+      strcpy(buf, "St_6_Free");
       break;
-    case Main__St_6_Active:
-      strcpy(buf, "St_6_Active");
+    case Main__St_6_Fail:
+      strcpy(buf, "St_6_Fail");
       break;
     default:
       break;
@@ -238,21 +307,21 @@ char* string_of_Main__st_6(Main__st_6 x, char* buf) {
 }
 
 Main__st_5 Main__st_5_of_string(char* s) {
-  if ((strcmp(s, "St_5_Idle")==0)) {
-    return Main__St_5_Idle;
+  if ((strcmp(s, "St_5_Free")==0)) {
+    return Main__St_5_Free;
   };
-  if ((strcmp(s, "St_5_Active")==0)) {
-    return Main__St_5_Active;
+  if ((strcmp(s, "St_5_Fail")==0)) {
+    return Main__St_5_Fail;
   };
 }
 
 char* string_of_Main__st_5(Main__st_5 x, char* buf) {
   switch (x) {
-    case Main__St_5_Idle:
-      strcpy(buf, "St_5_Idle");
+    case Main__St_5_Free:
+      strcpy(buf, "St_5_Free");
       break;
-    case Main__St_5_Active:
-      strcpy(buf, "St_5_Active");
+    case Main__St_5_Fail:
+      strcpy(buf, "St_5_Fail");
       break;
     default:
       break;
@@ -261,21 +330,21 @@ char* string_of_Main__st_5(Main__st_5 x, char* buf) {
 }
 
 Main__st_4 Main__st_4_of_string(char* s) {
-  if ((strcmp(s, "St_4_Free")==0)) {
-    return Main__St_4_Free;
+  if ((strcmp(s, "St_4_Idle")==0)) {
+    return Main__St_4_Idle;
   };
-  if ((strcmp(s, "St_4_Fail")==0)) {
-    return Main__St_4_Fail;
+  if ((strcmp(s, "St_4_Active")==0)) {
+    return Main__St_4_Active;
   };
 }
 
 char* string_of_Main__st_4(Main__st_4 x, char* buf) {
   switch (x) {
-    case Main__St_4_Free:
-      strcpy(buf, "St_4_Free");
+    case Main__St_4_Idle:
+      strcpy(buf, "St_4_Idle");
       break;
-    case Main__St_4_Fail:
-      strcpy(buf, "St_4_Fail");
+    case Main__St_4_Active:
+      strcpy(buf, "St_4_Active");
       break;
     default:
       break;
@@ -284,21 +353,27 @@ char* string_of_Main__st_4(Main__st_4 x, char* buf) {
 }
 
 Main__st_3 Main__st_3_of_string(char* s) {
-  if ((strcmp(s, "St_3_Free")==0)) {
-    return Main__St_3_Free;
+  if ((strcmp(s, "St_3_T")==0)) {
+    return Main__St_3_T;
   };
-  if ((strcmp(s, "St_3_Fail")==0)) {
-    return Main__St_3_Fail;
+  if ((strcmp(s, "St_3_DT")==0)) {
+    return Main__St_3_DT;
+  };
+  if ((strcmp(s, "St_3_D")==0)) {
+    return Main__St_3_D;
   };
 }
 
 char* string_of_Main__st_3(Main__st_3 x, char* buf) {
   switch (x) {
-    case Main__St_3_Free:
-      strcpy(buf, "St_3_Free");
+    case Main__St_3_T:
+      strcpy(buf, "St_3_T");
       break;
-    case Main__St_3_Fail:
-      strcpy(buf, "St_3_Fail");
+    case Main__St_3_DT:
+      strcpy(buf, "St_3_DT");
+      break;
+    case Main__St_3_D:
+      strcpy(buf, "St_3_D");
       break;
     default:
       break;
@@ -307,21 +382,21 @@ char* string_of_Main__st_3(Main__st_3 x, char* buf) {
 }
 
 Main__st_2 Main__st_2_of_string(char* s) {
-  if ((strcmp(s, "St_2_Free")==0)) {
-    return Main__St_2_Free;
+  if ((strcmp(s, "St_2_Idle")==0)) {
+    return Main__St_2_Idle;
   };
-  if ((strcmp(s, "St_2_Fail")==0)) {
-    return Main__St_2_Fail;
+  if ((strcmp(s, "St_2_Active")==0)) {
+    return Main__St_2_Active;
   };
 }
 
 char* string_of_Main__st_2(Main__st_2 x, char* buf) {
   switch (x) {
-    case Main__St_2_Free:
-      strcpy(buf, "St_2_Free");
+    case Main__St_2_Idle:
+      strcpy(buf, "St_2_Idle");
       break;
-    case Main__St_2_Fail:
-      strcpy(buf, "St_2_Fail");
+    case Main__St_2_Active:
+      strcpy(buf, "St_2_Active");
       break;
     default:
       break;

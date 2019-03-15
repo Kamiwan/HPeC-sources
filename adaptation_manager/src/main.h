@@ -1,6 +1,6 @@
-/* --- Generated the 30/10/2018 at 9:38 --- */
-/* --- heptagon compiler, version 1.05.00 (compiled sun. oct. 7 16:30:53 CET 2018) --- */
-/* --- Command line: /home/gwen/.opam/4.04.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
+/* --- Generated the 15/3/2019 at 16:20 --- */
+/* --- heptagon compiler, version 1.05.00 (compiled mon. mar. 11 14:26:46 CET 2019) --- */
+/* --- Command line: /home/gwen/.opam/4.05.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
 
 #ifndef MAIN_H
 #define MAIN_H
@@ -26,21 +26,59 @@ void Main__pref_ver_task_step(Main__version_type task_ver, int current_texec,
                               Main__pref_ver_task_out* _out,
                               Main__pref_ver_task_mem* self);
 
+typedef struct Main__reqend_task_mem {
+  Main__st_2 ck;
+  int pnr;
+} Main__reqend_task_mem;
+
+typedef struct Main__reqend_task_out {
+  int r;
+  int e;
+} Main__reqend_task_out;
+
+void Main__reqend_task_reset(Main__reqend_task_mem* self);
+
+void Main__reqend_task_step(int act, Main__reqend_task_out* _out,
+                            Main__reqend_task_mem* self);
+
+typedef struct Main__detection_tracking_mem {
+  Main__st_4 ck;
+  Main__st_3 v_19;
+  int v_20;
+  int pnr_1;
+  Main__reqend_task_mem reqend_task_1;
+  Main__reqend_task_mem reqend_task;
+} Main__detection_tracking_mem;
+
+typedef struct Main__detection_tracking_out {
+  int det_r;
+  int det_e;
+  int track_r;
+  int track_e;
+} Main__detection_tracking_out;
+
+void Main__detection_tracking_reset(Main__detection_tracking_mem* self);
+
+void Main__detection_tracking_step(int dt_r, int dt_e, int ncc,
+                                   Main__detection_tracking_out* _out,
+                                   Main__detection_tracking_mem* self);
+
 typedef struct Main__main_mem {
-  Main__st_15 ck;
-  Main__st_14 ck_7;
-  Main__st_13 ck_10;
-  Main__st_12 ck_13;
-  Main__st_11 ck_16;
-  Main__st_10 ck_19;
-  Main__st_9 ck_22;
-  Main__st_8 ck_25;
-  Main__st_7 ck_28;
-  Main__st_6 ck_31;
-  Main__st_5 ck_34;
-  Main__st_4 ck_37;
-  Main__st_3 ck_39;
-  Main__st_2 ck_41;
+  Main__st_18 ck;
+  Main__st_17 ck_10;
+  Main__st_16 ck_13;
+  Main__st_15 ck_16;
+  Main__st_14 ck_19;
+  Main__st_13 ck_22;
+  Main__st_12 ck_25;
+  Main__st_11 ck_28;
+  Main__st_10 ck_31;
+  Main__st_9 ck_34;
+  Main__st_8 ck_37;
+  Main__st_7 ck_40;
+  Main__st_6 ck_42;
+  Main__st_5 ck_44;
+  int pnr_14;
   int pnr_13;
   int pnr_12;
   int pnr_11;
@@ -53,7 +91,6 @@ typedef struct Main__main_mem {
   int pnr_4;
   int pnr_3;
   int pnr_2;
-  int pnr_1;
   int pnr;
   int pref_ver_task_guarantee_12;
   int pref_ver_task_assume_12;
@@ -77,6 +114,7 @@ typedef struct Main__main_mem {
   int pref_ver_task_assume_9_1;
   int pref_ver_task_guarantee_10_1;
   int pref_ver_task_assume_10_1;
+  Main__detection_tracking_mem detection_tracking;
   Main__pref_ver_task_mem pref_ver_task_10;
   Main__pref_ver_task_mem pref_ver_task_9;
   Main__pref_ver_task_mem pref_ver_task_8;
@@ -127,6 +165,9 @@ typedef struct Main__main_out {
   int obj_occ;
   int obj_pref;
   int obj_tasks;
+  int err_1;
+  int err_2;
+  int err_3;
 } Main__main_out;
 
 void Main__main_reset(Main__main_mem* self);
@@ -142,8 +183,8 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                      int me_img_e, int sl_r, int sl_e, int oa_r, int oa_e,
                      int tl_r, int tl_e, int rs_r, int rs_e, int rb_r,
                      int rb_e, int rpl_r, int rpl_e, int dt_r, int dt_e,
-                     int trk_r, int trk_e, int f_1, int rp_1, int f_2,
-                     int rp_2, int f_3, int rp_3, Main__main_out* _out,
-                     Main__main_mem* self);
+                     int trk_r, int trk_e, int ncc, int f_1, int rp_1,
+                     int f_2, int rp_2, int f_3, int rp_3,
+                     Main__main_out* _out, Main__main_mem* self);
 
 #endif // MAIN_H
