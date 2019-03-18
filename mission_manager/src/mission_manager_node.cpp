@@ -56,7 +56,7 @@ ros::Subscriber obstacle_sub;
 ros::Publisher  nav_order_pub;
 
 ros::Publisher search_land_pub;
-ros::Publisher motion_estim_imu_pub;
+ros::Publisher stab_imu_pub;
 ros::Publisher obstacle_avoidance_pub;
 ros::Publisher detection_pub;
 /*********** Global variables ***********/ 
@@ -341,13 +341,13 @@ int main(int argc, char **argv)
    notify_from_MM_pub = boost::make_shared<ros::Publisher>(
       nh.advertise<std_msgs::Int32>("/notify_from_MM_topic", 1000));
 
-   nav_order_pub = nh.advertise<std_msgs::Int32>
+   nav_order_pub = nh.advertise<communication::nav_control>
             ("navigation/order", 10);
 
    search_land_pub = nh.advertise<std_msgs::Int32>
             ("/search_landing_area_mgt_topic", 10);
-   motion_estim_imu_pub = nh.advertise<std_msgs::Int32>
-            ("/motion_estim_imu_mgt_topic", 10);
+   stab_imu_pub = nh.advertise<std_msgs::Int32>
+            ("/stabilisation_imu_mgt_topic", 10);
    obstacle_avoidance_pub = nh.advertise<std_msgs::Int32>
             ("/obstacle_avoidance_mgt_topic", 10);
    detection_pub = nh.advertise<std_msgs::Int32>
@@ -417,51 +417,48 @@ void StaticScenario_1()
       ROS_INFO("Send TAKEOFF order!");
       communication::nav_control nav_order_msg;
       nav_order_msg.order     = "TAKEOFF"; 
-      nav_order_msg.altitude  = altitude + 10;
+      nav_order_msg.altitude  = altitude + 11;
 
       nav_order_pub.publish(nav_order_msg);
       step_1 = true;
    }
 
-   if(scenario_duration.toSec() > 30 && !step_2)
+   if(Compare( altitude, HOME_ALTITUDE+10, 0) && !step_2)
    {
-      ROS_INFO("Send GPS_MOVE order!");
+      ROS_INFO("GO TO RESEARCH AREA!");
       communication::nav_control nav_order_msg;
-      nav_order_msg.order        = "VELOCITY_MOVE"; 
-      nav_order_msg.vel_linear_x = 2;
-      nav_order_msg.distance     = 30;
+      nav_order_msg.order     = "GPS_MOVE"; 
+      nav_order_msg.altitude  = altitude;
+      nav_order_msg.latitude  = -35.363086;
+      nav_order_msg.longitude = 149.165250;
  
       nav_order_pub.publish(nav_order_msg);
       step_2 = true;
 
+      ROS_INFO("Application activation!");
       std_msgs::Int32 activation_msg;
       activation_msg.data = 1;
       search_land_pub.publish(activation_msg);
-      motion_estim_imu_pub.publish(activation_msg);
+      stab_imu_pub.publish(activation_msg);
       obstacle_avoidance_pub.publish(activation_msg);
       detection_pub.publish(activation_msg);
    }
 
-   if(scenario_duration.toSec() > 50 && !step_3)
+   if(CompareGpsPositions(latitude, -35.363086, longitude, 149.165250, 5) && !step_3)
    {
-      ROS_INFO("Send GPS_MOVE order!");
+      ROS_INFO("LOOKING FOR TARGET!");
       communication::nav_control nav_order_msg;
       nav_order_msg.order     = "GPS_MOVE"; 
       nav_order_msg.altitude  = altitude;
-      nav_order_msg.latitude  = -35.363661;
-      nav_order_msg.longitude = 149.165030;
-
-      //wpTemp.lat=-35.362661; wpTemp.lon=149.165830;
-	   //vectTemp.push_back(wpTemp);
-	   //wpTemp.lat=-35.363261; wpTemp.lon=149.165830;
-	   //vectTemp.push_back(wpTemp);
-	   //wpTemp.lat=-35.363261; wpTemp.lon=149.165230;
-
+      nav_order_msg.latitude  = -35.362823;
+      nav_order_msg.longitude = 149.165586;
+ 
       nav_order_pub.publish(nav_order_msg);
       step_3 = true;
    }
 
-   if(scenario_duration.toSec() > 70 && !step_4)
+   /*
+   if(scenario_duration.toSec() > 90 && !step_4)
    {
       ROS_INFO("Send GPS_MOVE order!");
       communication::nav_control nav_order_msg;
@@ -470,18 +467,13 @@ void StaticScenario_1()
       nav_order_msg.latitude  = -35.363261;
       nav_order_msg.longitude = 149.165030;
 
-      //wpTemp.lat=-35.362661; wpTemp.lon=149.165830;
-	   //vectTemp.push_back(wpTemp);
-	   //wpTemp.lat=-35.363261; wpTemp.lon=149.165830;
-	   //vectTemp.push_back(wpTemp);
-	   //wpTemp.lat=-35.363261; wpTemp.lon=149.165230;
 
       nav_order_pub.publish(nav_order_msg);
       step_4 = true;
    }
 
 
-   if(scenario_duration.toSec() > 90 && !step_5)
+   if(scenario_duration.toSec() > 110 && !step_5)
    {
       ROS_INFO("Send LAND order!");
       communication::nav_control nav_order_msg;
@@ -490,6 +482,18 @@ void StaticScenario_1()
       nav_order_pub.publish(nav_order_msg);
       step_5 = true;
    }
+   */
 
 }
 
+
+bool Compare(double value1, double value2, int precision)
+{
+    return std::abs(value1 - value2) < std::pow(10, -precision);
+}
+
+bool CompareGpsPositions(double latitude_1, double latitude_2, 
+      double longitude_1, double longitude_2, int precision)
+{
+   return Compare(latitude_1, latitude_2, precision) && Compare( longitude_1, longitude_2, precision);
+}

@@ -59,6 +59,7 @@
 #define VERBOSITY_MEDIUM    2
 #define VERBOSITY_HIGH      3
 
+#define HOME_ALTITUDE 603.4486
 
 void sensor_cam_callback(const sensor_msgs::Image::ConstPtr &img_msg);
 void light_sensor_callback(const sensor_msgs::Illuminance::ConstPtr &light_msg);
@@ -74,6 +75,10 @@ void   init_cpu_load();
 double current_cpu_value();
 
 void StaticScenario_1();
+
+bool Compare(double value1, double value2, int precision);
+bool CompareGpsPositions(double latitude_1, double latitude_2, 
+        double longitude_1, double longitude_2, int precision);
 
 /*********** Global variables ***********/ 
 extern int	    verbose;
@@ -98,7 +103,7 @@ extern ros::Subscriber obstacle_sub;
 extern ros::Publisher  nav_order_pub;
 
 extern ros::Publisher search_land_pub;
-extern ros::Publisher motion_estim_imu_pub;
+extern ros::Publisher stab_imu_pub;
 extern ros::Publisher obstacle_avoidance_pub;
 extern ros::Publisher detection_pub;
 
