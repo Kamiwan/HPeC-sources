@@ -51,26 +51,3 @@ int main(int argc, char **argv)
     return 0;
 }
 
-
-
-    //EM, Move UAV with velocity commands
-    /*geometry_msgs::TwistStamped vel_msg;
-    vel_msg.header.stamp = ros::Time::now();
-    vel_msg.header.frame_id = "fcu";
-    vel_msg.twist.linear.y = 2;
-
-    ROS_INFO("SENDING VELOCITY COMMANDS");
-    for(int i = 100; ros::ok() && i > 0; --i){
-        //local_pos_pub.publish(pose);
-        //global_pos_pub.publish(target);
-        if(i<50)
-            vel_msg.twist.linear.y = -2;
-
-        cmd_vel_pub.publish(vel_msg);
-        ros::spinOnce();
-        rate.sleep();
-    }
-
-    ROS_INFO("NEW GLOBAL position published");*/
-
-    

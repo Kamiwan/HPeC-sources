@@ -48,6 +48,8 @@
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/GlobalPositionTarget.h>
 
+#include <tld_msgs/BoundingBox.h>
+
 #include "communication/nav_control.h"
 
 #define PI          3.14159265
@@ -72,8 +74,11 @@ class NavCommand
     ros::Subscriber pos_sub_;
     ros::Subscriber compass_heading_sub_;
 
-    //Topic subscriber to get orders from the navigation USER
+    // Topic subscriber to get orders from the navigation USER
     ros::Subscriber nav_order_sub_;
+
+    // Topic subscriber to get target object position from detection_tracking ROS node
+    ros::Subscriber tracked_object_pos_sub_;
 
     // Topic publishers to send new movement order
     ros::Publisher local_pos_pub_;
@@ -115,8 +120,13 @@ class NavCommand
         INVALID_ORDER
     };
 
-    //Yaw is in radian, so I give a default value outside -3.14 < val < 3.14
-    //Because values 0 and -1 can be relevant
+    // Attributes to follow a target (TRACKING_MOVE)
+    int target_x_, target_y_;
+    int previous_target_x_, previous_target_y_;
+    int delta_target_x_ , delta_target_y_;
+
+    // Yaw is in radian, so I give a default value outside -3.14 < val < 3.14
+    // Because values 0 and -1 can be relevant
     static constexpr double kDefaultNoYaw = 42.0;
 
     //!\ You must adapt these values to your context
@@ -133,6 +143,7 @@ class NavCommand
     void CompassCallback(const std_msgs::Float64::ConstPtr& msg);
     void GpsCallback(const sensor_msgs::NavSatFix::ConstPtr& position);
     void ControlCallback(const communication::nav_control::ConstPtr& next_order);
+    void TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target);
 
     void LandOrder();
     void TakeoffOrder(double target_altitude);

@@ -81,9 +81,10 @@ bool CompareGpsPositions(double latitude_1, double latitude_2,
         double longitude_1, double longitude_2, int precision);
 
 /*********** Global variables ***********/ 
-extern int	    verbose;
+extern int	verbose;
 extern double   roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw, delta_roll, delta_pitch, delta_yaw;
 extern double   altitude, longitude, latitude, illuminance;
+extern double   target_latitude, target_longitude;
 extern double   ang_vel_x, ang_vel_y, ang_vel_z, lin_vel_x, lin_vel_y, lin_vel_z;
 extern float    battery_level;
 extern bool     first_time_imu;
@@ -97,11 +98,12 @@ extern ros::Subscriber imu_sub;
 extern ros::Subscriber bat_sub;
 extern ros::Subscriber vel_sub;
 extern ros::Subscriber pos_sub;
-extern ros::Subscriber achievable_sub;
 extern ros::Subscriber obstacle_sub;
+extern ros::Subscriber achievable_sub;
 
 extern ros::Publisher  nav_order_pub;
 
+// Publishers to bypass the Adaptation Manager for Static Scenario
 extern ros::Publisher search_land_pub;
 extern ros::Publisher stab_imu_pub;
 extern ros::Publisher obstacle_avoidance_pub;

@@ -38,6 +38,11 @@ NavCommand::NavCommand(ros::NodeHandle* nodehandle):nh_(*nodehandle)
     destination_altitude_  = 0.0;
     destination_latitude_  = 0.0;
     destination_longitude_ = 0.0;
+
+    previous_target_x_ = 0;
+    previous_target_y_ = 0;
+    target_x_   = 0;
+    target_y_   = 0;
     
     ros::Rate rate(20.0);
 
@@ -66,6 +71,8 @@ void NavCommand::InitializeSubscribers()
             ("mavros/global_position/compass_hdg", 10, &NavCommand::CompassCallback, this);
     nav_order_sub_ = nh_.subscribe<communication::nav_control>
             ("navigation/order", 10, &NavCommand::ControlCallback, this);     
+    tracked_object_pos_sub_ = nh_.subscribe<tld_msgs::BoundingBox>
+            ("tld_tracked_object", 10, &NavCommand::TrackingCallback, this);  
 }
 
 void NavCommand::InitializePublishers()
@@ -137,6 +144,29 @@ void NavCommand::GpsCallback(const sensor_msgs::NavSatFix::ConstPtr &position)
    //ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",current_altitude_, current_longitude_, current_latitude_);
 }
 
+
+
+
+/*******************************************************************
+ * TrackingCallback
+ * Author : EM 
+ * @param target, target bounding box properties
+ * 
+*******************************************************************/
+void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
+{
+    if(target->confidence > 0)
+    {
+        previous_target_x_ = target_x_;
+        previous_target_y_ = target_y_;
+
+        target_x_   = target->x;
+        target_y_   = target->y;
+
+        delta_target_x_ = target_x_ - previous_target_x_;
+        delta_target_y_ = target_y_ - previous_target_y_;
+    } 
+}
 
 /*******************************************************************
  * ControlCallback
@@ -393,7 +423,6 @@ void NavCommand::setArmThrottle()
         {
             ROS_ERROR("Vehicle arming FAILED");
         }
-        
     }
 }
 
@@ -418,7 +447,7 @@ double NavCommand::ComputeHeadingYaw(double target_altitude,
     double rad_curr_lat  = current_latitude_  * (PI / 180);
     double rad_curr_long = current_longitude_ * (PI / 180);
 
-    double d_lat 	= target_altitude - rad_curr_lat;
+    double d_lat 	= target_altitude  - rad_curr_lat;
     double d_long 	= target_longitude - rad_curr_long;
     
     double x = std::cos(target_latitude) * std::sin(d_long);
@@ -426,8 +455,12 @@ double NavCommand::ComputeHeadingYaw(double target_altitude,
         (std::sin(rad_curr_lat) * std::cos(target_latitude) * std::cos(d_long) );
     double absolute_yaw = std::atan2(y,x);
     
-    ROS_INFO_STREAM("ABSOLUTE YAW (rad) = " << absolute_yaw); 
+    ROS_INFO_STREAM("ABSOLUTE YAW    (rad) = " << absolute_yaw); 
     ROS_INFO_STREAM("CURRENT HEADING (deg) = " << current_heading_.data);
 
     return absolute_yaw;
 }
+
+
+
+

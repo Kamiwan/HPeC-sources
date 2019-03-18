@@ -35,6 +35,7 @@
 int	 verbose;
 double roll, pitch, yaw, prev_roll, prev_pitch, prev_yaw, delta_roll, delta_pitch, delta_yaw;
 double altitude, longitude, latitude, illuminance;
+double target_latitude, target_longitude;
 double ang_vel_x, ang_vel_y, ang_vel_z, lin_vel_x, lin_vel_y, lin_vel_z;
 float  battery_level;
 bool   first_time_imu;
@@ -344,6 +345,7 @@ int main(int argc, char **argv)
    nav_order_pub = nh.advertise<communication::nav_control>
             ("navigation/order", 10);
 
+   // EM : Publishers to bypass the Adaptation Manager for Static Scenario
    search_land_pub = nh.advertise<std_msgs::Int32>
             ("/search_landing_area_mgt_topic", 10);
    stab_imu_pub = nh.advertise<std_msgs::Int32>
@@ -431,6 +433,8 @@ void StaticScenario_1()
       nav_order_msg.altitude  = altitude;
       nav_order_msg.latitude  = -35.363086;
       nav_order_msg.longitude = 149.165250;
+      target_latitude         = nav_order_msg.latitude;
+      target_longitude        = nav_order_msg.longitude;
  
       nav_order_pub.publish(nav_order_msg);
       step_2 = true;
@@ -444,7 +448,7 @@ void StaticScenario_1()
       detection_pub.publish(activation_msg);
    }
 
-   if(CompareGpsPositions(latitude, -35.363086, longitude, 149.165250, 5) && !step_3)
+   if(CompareGpsPositions(latitude, target_latitude, longitude, target_longitude, 5) && !step_3)
    {
       ROS_INFO("LOOKING FOR TARGET!");
       communication::nav_control nav_order_msg;
@@ -452,6 +456,8 @@ void StaticScenario_1()
       nav_order_msg.altitude  = altitude;
       nav_order_msg.latitude  = -35.362823;
       nav_order_msg.longitude = 149.165586;
+      target_latitude         = nav_order_msg.latitude;
+      target_longitude        = nav_order_msg.longitude;
  
       nav_order_pub.publish(nav_order_msg);
       step_3 = true;
