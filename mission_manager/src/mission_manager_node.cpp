@@ -503,3 +503,55 @@ bool CompareGpsPositions(double latitude_1, double latitude_2,
 {
    return Compare(latitude_1, latitude_2, precision) && Compare( longitude_1, longitude_2, precision);
 }
+
+
+
+
+
+/*******************************************************************
+ * SetWaypointsAreaCovering
+ * Author : EM 
+ * @param lata latb latc latd longa longb longc longd, (all in radians)
+ *    B_________C          B    B ------> C           C  
+ *    | Area   |           ^                          v
+ *    |  to    |           |                    x<----x
+ *    | Cover  |           |                    v   
+ *    |________|     A     A                    x--->x   A <-----D
+ *    A        D                                     v
+ *                                                   D
+ *                  [        Step 1       ][   Step 2   ][ Step 3  ]
+ * 
+ *******************************************************************/
+void SetWaypointsAreaCovering(double latitude_a, double latitude_b, 
+        double latitude_c, double latitude_d, double longitude_a, double longitude_b, 
+        double longitude_c, double longitude_d)
+{
+   std::vector<communication::nav_control> area_path;
+
+   communication::nav_control next_waypoint;
+   next_waypoint.order     = "GPS_MOVE";
+   next_waypoint.altitude  = altitude;
+
+   // EM Step 1: Go to A, then B, then C
+   next_waypoint.latitude  = latitude_a;
+   next_waypoint.longitude = longitude_a;
+   area_path.push_back(next_waypoint);
+   
+   next_waypoint.latitude  = latitude_b;
+   next_waypoint.longitude = longitude_b;
+   area_path.push_back(next_waypoint);
+   
+   next_waypoint.latitude  = latitude_c;
+   next_waypoint.longitude = longitude_c;
+   area_path.push_back(next_waypoint);
+
+   // EM Step 2: compute intermediate WPs before to go to D to cover the whole area
+
+
+
+}
+
+
+
+
+

@@ -447,7 +447,7 @@ double NavCommand::ComputeHeadingYaw(double target_altitude,
     double rad_curr_lat  = current_latitude_  * (PI / 180);
     double rad_curr_long = current_longitude_ * (PI / 180);
 
-    double d_lat 	= target_altitude  - rad_curr_lat;
+    double d_lat 	= target_latitude  - rad_curr_lat;
     double d_long 	= target_longitude - rad_curr_long;
     
     double x = std::cos(target_latitude) * std::sin(d_long);

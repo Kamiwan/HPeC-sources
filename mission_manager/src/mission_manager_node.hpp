@@ -24,8 +24,8 @@
  *    the Adaptation Manager. A shared memory is used for IPC.
  *************************************************************************************/
 
-#ifndef MISSION_MANAGER_NODE_H
-#define MISSION_MANAGER_NODE_H
+#ifndef MISSION_MANAGER_NODE_HPP
+#define MISSION_MANAGER_NODE_HPP
 
 #include <ros/ros.h>
 #include <boost/thread.hpp>
@@ -33,6 +33,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "std_msgs/String.h"
 #include "std_msgs/Int32.h"
@@ -50,7 +51,7 @@
 #include "communication/nav_control.h"
 
 #include "comm_shared_memory.hpp" //EM, shared_memory_lib header
-
+#include "pixel_to_xy_gps_position.hpp" //EM, tools for camera to position data
 
 //EM, Verbosity levels
 #define VERBOSITY_DEFAULT   0
@@ -79,6 +80,11 @@ void StaticScenario_1();
 bool Compare(double value1, double value2, int precision);
 bool CompareGpsPositions(double latitude_1, double latitude_2, 
         double longitude_1, double longitude_2, int precision);
+
+void SetWaypointsAreaCovering(double latitude_a, double latitude_b, 
+        double latitude_c, double latitude_d, double longitude_a, double longitude_b, 
+        double longitude_c, double longitude_d);
+
 
 /*********** Global variables ***********/ 
 extern int	verbose;
@@ -109,7 +115,8 @@ extern ros::Publisher stab_imu_pub;
 extern ros::Publisher obstacle_avoidance_pub;
 extern ros::Publisher detection_pub;
 
-
+// EM, TODO: Work in Progress, variables below will not stay like this
+// Used for static scenario
 bool    step_1;
 bool    step_2;
 bool    step_3;
