@@ -34,6 +34,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <queue>
 
 #include "std_msgs/String.h"
 #include "std_msgs/Int32.h"
@@ -85,7 +86,7 @@ bool Compare(double value1, double value2, int precision);
 bool CompareGpsPositions(double latitude_1, double latitude_2, 
         double longitude_1, double longitude_2, int precision);
 
-void SetWaypointsAreaCovering(double latitude_a, double latitude_b, 
+std::queue<communication::nav_control> SetWaypointsAreaCovering(double latitude_a, double latitude_b, 
         double latitude_c, double latitude_d, double longitude_a, double longitude_b, 
         double longitude_c, double longitude_d);
 
@@ -127,5 +128,6 @@ bool    step_3;
 bool    step_4;
 bool    step_5;
 
+std::queue<communication::nav_control> area_cover_path;
 
 #endif

@@ -427,20 +427,22 @@ void StaticScenario_1()
 
    if(Compare( altitude, HOME_ALTITUDE+10, 0) && !step_2)
    {
-      // EM, Predefined area        A           B           C           D
-      SetWaypointsAreaCovering(-35.363086,  -35.363086, -35.362561, -35.362561, 
-                               149.165250,  149.165923, 149.165923, 149.165250);
+      // EM, Predefined area                          A           B           C           D
+      area_cover_path = SetWaypointsAreaCovering(-35.363086,  -35.363086, -35.362561, -35.362561, 
+                                                 149.165250,  149.165923, 149.165923, 149.165250);
 
       ROS_INFO("GO TO RESEARCH AREA!");
       communication::nav_control nav_order_msg;
-      nav_order_msg.order     = "GPS_MOVE"; 
-      nav_order_msg.altitude  = altitude;
-      nav_order_msg.latitude  = -35.363086;
-      nav_order_msg.longitude = 149.165250;
+      nav_order_msg = area_cover_path.front(); 
+      ROS_INFO_STREAM("Nav order = " << nav_order_msg.order 
+                     << " ; altitude = " << nav_order_msg.altitude 
+                     << " ; latitude = " << nav_order_msg.latitude
+                     << " ; longitude = " << nav_order_msg.longitude);
+
+      nav_order_pub.publish(nav_order_msg);
       target_latitude         = nav_order_msg.latitude;
       target_longitude        = nav_order_msg.longitude;
- 
-      //nav_order_pub.publish(nav_order_msg);
+
       step_2 = true;
 
       ROS_INFO("Application activation!");
@@ -452,19 +454,21 @@ void StaticScenario_1()
       detection_pub.publish(activation_msg);
    }
 
-   if(CompareGpsPositions(latitude, target_latitude, longitude, target_longitude, 5) && !step_3)
+   if(CompareGpsPositions(latitude, target_latitude, longitude, target_longitude, 5) && !area_cover_path.empty())
    {
-      ROS_INFO("LOOKING FOR TARGET!");
-      communication::nav_control nav_order_msg;
-      nav_order_msg.order     = "GPS_MOVE"; 
-      nav_order_msg.altitude  = altitude;
-      nav_order_msg.latitude  = -35.362823;
-      nav_order_msg.longitude = 149.165586;
-      target_latitude         = nav_order_msg.latitude;
-      target_longitude        = nav_order_msg.longitude;
- 
-      nav_order_pub.publish(nav_order_msg);
-      step_3 = true;
+      area_cover_path.pop(); // FiFo: remove the last element used from the queue
+      if(area_cover_path.empty())
+      {
+         ROS_INFO("AREA COVERING COMPLETE");
+      } else
+      {
+         ROS_INFO("NEXT STEP OF AREA COVERING");
+         communication::nav_control nav_order_msg;
+         nav_order_msg = area_cover_path.front(); 
+         nav_order_pub.publish(nav_order_msg);
+         target_latitude         = nav_order_msg.latitude;
+         target_longitude        = nav_order_msg.longitude;
+      }
    }
 }
 
@@ -497,11 +501,11 @@ bool CompareGpsPositions(double latitude_1, double latitude_2,
  * 
  * x is an intermediate GPS position
  *****************************************************************************/
-void SetWaypointsAreaCovering(double latitude_a, double latitude_b, 
+std::queue<communication::nav_control> SetWaypointsAreaCovering(double latitude_a, double latitude_b, 
         double latitude_c, double latitude_d, double longitude_a, double longitude_b, 
         double longitude_c, double longitude_d)
 {
-   std::vector<communication::nav_control> area_path;
+   std::queue<communication::nav_control> area_path;
 
    communication::nav_control next_waypoint;
    next_waypoint.order     = "GPS_MOVE";
@@ -510,20 +514,20 @@ void SetWaypointsAreaCovering(double latitude_a, double latitude_b,
    // EM Step 1: Go to A, then B, then C
    next_waypoint.latitude  = latitude_a;
    next_waypoint.longitude = longitude_a;
-   area_path.push_back(next_waypoint);
+   area_path.push(next_waypoint);
    
    next_waypoint.latitude  = latitude_b;
    next_waypoint.longitude = longitude_b;
-   area_path.push_back(next_waypoint);
+   area_path.push(next_waypoint);
    
    next_waypoint.latitude  = latitude_c;
    next_waypoint.longitude = longitude_c;
-   area_path.push_back(next_waypoint);
+   area_path.push(next_waypoint);
 
    // EM Step 2: compute intermediate WPs before to go to D to cover the whole area
    // Preliminary computations
-   double delta_lat_area   = std::abs(latitude_c  - latitude_a);
-   double delta_long_area  = std::abs(longitude_c - longitude_a);
+   double delta_lat_area  = std::abs(latitude_c  - latitude_a);
+   double delta_long_area = std::abs(longitude_c - longitude_a);
 
    double x=0,y=0; //Lenghts in meters to know area dimensions
    TwoGpsPositionToXY(latitude_a * PI/180, latitude_c * PI/180, longitude_a * PI/180, longitude_c * PI/180, x, y);
@@ -550,7 +554,7 @@ void SetWaypointsAreaCovering(double latitude_a, double latitude_b,
       // We are going down (longitude change)
       next_waypoint.latitude  = last_latitude;
       next_waypoint.longitude = last_longitude - delta_long_step;
-      area_path.push_back(next_waypoint);
+      area_path.push(next_waypoint);
       last_latitude  = next_waypoint.latitude;
       last_longitude = next_waypoint.longitude;
 
@@ -562,7 +566,7 @@ void SetWaypointsAreaCovering(double latitude_a, double latitude_b,
       else
          next_waypoint.latitude = latitude_c;
 
-      area_path.push_back(next_waypoint);
+      area_path.push(next_waypoint);
       last_latitude  = next_waypoint.latitude;
       last_longitude = next_waypoint.longitude;
    }
@@ -570,20 +574,21 @@ void SetWaypointsAreaCovering(double latitude_a, double latitude_b,
    {  // We add an extra position if the last intermediate position is not the corner D
       next_waypoint.latitude  = latitude_d;
       next_waypoint.longitude = longitude_d;
-      area_path.push_back(next_waypoint);
+      area_path.push(next_waypoint);
    }
 
    // EM Step 3: go back to A
    next_waypoint.latitude  = latitude_a;
    next_waypoint.longitude = longitude_a;
-   area_path.push_back(next_waypoint);
+   area_path.push(next_waypoint);
 
-   ROS_INFO("Summary of all Waypoint covering ");
-   for(size_t i = 0; i < area_path.size(); i++)
-      std::cout << "WP[" << i << "]: latitude = " << std::setprecision (10) << area_path[i].latitude 
-                << " ; longitude = " << area_path[i].longitude << std::endl;
-   
+   // Cannot perform random access with a queue
+   //ROS_INFO("Summary of all Waypoint to cover the area "); 
+   //for(size_t i = 0; i < area_path.size(); i++)
+   //   std::cout << "WP[" << i << "]: latitude = " << std::setprecision (10) << area_path[i].latitude 
+   //             << " ; longitude = " << area_path[i].longitude << std::endl;
 
+   return area_path;
 }
 
 
