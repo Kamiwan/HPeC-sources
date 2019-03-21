@@ -427,6 +427,9 @@ void StaticScenario_1()
 
    if(Compare( altitude, HOME_ALTITUDE+10, 0) && !step_2)
    {
+      SetWaypointsAreaCovering(-35.363086, -35.362561, -35.362561, -35.363086, 
+                               149.165250, 149.165250, 149.165923, 149.165923);
+
       ROS_INFO("GO TO RESEARCH AREA!");
       communication::nav_control nav_order_msg;
       nav_order_msg.order     = "GPS_MOVE"; 
@@ -436,7 +439,7 @@ void StaticScenario_1()
       target_latitude         = nav_order_msg.latitude;
       target_longitude        = nav_order_msg.longitude;
  
-      nav_order_pub.publish(nav_order_msg);
+      //nav_order_pub.publish(nav_order_msg);
       step_2 = true;
 
       ROS_INFO("Application activation!");
@@ -506,12 +509,10 @@ bool CompareGpsPositions(double latitude_1, double latitude_2,
 
 
 
-
-
-/*******************************************************************
+/******************************************************************************
  * SetWaypointsAreaCovering
  * Author : EM 
- * @param lata latb latc latd longa longb longc longd, (all in radians)
+ * @param lata latb latc latd longa longb longc longd, (all in degrees!)
  *    B_________C          B    B ------> C           C  
  *    | Area   |           ^                          v
  *    |  to    |           |                    x<----x
@@ -521,7 +522,7 @@ bool CompareGpsPositions(double latitude_1, double latitude_2,
  *                                                   D
  *                  [        Step 1       ][   Step 2   ][ Step 3  ]
  * 
- *******************************************************************/
+ *****************************************************************************/
 void SetWaypointsAreaCovering(double latitude_a, double latitude_b, 
         double latitude_c, double latitude_d, double longitude_a, double longitude_b, 
         double longitude_c, double longitude_d)
@@ -546,8 +547,24 @@ void SetWaypointsAreaCovering(double latitude_a, double latitude_b,
    area_path.push_back(next_waypoint);
 
    // EM Step 2: compute intermediate WPs before to go to D to cover the whole area
+   double delta_lat_area   = std::abs(latitude_c  - latitude_a);
+   double delta_long_area  = std::abs(longitude_c - longitude_a);
 
+   double x=0,y=0; //Lenghts in meters to know area dimensions
+   TwoGpsPositionToXY(latitude_a * PI/180, latitude_c* PI/180, longitude_a* PI/180, longitude_c* PI/180, x, y);
+   ROS_INFO_STREAM("X and Y values = " << x << " m; " << y << " m");
 
+   double hfov_lenght = HorizontalFOVLenght(altitude - HOME_ALTITUDE, HFOV_ANGLE_CAMERA);
+   double vfov_lenght = VerticalFOVLenght(hfov_lenght, PIXEL_CAMERA_WIDTH,  PIXEL_CAMERA_HEIGHT);
+   ROS_INFO_STREAM("HFOV = " << hfov_lenght << " m ; VFOV = " << vfov_lenght << " m");
+
+   int nb_step_x = x / vfov_lenght; //only need integer part, so int
+   int nb_step_y = y / hfov_lenght;
+   ROS_INFO_STREAM("nb_step_x = " << nb_step_x << " ; nb_step_y = " << nb_step_y);
+
+   double delta_lat_step  = delta_lat_area   / nb_step_x;
+   double delta_long_step = delta_long_area  / nb_step_y;
+   ROS_INFO_STREAM("delta_lat_step = " << delta_lat_step << " degrees; delta_long_step = " << delta_long_step << " degrees");
 
 }
 

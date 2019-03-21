@@ -60,7 +60,11 @@
 #define VERBOSITY_MEDIUM    2
 #define VERBOSITY_HIGH      3
 
-#define HOME_ALTITUDE 603.4486
+#define HOME_ALTITUDE       603.4486
+#define PI                  3.14159265
+#define HFOV_ANGLE_CAMERA   1.0472
+#define PIXEL_CAMERA_WIDTH  640
+#define PIXEL_CAMERA_HEIGHT 480
 
 void sensor_cam_callback(const sensor_msgs::Image::ConstPtr &img_msg);
 void light_sensor_callback(const sensor_msgs::Illuminance::ConstPtr &light_msg);
