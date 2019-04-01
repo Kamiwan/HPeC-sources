@@ -26,11 +26,21 @@
 #ifndef PIXEL_TO_XY_GPS_POSITION_HPP
 #define PIXEL_TO_XY_GPS_POSITION_HPP
 
+static constexpr double kMetersPerLatDegree = 111111.1;
+static constexpr double kEarthRadiusMeters  = 6378137;
+
 double  HorizontalFOVLenght(double relative_altitude, double angle_fov_camera);
 double  VerticalFOVLenght(double hfov_lenght, double cam_width_pixel,  double cam_height_pixel);
-void    TwoGpsPositionToXY(double latitude_1, double latitude_2, 
+void    DistanceTwoGpsPositions(double latitude_1, double latitude_2, 
                             double longitude_1, double longitude_2, 
                             double & x, double & y);
-                            
+
+void    XYinPicToGpsPosition(double x, double y, 
+                            double current_latitude, double current_longitude,
+                            double hfov_lenght, int cam_width_pixel, int cam_height_pixel,
+                            double & latitude, double & longitude);
+
+double  XYLenghtsToHypotenuse(double x_lenght, double y_lenght);
+
 
 #endif

@@ -88,7 +88,7 @@ bool CompareGpsPositions(double latitude_1, double latitude_2,
 
 std::queue<communication::nav_control> SetWaypointsAreaCovering(double latitude_a, double latitude_b, 
         double latitude_c, double latitude_d, double longitude_a, double longitude_b, 
-        double longitude_c, double longitude_d);
+        double longitude_c, double longitude_d, double current_altitude);
 
 
 /*********** Global variables ***********/ 

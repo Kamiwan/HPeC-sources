@@ -123,7 +123,11 @@ class NavCommand
     // Attributes to follow a target (TRACKING_MOVE)
     int target_x_, target_y_;
     int previous_target_x_, previous_target_y_;
-    int delta_target_x_ , delta_target_y_;
+    int delta_target_x_, delta_target_y_;
+    double target_time_, previous_target_time_, delta_time_;
+    float  target_confidence_, prev_target_confidence_;
+    bool   is_target_;
+    
 
     // Yaw is in radian, so I give a default value outside -3.14 < val < 3.14
     // Because values 0 and -1 can be relevant
@@ -149,11 +153,12 @@ class NavCommand
     void TakeoffOrder(double target_altitude);
     void GpsMoveOrder(double target_altitude, double target_latitude, double target_longitude,  double yaw = kDefaultNoYaw);
     void VelMoveOrder(double vel_linear_x, double vel_linear_y, double vel_linear_z, int distance);
+    void TrackingOrder();
     
     void setGuidedMode();
     void setArmThrottle();
 
-    double ComputeHeadingYaw(double target_altitude, double target_latitude, double target_longitude);
+    double   ComputeHeadingYaw(double target_altitude, double target_latitude, double target_longitude);
     NavOrder ResolveNavOrder(std::string input);
 
 };

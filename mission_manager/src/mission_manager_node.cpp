@@ -429,7 +429,8 @@ void StaticScenario_1()
    {
       // EM, Predefined area                          A           B           C           D
       area_cover_path = SetWaypointsAreaCovering(-35.363086,  -35.363086, -35.362561, -35.362561, 
-                                                 149.165250,  149.165923, 149.165923, 149.165250);
+                                                 149.165250,  149.165923, 149.165923, 149.165250,
+                                                 altitude); 
 
       ROS_INFO("GO TO RESEARCH AREA!");
       communication::nav_control nav_order_msg;
@@ -503,13 +504,13 @@ bool CompareGpsPositions(double latitude_1, double latitude_2,
  *****************************************************************************/
 std::queue<communication::nav_control> SetWaypointsAreaCovering(double latitude_a, double latitude_b, 
         double latitude_c, double latitude_d, double longitude_a, double longitude_b, 
-        double longitude_c, double longitude_d)
+        double longitude_c, double longitude_d, double current_altitude)
 {
    std::queue<communication::nav_control> area_path;
 
    communication::nav_control next_waypoint;
    next_waypoint.order     = "GPS_MOVE";
-   next_waypoint.altitude  = altitude;
+   next_waypoint.altitude  = current_altitude;
 
    // EM Step 1: Go to A, then B, then C
    next_waypoint.latitude  = latitude_a;
@@ -530,15 +531,15 @@ std::queue<communication::nav_control> SetWaypointsAreaCovering(double latitude_
    double delta_long_area = std::abs(longitude_c - longitude_a);
 
    double x=0,y=0; //Lenghts in meters to know area dimensions
-   TwoGpsPositionToXY(latitude_a * PI/180, latitude_c * PI/180, longitude_a * PI/180, longitude_c * PI/180, x, y);
+   DistanceTwoGpsPositions(latitude_a * PI/180, latitude_c * PI/180, longitude_a * PI/180, longitude_c * PI/180, x, y);
    ROS_INFO_STREAM("X and Y values = " << x << " m; " << y << " m");
 
-   double hfov_lenght = HorizontalFOVLenght(altitude - HOME_ALTITUDE, HFOV_ANGLE_CAMERA);
+   double hfov_lenght = HorizontalFOVLenght(current_altitude - HOME_ALTITUDE, HFOV_ANGLE_CAMERA);
    double vfov_lenght = VerticalFOVLenght(hfov_lenght, PIXEL_CAMERA_WIDTH,  PIXEL_CAMERA_HEIGHT);
    ROS_INFO_STREAM("HFOV = " << hfov_lenght << " m ; VFOV = " << vfov_lenght << " m");
 
-   int nb_step_x = x / vfov_lenght; //only need integer part, so int
-   int nb_step_y = y / hfov_lenght;
+   int nb_step_x = std::ceil( x / vfov_lenght); //only need integer part, so int
+   int nb_step_y = std::ceil( y / hfov_lenght);
    ROS_INFO_STREAM("nb_step_x = " << nb_step_x << " ; nb_step_y = " << nb_step_y);
 
    double delta_lat_step  = delta_lat_area  / nb_step_x;
@@ -570,12 +571,12 @@ std::queue<communication::nav_control> SetWaypointsAreaCovering(double latitude_
       last_latitude  = next_waypoint.latitude;
       last_longitude = next_waypoint.longitude;
    }
-   if(last_latitude != latitude_d || last_longitude != longitude_d)
+   /*if(last_latitude != latitude_d || last_longitude != longitude_d)
    {  // We add an extra position if the last intermediate position is not the corner D
       next_waypoint.latitude  = latitude_d;
       next_waypoint.longitude = longitude_d;
       area_path.push(next_waypoint);
-   }
+   }*/
 
    // EM Step 3: go back to A
    next_waypoint.latitude  = latitude_a;

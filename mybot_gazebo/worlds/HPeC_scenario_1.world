@@ -234,47 +234,39 @@
       </include>
     </model>
 
-     <!--model name="Cube_Target">
-      <include>
-        <uri>model:///Gazebo/Cube_Target</uri>
-        <pose>3 3 1 0 0 0 </pose>
-        <name>"Cube_Target"</name>
-      </include>
-    </model-->
-
 <!-- FOR GAZEBO 8 OR HIGHER  -->
 <actor name="animated_box2"> 
     
       <include>
         <uri>model:///Gazebo/Cube_Target</uri>
-        <pose>6 6 1 0 0 0 </pose>
+        <pose>2 2 1 0 0 -1.5704 </pose>
         <name>"Cube_Target2"</name>
       </include>
     
         <script>
           <loop>true</loop>
-          <delay_start>0.000000</delay_start>
+          <delay_start>1.000000</delay_start>
           <auto_start>true</auto_start>
-        <trajectory id="0" type="square">
+        <trajectory id="0" type="walking">
           <waypoint>
-            <time>0.0</time>
-            <pose>50 -30 1 0 0 0</pose>
+            <time>1</time>
+            <pose>20 -10 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>3</time>
-            <pose>50 -32 1 0 0 0</pose>
+            <pose>20 -12 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>6</time>
-            <pose>48 -32 1 0 0 0</pose>
+            <pose>22 -12 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>9</time>
-            <pose>48 -30 1 0 0 0</pose>
+            <pose>22 -10 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>12</time>
-            <pose>50 -30 1 0 0 0</pose>
+            <pose>20 -10 1 0 0 0</pose>
           </waypoint>
         </trajectory>
       </script>

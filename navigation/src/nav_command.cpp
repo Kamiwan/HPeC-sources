@@ -43,10 +43,17 @@ NavCommand::NavCommand(ros::NodeHandle* nodehandle):nh_(*nodehandle)
     previous_target_y_ = 0;
     target_x_   = 0;
     target_y_   = 0;
+    target_time_ = 0.0;
+    previous_target_time_ = 0.0;
+    delta_time_ = 0.0;
+    target_confidence_ = 0.0;
+    prev_target_confidence_ = 0.0;
+    is_target_ = false;
     
     ros::Rate rate(20.0);
 
     // wait for FCU connection
+    ROS_INFO("NavCommand object wait for FCU connection!");
     while(ros::ok() && !current_state_.connected){
         ros::spinOnce();
         rate.sleep();
@@ -155,16 +162,22 @@ void NavCommand::GpsCallback(const sensor_msgs::NavSatFix::ConstPtr &position)
 *******************************************************************/
 void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
 {
-    if(target->confidence > 0)
+    is_target_ = (target->confidence > 0) ? true : false;
+    if(is_target_)
     {
         previous_target_x_ = target_x_;
         previous_target_y_ = target_y_;
-
+        previous_target_time_ = target_time_;
+        prev_target_confidence_ = target_confidence_;
+        
         target_x_   = target->x;
         target_y_   = target->y;
+        target_time_ = ros::Time::now().toSec(); 
+        target_confidence_ = target->confidence;
 
         delta_target_x_ = target_x_ - previous_target_x_;
         delta_target_y_ = target_y_ - previous_target_y_;
+        delta_time_     = target_time_ - previous_target_time_;
     } 
 }
 
@@ -216,7 +229,6 @@ void NavCommand::ControlCallback(const communication::nav_control::ConstPtr& nex
             {
                 ROS_ERROR("The UAV is not flying!");
                 //TakeoffOrder(next_order->altitude);
-                
             }
             break;
 
@@ -225,7 +237,14 @@ void NavCommand::ControlCallback(const communication::nav_control::ConstPtr& nex
             break;
 
         case TRACKING_MOVE:
-            /* TODO: think of how this function will be stopped */
+            if(flying_)
+            {
+                TrackingOrder();
+            } else
+            {
+                ROS_ERROR("The UAV is not flying!");
+            }
+            
             break;
 
         // handles INVALID_MOVE and any other missing/unmapped cases
@@ -381,6 +400,25 @@ void NavCommand::VelMoveOrder(double vel_linear_x,
 
 }
 
+
+/*******************************************************************
+ * TrackingOrder
+ * Author : EM 
+ * 
+ * Make enter the NavCommand object in a loop to follow a tracked
+ * object.
+ * This loop ends either if the object is lost or if a new order
+ * is received.
+*******************************************************************/
+void NavCommand::TrackingOrder()
+{
+
+
+
+}
+
+
+
 /*******************************************************************
  * setGuidedMode
  * Author : EM 
@@ -391,15 +429,15 @@ void NavCommand::setGuidedMode()
 {
     set_mode_cmd_.request.custom_mode = "GUIDED";
     if( current_state_.mode != "GUIDED")
+    {
+        if( set_mode_client_.call(set_mode_cmd_) &&
+            set_mode_cmd_.response.mode_sent)
         {
-            if( set_mode_client_.call(set_mode_cmd_) &&
-                set_mode_cmd_.response.mode_sent)
-            {
-                ROS_INFO("GUIDED enabled");
-            } else
-            {
-                ROS_ERROR("Set GUIDED mode FAILED");
-            }
+            ROS_INFO("GUIDED enabled");
+        } else
+        {
+            ROS_ERROR("Set GUIDED mode FAILED");
+        }
     } 
 }
 
