@@ -22,6 +22,7 @@
  * 
  *************************************************************************************/
 #include "nav_command.hpp"
+#include "pixel_to_xy_gps_position.hpp"
 
 NavCommand::NavCommand(ros::NodeHandle* nodehandle):nh_(*nodehandle)
 {
@@ -41,14 +42,22 @@ NavCommand::NavCommand(ros::NodeHandle* nodehandle):nh_(*nodehandle)
 
     previous_target_x_ = 0;
     previous_target_y_ = 0;
-    target_x_   = 0;
-    target_y_   = 0;
-    target_time_ = 0.0;
+    target_x_          = 0;
+    target_y_          = 0;
+    target_time_          = 0.0;
     previous_target_time_ = 0.0;
-    delta_time_ = 0.0;
-    target_confidence_ = 0.0;
+    delta_time_           = 0.0;
+    target_confidence_      = 0.0;
     prev_target_confidence_ = 0.0;
-    is_target_ = false;
+    is_target_              = false;
+    prev_target_latitude_   = 0.0;
+    prev_target_longitude_  = 0.0;
+    target_latitude_        = 0.0;            
+    target_longitude_       = 0.0;
+    delta_target_meters_x_       = 0.0;
+    delta_target_meters_y_       = 0.0;
+    distance_from_prev_position_ = 0.0;
+
     
     ros::Rate rate(20.0);
 
@@ -169,6 +178,8 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
         previous_target_y_ = target_y_;
         previous_target_time_ = target_time_;
         prev_target_confidence_ = target_confidence_;
+        prev_target_latitude_   = target_latitude_;
+        prev_target_longitude_  = target_longitude_;
         
         target_x_   = target->x;
         target_y_   = target->y;
@@ -178,6 +189,22 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
         delta_target_x_ = target_x_ - previous_target_x_;
         delta_target_y_ = target_y_ - previous_target_y_;
         delta_time_     = target_time_ - previous_target_time_;
+
+        double h_fov = HorizontalFOVLenght(current_altitude_ - kHomeAltitude, kHFOV);
+
+        XYinPicToGpsPosition(target_x_, target_y_, 
+                            current_latitude_, current_longitude_,
+                            h_fov, kCamWidthPixel, kCamHeightPixel,
+                            target_longitude_, target_latitude_);
+
+        if(prev_target_latitude_ != 0.0) // EM to avoid first target irrelevant computing
+        {
+            DistanceTwoGpsPositions(prev_target_latitude_, target_latitude_, 
+                                    prev_target_longitude_, target_longitude_, 
+                                    delta_target_meters_x_, delta_target_meters_y_);
+            distance_from_prev_position_ = XYLenghtsToHypotenuse(delta_target_meters_x_, delta_target_meters_y_);
+        }
+        
     } 
 }
 
@@ -480,10 +507,10 @@ double NavCommand::ComputeHeadingYaw(double target_altitude,
         double target_latitude, double target_longitude)
 {
     //Conv degrees to radians
-    target_latitude  = target_latitude  * (PI / 180);
-    target_longitude = target_longitude * (PI / 180);
-    double rad_curr_lat  = current_latitude_  * (PI / 180);
-    double rad_curr_long = current_longitude_ * (PI / 180);
+    target_latitude  = target_latitude  * (M_PI / 180);
+    target_longitude = target_longitude * (M_PI / 180);
+    double rad_curr_lat  = current_latitude_  * (M_PI / 180);
+    double rad_curr_long = current_longitude_ * (M_PI / 180);
 
     double d_lat 	= target_latitude  - rad_curr_lat;
     double d_long 	= target_longitude - rad_curr_long;

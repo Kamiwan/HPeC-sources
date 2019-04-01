@@ -148,6 +148,7 @@ include_directories(
 add_executable(navigation_node
 			src/navigation_node.cpp
       src/nav_command.cpp
+      src/pixel_to_xy_gps_position.cpp
 )
 
 ## Rename C++ executable without prefix

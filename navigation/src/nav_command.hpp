@@ -52,7 +52,6 @@
 
 #include "communication/nav_control.h"
 
-#define PI          3.14159265
 #define RAD_360     6.28319
 #define DEG_TO_RAD  0.0174532925
 #define RAD_90      1.57079
@@ -127,16 +126,23 @@ class NavCommand
     double target_time_, previous_target_time_, delta_time_;
     float  target_confidence_, prev_target_confidence_;
     bool   is_target_;
+    double target_longitude_, target_latitude_;
+    double prev_target_longitude_, prev_target_latitude_;
+    double delta_target_meters_x_, delta_target_meters_y_;
+    double distance_from_prev_position_;
     
-
     // Yaw is in radian, so I give a default value outside -3.14 < val < 3.14
     // Because values 0 and -1 can be relevant
     static constexpr double kDefaultNoYaw = 42.0;
 
     //!\ You must adapt these values to your context
-    static constexpr double kHomeAltitude  = 603.4486;
-    static constexpr double kHomeLatitude  = -35.363261;
-    static constexpr double kHomeLongitude = 149.16523;
+    static constexpr double kHomeAltitude   = 603.4486;
+    static constexpr double kHomeLatitude   = -35.363261;
+    static constexpr double kHomeLongitude  = 149.16523;
+    // Camera caracteristics used for TRACKING_MOVE
+    static constexpr double kHFOV           = 1.0472; // in radian
+    static constexpr int    kCamWidthPixel  = 640;
+    static constexpr int    kCamHeightPixel = 480;
 
     // ### Methods ###
     void InitializeSubscribers();
@@ -160,14 +166,10 @@ class NavCommand
 
     double   ComputeHeadingYaw(double target_altitude, double target_latitude, double target_longitude);
     NavOrder ResolveNavOrder(std::string input);
-
 };
 
 
-
-
-
-
-
-
 #endif
+
+
+
