@@ -27,7 +27,7 @@
 #define PIXEL_TO_XY_GPS_POSITION_HPP
 
 static constexpr double kMetersPerLatDegree = 111111.1;
-static constexpr double kEarthRadiusMeters  = 6378137;
+static constexpr double kEarthRadiusMeters  = 6371000;
 
 double  HorizontalFOVLenght(double relative_altitude, double angle_fov_camera);
 double  VerticalFOVLenght(double hfov_lenght, double cam_width_pixel,  double cam_height_pixel);

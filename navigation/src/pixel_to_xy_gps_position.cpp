@@ -30,14 +30,14 @@
  * HorizontalFOVLenght
  * Author : EM 
  * @param relative_altitude, distance from the ground (in meters)
- * @param angle_fov_camera, (in radians!)
+ * @param angle_fov_camera, (in DEGREES!)
  * 
  * Give the lenght in meters of the camera horizontal fov
  *******************************************************************/
 double HorizontalFOVLenght(double relative_altitude, double angle_fov_camera)
 {
     // HFOV = 2 * relative_altitude * tan( AFOV / 2 )
-    return  2 * relative_altitude * std::tan(angle_fov_camera / 2) ;
+    return  2 * relative_altitude * std::tan( (angle_fov_camera * (M_PI / 180)) / 2) ;
 }
 
 
@@ -57,7 +57,7 @@ double VerticalFOVLenght(double hfov_lenght, double cam_width_pixel,  double cam
 /*******************************************************************
  * DistanceTwoGpsPositions
  * Author : EM 
- * @param lat1 lat2 long1 long2, (all in radians!)
+ * @param lat1 lat2 long1 long2, (all in DEGREES!)
  * @out x y, (in meters)
  * 
  * Give the distance x and y from 2 GPS positions
@@ -66,15 +66,20 @@ void    DistanceTwoGpsPositions(double latitude_1, double latitude_2,
                             double longitude_1, double longitude_2, 
                             double & x, double & y)
 {
-    double d_lat 	= latitude_2  - latitude_1;
-    double d_long 	= longitude_2 - longitude_1;
+    double rad_latitude_1, rad_latitude_2, rad_longitude_1, rad_longitude_2;
+    rad_latitude_1  = latitude_1 * M_PI / 180;
+    rad_latitude_2  = latitude_2 * M_PI / 180;
+    rad_longitude_1 = longitude_1 * M_PI / 180;
+    rad_longitude_2 = longitude_2 * M_PI / 180;
+
+    double d_long 	= rad_longitude_2 - rad_longitude_1;
     
-    x = std::cos(latitude_2) * std::sin(d_long);
-    y = (std::cos(latitude_1) * std::sin(latitude_2))  - 
-        (std::sin(latitude_1) * std::cos(latitude_2) * std::cos(d_long) );
+    x = std::cos(rad_latitude_2) * std::sin(d_long);
+    y = (std::cos(rad_latitude_1) * std::sin(rad_latitude_2))  - 
+        (std::sin(rad_latitude_1) * std::cos(rad_latitude_2) * std::cos(d_long) );
 
     // To get the result in meters, we have to multiply radians 
-    // by the radius of the earth: 6 378 137 m
+    // by the radius of the earth: 6371000 m
     x = x * kEarthRadiusMeters; 
     y = y * kEarthRadiusMeters;
 }
@@ -95,14 +100,14 @@ void    DistanceTwoGpsPositions(double latitude_1, double latitude_2,
  * Give the latitude and longitude coordinates to a given pixel position
  *******************************************************************/
 void    XYinPicToGpsPosition(double x, double y, 
-                            double current_latitude, double current_longitude,
+                            double origin_latitude, double origin_longitude,
                             double hfov_lenght, int cam_width_pixel, int cam_height_pixel,
                             double & latitude, double & longitude)
 {
     int center_x       = cam_width_pixel  >> 1; // EM, Divide by 2 so >> 1
     int center_y       = cam_height_pixel >> 1;
-    int x_distance_px  = std::abs(x - center_x);
-    int y_distance_px  = std::abs(y - center_y);
+    int x_distance_px  = x - center_x;
+    int y_distance_px  = y - center_y;
 
     double  meters_per_px = hfov_lenght / cam_width_pixel;  // EM, pixels are squares so we only use hfov, 
                                                             // no need to use vfov
@@ -110,8 +115,9 @@ void    XYinPicToGpsPosition(double x, double y,
     double x_distance_meters = x_distance_px * meters_per_px;
     double y_distance_meters = y_distance_px * meters_per_px;
 
-    latitude  = current_latitude  + ( y_distance_meters / kMetersPerLatDegree );
-    longitude = current_longitude + ( x_distance_meters / (kMetersPerLatDegree * std::cos(current_latitude * M_PI / 180)) );
+    latitude  = origin_latitude  + ( y_distance_meters / kMetersPerLatDegree );
+    //longitude = current_longitude + ( x_distance_meters / (kMetersPerLatDegree * std::cos(current_latitude * M_PI / 180)) );
+    longitude = origin_longitude + (x_distance_meters / kEarthRadiusMeters) * (M_PI / 180) / std::cos(origin_latitude * M_PI / 180);
 }                            
 
 

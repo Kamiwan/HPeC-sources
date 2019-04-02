@@ -531,7 +531,7 @@ std::queue<communication::nav_control> SetWaypointsAreaCovering(double latitude_
    double delta_long_area = std::abs(longitude_c - longitude_a);
 
    double x=0,y=0; //Lenghts in meters to know area dimensions
-   DistanceTwoGpsPositions(latitude_a * PI/180, latitude_c * PI/180, longitude_a * PI/180, longitude_c * PI/180, x, y);
+   DistanceTwoGpsPositions(latitude_a, latitude_c, longitude_a, longitude_c, x, y);
    ROS_INFO_STREAM("X and Y values = " << x << " m; " << y << " m");
 
    double hfov_lenght = HorizontalFOVLenght(current_altitude - HOME_ALTITUDE, HFOV_ANGLE_CAMERA);

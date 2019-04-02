@@ -50,6 +50,7 @@ NavCommand::NavCommand(ros::NodeHandle* nodehandle):nh_(*nodehandle)
     target_confidence_      = 0.0;
     prev_target_confidence_ = 0.0;
     is_target_              = false;
+    first_detection_        = true;
     prev_target_latitude_   = 0.0;
     prev_target_longitude_  = 0.0;
     target_latitude_        = 0.0;            
@@ -157,7 +158,7 @@ void NavCommand::GpsCallback(const sensor_msgs::NavSatFix::ConstPtr &position)
    current_altitude_  = position->altitude;
    current_latitude_  = position->latitude;
    current_longitude_ = position->longitude;
-   //ROS_INFO("Altitude = %f Longitude = %f Latitude = %f ",current_altitude_, current_longitude_, current_latitude_);
+   //ROS_INFO("Altitude = %f Latitude = %f Longitude = %f ",current_altitude_,  current_latitude_, current_longitude_);
 }
 
 
@@ -174,38 +175,68 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
     is_target_ = (target->confidence > 0) ? true : false;
     if(is_target_)
     {
-        previous_target_x_ = target_x_;
-        previous_target_y_ = target_y_;
-        previous_target_time_ = target_time_;
+        previous_target_x_      = target_x_;
+        previous_target_y_      = target_y_;
+        previous_target_time_   = target_time_;
         prev_target_confidence_ = target_confidence_;
         prev_target_latitude_   = target_latitude_;
         prev_target_longitude_  = target_longitude_;
         
-        target_x_   = target->x;
-        target_y_   = target->y;
-        target_time_ = ros::Time::now().toSec(); 
+        target_x_    = target->x + target->width/2;
+        target_y_    = target->y + target->height/2;
+        target_time_ = target->header.stamp.toSec(); 
         target_confidence_ = target->confidence;
 
         delta_target_x_ = target_x_ - previous_target_x_;
         delta_target_y_ = target_y_ - previous_target_y_;
         delta_time_     = target_time_ - previous_target_time_;
 
+        if(first_detection_) // previous target position = current one if it's the first detection
+        {
+            previous_target_x_      = target_x_;
+            previous_target_y_      = target_y_;
+            previous_target_time_   = target_time_;
+            prev_target_confidence_ = target_confidence_;
+            prev_target_latitude_   = target_latitude_;
+            prev_target_longitude_  = target_longitude_;
+            first_detection_        = false;
+        }
+
         double h_fov = HorizontalFOVLenght(current_altitude_ - kHomeAltitude, kHFOV);
 
         XYinPicToGpsPosition(target_x_, target_y_, 
                             current_latitude_, current_longitude_,
                             h_fov, kCamWidthPixel, kCamHeightPixel,
-                            target_longitude_, target_latitude_);
-
-        if(prev_target_latitude_ != 0.0) // EM to avoid first target irrelevant computing
-        {
-            DistanceTwoGpsPositions(prev_target_latitude_, target_latitude_, 
+                            target_latitude_, target_longitude_);
+        DistanceTwoGpsPositions(prev_target_latitude_ , target_latitude_ , 
                                     prev_target_longitude_, target_longitude_, 
                                     delta_target_meters_x_, delta_target_meters_y_);
-            distance_from_prev_position_ = XYLenghtsToHypotenuse(delta_target_meters_x_, delta_target_meters_y_);
+        distance_from_prev_position_ = XYLenghtsToHypotenuse(delta_target_meters_x_, delta_target_meters_y_);
+
+        if( (target_time_ - previous_target_time_) > 0) // EM, avoid infinite speed
+            target_speed_ = distance_from_prev_position_ / (target_time_ - previous_target_time_);
+        else
+        {
+            target_speed_ = 0;
         }
+
+        // DEBUG PART
+        double uav_dist_x=0, uav_dist_y=0;
+        DistanceTwoGpsPositions(target_latitude_, current_latitude_, 
+                                    target_longitude_, current_longitude_,
+                                    uav_dist_x, uav_dist_y);
+        printf("Altitude = %f Latitude = %f Longitude = %f ",current_altitude_,  current_latitude_, current_longitude_);
+        // END DEBUG PART
         
+        ROS_INFO_STREAM("\n Target locked: latitude = " << std::setprecision (10) << target_latitude_  
+                        << " ; longitude = " << target_longitude_ 
+                        << "\n Distance X =  " << delta_target_meters_x_ << " m ; Distance Y = " << delta_target_meters_y_
+                        << ";\n UAV X =  " << uav_dist_x << " m ; UAV Y = " << uav_dist_y
+                        << " m ; Distance from prev pos = " << distance_from_prev_position_ 
+                        << " m ;\n Time t = " << target_time_ << " s ; T-1 = " << previous_target_time_
+                        << " s ; Speed = " << target_speed_ << " m/s");
     } 
+
 }
 
 /*******************************************************************

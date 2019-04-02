@@ -63,7 +63,7 @@
 
 #define HOME_ALTITUDE       603.4486
 #define PI                  3.14159265
-#define HFOV_ANGLE_CAMERA   1.0472
+#define HFOV_ANGLE_CAMERA   60  //1.0472 in radian
 #define PIXEL_CAMERA_WIDTH  640
 #define PIXEL_CAMERA_HEIGHT 480
 
