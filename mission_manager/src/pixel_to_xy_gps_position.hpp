@@ -33,7 +33,7 @@ double  HorizontalFOVLenght(double relative_altitude, double angle_fov_camera);
 double  VerticalFOVLenght(double hfov_lenght, double cam_width_pixel,  double cam_height_pixel);
 void    DistanceTwoGpsPositions(double latitude_1, double latitude_2, 
                             double longitude_1, double longitude_2, 
-                            double & x, double & y);
+                            double & x_lenght, double & y_lenght);
 
 void    XYinPicToGpsPosition(double x, double y, 
                             double current_latitude, double current_longitude,
@@ -42,5 +42,8 @@ void    XYinPicToGpsPosition(double x, double y,
 
 double  XYLenghtsToHypotenuse(double x_lenght, double y_lenght);
 
+void    LatLongOffsetMeters(double x_lenght, double y_lenght, 
+        double current_latitude, double current_longitude, 
+        double & latitude, double & longitude);
 
 #endif

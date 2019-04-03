@@ -120,18 +120,20 @@ class NavCommand
     };
 
     // Attributes to follow a target (TRACKING_MOVE)
-    int target_x_, target_y_;
-    int previous_target_x_, previous_target_y_;
-    int delta_target_x_, delta_target_y_;
-    double target_time_, previous_target_time_, delta_time_;
-    float  target_confidence_, prev_target_confidence_;
-    bool   is_target_;
-    bool   first_detection_;
-    double target_longitude_, target_latitude_;
-    double prev_target_longitude_, prev_target_latitude_;
-    double delta_target_meters_x_, delta_target_meters_y_;
-    double distance_from_prev_position_;
-    double target_speed_, prev_target_speed;
+    int     target_x_, target_y_;
+    int     previous_target_x_, previous_target_y_;
+    int     delta_target_x_, delta_target_y_;
+    double  target_time_, previous_target_time_, delta_time_;
+    float   target_confidence_, prev_target_confidence_;
+    bool    is_target_;
+    bool    first_detection_;
+    double  target_latitude_, target_longitude_;
+    double  prev_target_latitude_,prev_target_longitude_;
+    double  delta_target_meters_x_, delta_target_meters_y_;
+    double  distance_from_prev_position_, target_uav_distance_;
+    double  target_speed_, prev_target_speed;
+    double  uav_dist_x_, uav_dist_y_;
+    bool    tracking_online_;
     
     // Yaw is in radian, so I give a default value outside -3.14 < val < 3.14
     // Because values 0 and -1 can be relevant
@@ -145,6 +147,8 @@ class NavCommand
     static constexpr double kHFOV           = 60.0; //1.0472 in radian
     static constexpr int    kCamWidthPixel  = 640;
     static constexpr int    kCamHeightPixel = 480;
+    // Minimal UAV speed used for tracking
+    static constexpr double kMinUAVSpeed    = 1.0;
 
     // ### Methods ###
     void InitializeSubscribers();
@@ -160,7 +164,7 @@ class NavCommand
     void LandOrder();
     void TakeoffOrder(double target_altitude);
     void GpsMoveOrder(double target_altitude, double target_latitude, double target_longitude,  double yaw = kDefaultNoYaw);
-    void VelMoveOrder(double vel_linear_x, double vel_linear_y, double vel_linear_z, int distance);
+    void VelMoveOrder(double vel_linear_x, double vel_linear_y, double vel_linear_z, double distance);
     void TrackingOrder();
     
     void setGuidedMode();

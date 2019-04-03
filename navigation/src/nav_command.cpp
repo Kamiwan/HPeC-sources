@@ -58,6 +58,10 @@ NavCommand::NavCommand(ros::NodeHandle* nodehandle):nh_(*nodehandle)
     delta_target_meters_x_       = 0.0;
     delta_target_meters_y_       = 0.0;
     distance_from_prev_position_ = 0.0;
+    target_uav_distance_         = 0.0;
+    uav_dist_x_                  = 0.0;
+    uav_dist_y_                  = 0.0;
+    tracking_online_             = false;
 
     
     ros::Rate rate(20.0);
@@ -220,22 +224,22 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
             target_speed_ = 0;
         }
 
-        // DEBUG PART
-        double uav_dist_x=0, uav_dist_y=0;
-        DistanceTwoGpsPositions(target_latitude_, current_latitude_, 
-                                    target_longitude_, current_longitude_,
-                                    uav_dist_x, uav_dist_y);
-        printf("Altitude = %f Latitude = %f Longitude = %f ",current_altitude_,  current_latitude_, current_longitude_);
-        // END DEBUG PART
-        
+        // Target-UAV distance computation
+        DistanceTwoGpsPositions(current_latitude_, target_latitude_, 
+                                current_longitude_, target_latitude_, 
+                                uav_dist_x_, uav_dist_y_);
+        target_uav_distance_ = XYLenghtsToHypotenuse(uav_dist_x_, uav_dist_y_);
+                
         ROS_INFO_STREAM("\n Target locked: latitude = " << std::setprecision (10) << target_latitude_  
                         << " ; longitude = " << target_longitude_ 
-                        << "\n Distance X =  " << delta_target_meters_x_ << " m ; Distance Y = " << delta_target_meters_y_
-                        << ";\n UAV X =  " << uav_dist_x << " m ; UAV Y = " << uav_dist_y
-                        << " m ; Distance from prev pos = " << distance_from_prev_position_ 
-                        << " m ;\n Time t = " << target_time_ << " s ; T-1 = " << previous_target_time_
-                        << " s ; Speed = " << target_speed_ << " m/s");
-    } 
+                        << " ;\n Distance from prev pos = " << distance_from_prev_position_ 
+                        << " m ; Target-UAV disance = " << target_uav_distance_ 
+                        << " m ; Speed = " << target_speed_ << " m/s");
+    } else
+    {
+        first_detection_ = true;
+    }
+    
 
 }
 
@@ -248,8 +252,9 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
 *******************************************************************/
 void NavCommand::ControlCallback(const communication::nav_control::ConstPtr& next_order)
 {
-    ROS_INFO("[NAV_COMMAND]: New command received!");
+    if(tracking_online_ && next_order->order != "TRACKING_MOVE") tracking_online_ = false;
 
+    ROS_INFO("[NAV_COMMAND]: New command received!");
     switch (ResolveNavOrder(next_order->order))
     {
         case LAND:
@@ -423,7 +428,7 @@ void NavCommand::GpsMoveOrder(double target_altitude,
  * the 3 axis velocities
 *******************************************************************/
 void NavCommand::VelMoveOrder(double vel_linear_x, 
-        double vel_linear_y, double vel_linear_z, int distance)
+        double vel_linear_y, double vel_linear_z, double distance)
 {
     geometry_msgs::TwistStamped vel_msg;
     vel_msg.header.stamp     = ros::Time::now();
@@ -470,9 +475,34 @@ void NavCommand::VelMoveOrder(double vel_linear_x,
 *******************************************************************/
 void NavCommand::TrackingOrder()
 {
+    tracking_online_ = true;
+    ros::Rate rate(20.0);
 
+    while(ros::ok() && tracking_online_){
 
+        double  forsee_target_x = uav_dist_x_ + delta_target_meters_x_;
+        double  forsee_target_y = uav_dist_y_ + delta_target_meters_y_;
+        double  distance        = XYLenghtsToHypotenuse(forsee_target_x, forsee_target_y);
+        double  speed_ratio_x   = forsee_target_x / distance;
+        double  speed_ratio_y   = forsee_target_y / distance;
 
+        double  vel_linear_x, vel_linear_y;
+        if(target_speed_ < kMinUAVSpeed)
+        {
+            vel_linear_x = kMinUAVSpeed * speed_ratio_x;
+            vel_linear_y = kMinUAVSpeed * speed_ratio_y;
+        } else
+        {
+            vel_linear_x = target_speed_ * speed_ratio_x;
+            vel_linear_y = target_speed_ * speed_ratio_y;
+        }
+        
+        VelMoveOrder(vel_linear_x, vel_linear_y, 0, distance);
+    
+        rate.sleep();        
+        ros::spinOnce();
+    }
+    ROS_INFO("Tracking target over");
 }
 
 

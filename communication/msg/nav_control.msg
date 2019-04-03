@@ -21,4 +21,4 @@ float64 yaw
 float64 vel_linear_x
 float64 vel_linear_y
 float64 vel_linear_z
-int32   distance
+float64 distance

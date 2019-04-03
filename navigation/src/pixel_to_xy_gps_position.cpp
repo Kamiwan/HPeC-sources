@@ -58,13 +58,13 @@ double VerticalFOVLenght(double hfov_lenght, double cam_width_pixel,  double cam
  * DistanceTwoGpsPositions
  * Author : EM 
  * @param lat1 lat2 long1 long2, (all in DEGREES!)
- * @out x y, (in meters)
+ * @out x_lenght y_lenght, (in meters)
  * 
  * Give the distance x and y from 2 GPS positions
  *******************************************************************/
 void    DistanceTwoGpsPositions(double latitude_1, double latitude_2, 
                             double longitude_1, double longitude_2, 
-                            double & x, double & y)
+                            double & x_lenght, double & y_lenght)
 {
     double rad_latitude_1, rad_latitude_2, rad_longitude_1, rad_longitude_2;
     rad_latitude_1  = latitude_1 * M_PI / 180;
@@ -74,14 +74,14 @@ void    DistanceTwoGpsPositions(double latitude_1, double latitude_2,
 
     double d_long 	= rad_longitude_2 - rad_longitude_1;
     
-    x = std::cos(rad_latitude_2) * std::sin(d_long);
-    y = (std::cos(rad_latitude_1) * std::sin(rad_latitude_2))  - 
+    x_lenght = std::cos(rad_latitude_2) * std::sin(d_long);
+    y_lenght = (std::cos(rad_latitude_1) * std::sin(rad_latitude_2))  - 
         (std::sin(rad_latitude_1) * std::cos(rad_latitude_2) * std::cos(d_long) );
 
     // To get the result in meters, we have to multiply radians 
     // by the radius of the earth: 6371000 m
-    x = x * kEarthRadiusMeters; 
-    y = y * kEarthRadiusMeters;
+    x_lenght = x_lenght * kEarthRadiusMeters; 
+    y_lenght = y_lenght * kEarthRadiusMeters;
 }
 
 
@@ -133,6 +133,25 @@ double  XYLenghtsToHypotenuse(double x_lenght, double y_lenght)
     return std::sqrt( std::pow(x_lenght, 2) + std::pow(y_lenght, 2) );
 }
 
+
+
+/*******************************************************************
+ * LatLongOffsetMeters
+ * Author : EM 
+ * @param x_lenght, y_lenght    (in meters)
+ * @param curr_lat, curr_long   (in degrees)
+ * @out   lat, long             (in degrees)
+ * 
+ * Give the new gps position (Lat-Long) with a translation vector in 
+ * Cartesian coordinates in meters
+ *******************************************************************/
+void    LatLongOffsetMeters(double x_lenght, double y_lenght, 
+        double current_latitude, double current_longitude, 
+        double & latitude, double & longitude)
+{
+    latitude  = current_latitude  + ( y_lenght / kMetersPerLatDegree );
+    longitude = current_longitude + (x_lenght / kEarthRadiusMeters) * (M_PI / 180) / std::cos(current_latitude * M_PI / 180);
+}
 
 
 
