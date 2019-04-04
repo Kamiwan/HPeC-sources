@@ -47,6 +47,7 @@
 #include "sensor_msgs/BatteryState.h"
 #include <sensor_msgs/NavSatFix.h>
 #include <tf/transform_datatypes.h>
+#include <tld_msgs/BoundingBox.h>
 
 #include "communication/obstacle_detection_msg.h"
 #include "communication/nav_control.h"
@@ -73,6 +74,7 @@ void battery_callback(const sensor_msgs::BatteryState::ConstPtr &bat_msg);
 void gps_vel_callback(const geometry_msgs::TwistStamped::ConstPtr &vel_msg);
 void gps_pos_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
 void imu_callback(const sensor_msgs::Imu::ConstPtr &imu_msg);
+void TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target);
 
 void obstacle_callback(const communication::obstacle_detection_msg::ConstPtr &detection_msg);
 void achievable_callback(const std_msgs::Int32::ConstPtr &msg1);
@@ -111,6 +113,7 @@ extern ros::Subscriber vel_sub;
 extern ros::Subscriber pos_sub;
 extern ros::Subscriber obstacle_sub;
 extern ros::Subscriber achievable_sub;
+extern ros::Subscriber tracking_sub;
 
 extern ros::Publisher  nav_order_pub;
 
@@ -127,6 +130,7 @@ bool    step_2;
 bool    step_3;
 bool    step_4;
 bool    step_5;
+bool    is_target;
 
 std::queue<communication::nav_control> area_cover_path;
 

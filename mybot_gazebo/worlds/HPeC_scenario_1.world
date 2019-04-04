@@ -256,23 +256,23 @@
         <trajectory id="0" type="walking">
           <waypoint>
             <time>1</time>
-            <pose>20 -10 1 0 0 0</pose>
+            <pose>18 -15 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>3</time>
-            <pose>20 -12 1 0 0 0</pose>
+            <pose>18 -17 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>6</time>
-            <pose>22 -12 1 0 0 0</pose>
+            <pose>20 -17 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>9</time>
-            <pose>22 -10 1 0 0 0</pose>
+            <pose>20 -15 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>12</time>
-            <pose>20 -10 1 0 0 0</pose>
+            <pose>18 -15 1 0 0 0</pose>
           </waypoint>
         </trajectory>
       </script>

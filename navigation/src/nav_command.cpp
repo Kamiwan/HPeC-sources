@@ -62,6 +62,7 @@ NavCommand::NavCommand(ros::NodeHandle* nodehandle):nh_(*nodehandle)
     uav_dist_x_                  = 0.0;
     uav_dist_y_                  = 0.0;
     tracking_online_             = false;
+    updated_tracking_data        = false;
 
     
     ros::Rate rate(20.0);
@@ -226,15 +227,19 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
 
         // Target-UAV distance computation
         DistanceTwoGpsPositions(current_latitude_, target_latitude_, 
-                                current_longitude_, target_latitude_, 
+                                current_longitude_, target_longitude_, 
                                 uav_dist_x_, uav_dist_y_);
         target_uav_distance_ = XYLenghtsToHypotenuse(uav_dist_x_, uav_dist_y_);
+
+        updated_tracking_data = true;
                 
+        /*
         ROS_INFO_STREAM("\n Target locked: latitude = " << std::setprecision (10) << target_latitude_  
                         << " ; longitude = " << target_longitude_ 
                         << " ;\n Distance from prev pos = " << distance_from_prev_position_ 
                         << " m ; Target-UAV disance = " << target_uav_distance_ 
                         << " m ; Speed = " << target_speed_ << " m/s");
+        */
     } else
     {
         first_detection_ = true;
@@ -404,6 +409,7 @@ void NavCommand::GpsMoveOrder(double target_altitude,
         yaw = ComputeHeadingYaw(target_altitude, target_latitude, target_longitude);
 
     next_gps_position_.yaw = yaw;
+    ROS_INFO_STREAM("Next Latitude = " << next_gps_position_.latitude << " Next Longitude = " << next_gps_position_.longitude);
     ROS_INFO_STREAM("Next Yaw = " << next_gps_position_.yaw);
 
     //Update Class Attributes
@@ -413,6 +419,21 @@ void NavCommand::GpsMoveOrder(double target_altitude,
 
     global_pos_pub_.publish(next_gps_position_);
 }
+
+
+void NavCommand::NoYawGpsMoveOrder(double target_altitude, double target_latitude, double target_longitude)
+{
+    next_gps_position_.header.stamp	= ros::Time::now();
+    next_gps_position_.header.frame_id = "fcu";
+    next_gps_position_.altitude 	= target_altitude;
+    next_gps_position_.latitude 	= target_latitude;
+    next_gps_position_.longitude 	= target_longitude;
+    next_gps_position_.yaw_rate     = 0;
+
+    ROS_INFO_STREAM("Next Latitude = " << next_gps_position_.latitude << " Next Longitude = " << next_gps_position_.longitude);
+    global_pos_pub_.publish(next_gps_position_);
+}
+
 
 
 
@@ -438,11 +459,11 @@ void NavCommand::VelMoveOrder(double vel_linear_x,
     vel_msg.twist.linear.z   = vel_linear_z;
 
     double highest_vel;
-    if(vel_linear_x >= vel_linear_y && vel_linear_x >= vel_linear_z)
+    if(std::abs(vel_linear_x) >= std::abs(vel_linear_y) && std::abs(vel_linear_x) >= std::abs(vel_linear_z))
         highest_vel = vel_linear_x;
     else
     {
-        if(vel_linear_y >= vel_linear_x && vel_linear_y >= vel_linear_z)
+        if(std::abs(vel_linear_y) >= std::abs(vel_linear_x) && std::abs(vel_linear_y) >= std::abs(vel_linear_z))
             highest_vel = vel_linear_y;
         else
             highest_vel = vel_linear_z;
@@ -453,7 +474,7 @@ void NavCommand::VelMoveOrder(double vel_linear_x,
     int count = (int)time_to_send * 20;
 
     ROS_INFO_STREAM("Send Vel command for " << time_to_send << 
-                    " seconds to move " << distance << " meters." );
+                    " seconds to move " << distance << " meters at" << highest_vel << " m/s" );
     for(int i = 0; i < count && ros::ok(); i++)
     {
         cmd_vel_pub_.publish(vel_msg);
@@ -480,11 +501,28 @@ void NavCommand::TrackingOrder()
 
     while(ros::ok() && tracking_online_){
 
-        double  forsee_target_x = uav_dist_x_ + delta_target_meters_x_;
-        double  forsee_target_y = uav_dist_y_ + delta_target_meters_y_;
-        double  distance        = XYLenghtsToHypotenuse(forsee_target_x, forsee_target_y);
-        double  speed_ratio_x   = forsee_target_x / distance;
-        double  speed_ratio_y   = forsee_target_y / distance;
+        double  foresee_target_x = uav_dist_x_; //+ delta_target_meters_x_;
+        double  foresee_target_y = -uav_dist_y_; //+ delta_target_meters_y_;
+        double  distance         = XYLenghtsToHypotenuse(foresee_target_x, foresee_target_y);
+
+        if(distance > 1 && updated_tracking_data) //No movements if the UAV is within 1 meter from the target
+        {
+            double  foresee_target_lat, foresee_target_long;
+            LatLongOffsetMeters(foresee_target_x, foresee_target_y,
+                                current_latitude_, current_longitude_,
+                                foresee_target_lat, foresee_target_long);
+            //double  yaw = (current_heading_.data > 180) ? (current_heading_.data - 360) * M_PI / 180 : current_heading_.data * M_PI / 180;
+            //Keep the current yaw
+            NoYawGpsMoveOrder(current_altitude_, foresee_target_lat, foresee_target_long); 
+            updated_tracking_data = false;
+
+            ROS_INFO_STREAM(" ; foresee_target_x = " << foresee_target_x 
+                            << " ; foresee_target_y = " << foresee_target_y );
+        }
+
+        /*
+        double  speed_ratio_x   = foresee_target_x / distance;
+        double  speed_ratio_y   = foresee_target_y / distance;
 
         double  vel_linear_x, vel_linear_y;
         if(target_speed_ < kMinUAVSpeed)
@@ -496,8 +534,13 @@ void NavCommand::TrackingOrder()
             vel_linear_x = target_speed_ * speed_ratio_x;
             vel_linear_y = target_speed_ * speed_ratio_y;
         }
-        
+        ROS_INFO_STREAM(" ; speed_ratio_x = " << speed_ratio_x 
+                        << " ; speed_ratio_y = " << speed_ratio_y  
+                        << " ; vel_linear_x = " << vel_linear_x 
+                        << " ; vel_linear_y = " << vel_linear_y 
+                        << " distance = " << distance );
         VelMoveOrder(vel_linear_x, vel_linear_y, 0, distance);
+        */
     
         rate.sleep();        
         ros::spinOnce();

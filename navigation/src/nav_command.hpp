@@ -134,6 +134,7 @@ class NavCommand
     double  target_speed_, prev_target_speed;
     double  uav_dist_x_, uav_dist_y_;
     bool    tracking_online_;
+    bool    updated_tracking_data;
     
     // Yaw is in radian, so I give a default value outside -3.14 < val < 3.14
     // Because values 0 and -1 can be relevant
@@ -164,6 +165,7 @@ class NavCommand
     void LandOrder();
     void TakeoffOrder(double target_altitude);
     void GpsMoveOrder(double target_altitude, double target_latitude, double target_longitude,  double yaw = kDefaultNoYaw);
+    void NoYawGpsMoveOrder(double target_altitude, double target_latitude, double target_longitude);
     void VelMoveOrder(double vel_linear_x, double vel_linear_y, double vel_linear_z, double distance);
     void TrackingOrder();
     

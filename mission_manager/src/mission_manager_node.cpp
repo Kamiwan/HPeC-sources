@@ -53,6 +53,7 @@ ros::Subscriber vel_sub;
 ros::Subscriber pos_sub;
 ros::Subscriber achievable_sub;
 ros::Subscriber obstacle_sub;
+ros::Subscriber tracking_sub;
 
 ros::Publisher  nav_order_pub;
 
@@ -311,6 +312,20 @@ void achievable_callback(const std_msgs::Int32::ConstPtr &msg1)
 
 
 
+
+/*******************************************************************
+ * TrackingCallback
+ * Author : EM 
+ * @param target, target bounding box properties
+ * 
+*******************************************************************/
+void TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
+{
+   if(target->confidence >0) is_target = true;
+}
+
+
+
 //***********************
 int main(int argc, char **argv)
 {
@@ -330,14 +345,16 @@ int main(int argc, char **argv)
       verbose = VERBOSITY_DEFAULT;
    }
 
-   cam_light_sub  = nh.subscribe("iris/light_sensor/rgb/image_raw", 1000, sensor_cam_callback);
-   light_sub      = nh.subscribe("light_sensor_plugin/lightSensor", 1000, light_sensor_callback);
-   imu_sub        = nh.subscribe("mavros/imu/data", 1000, imu_callback);
-   bat_sub        = nh.subscribe("mavros/battery", 1000, battery_callback);
-   vel_sub        = nh.subscribe("mavros/global_position/raw/gps_vel", 1000, gps_vel_callback);
-   pos_sub        = nh.subscribe("mavros/global_position/global", 1000, gps_pos_callback);
-   achievable_sub = nh.subscribe("/achievable_topic", 1000, achievable_callback);
-   obstacle_sub   = nh.subscribe("obstacle_detection_topic", 1000, obstacle_callback);
+   cam_light_sub  = nh.subscribe("iris/light_sensor/rgb/image_raw", 10, sensor_cam_callback);
+   light_sub      = nh.subscribe("light_sensor_plugin/lightSensor", 10, light_sensor_callback);
+   imu_sub        = nh.subscribe("mavros/imu/data", 10, imu_callback);
+   bat_sub        = nh.subscribe("mavros/battery", 10, battery_callback);
+   vel_sub        = nh.subscribe("mavros/global_position/raw/gps_vel", 10, gps_vel_callback);
+   pos_sub        = nh.subscribe("mavros/global_position/global", 10, gps_pos_callback);
+   achievable_sub = nh.subscribe("/achievable_topic", 10, achievable_callback);
+   obstacle_sub   = nh.subscribe("obstacle_detection_topic", 10, obstacle_callback);
+   tracking_sub   = nh.subscribe("tld_tracked_object", 10, TrackingCallback);
+      
    
    notify_from_MM_pub = boost::make_shared<ros::Publisher>(
       nh.advertise<std_msgs::Int32>("/notify_from_MM_topic", 1000));
@@ -373,6 +390,7 @@ int main(int argc, char **argv)
    step_3 = false;
    step_4 = false;
    step_5 = false;
+   is_target = false;
 
    ros::Rate loop_rate(1); //10hz = 100ms, 0.1hz=10s
    while (ros::ok())
@@ -455,7 +473,8 @@ void StaticScenario_1()
       detection_pub.publish(activation_msg);
    }
 
-   if(CompareGpsPositions(latitude, target_latitude, longitude, target_longitude, 5) && !area_cover_path.empty())
+   if(CompareGpsPositions(latitude, target_latitude, longitude, target_longitude, 5) 
+      && !area_cover_path.empty() && !is_target)
    {
       area_cover_path.pop(); // FiFo: remove the last element used from the queue
       if(area_cover_path.empty())
@@ -471,6 +490,18 @@ void StaticScenario_1()
          target_longitude        = nav_order_msg.longitude;
       }
    }
+
+   if(is_target && !step_3)
+   {
+      step_3 = true;
+      ROS_INFO("Send TRACKING order!");
+      communication::nav_control nav_order_msg;
+      nav_order_msg.order     = "TRACKING_MOVE"; 
+      nav_order_pub.publish(nav_order_msg);
+
+   }
+
+
 }
 
 
