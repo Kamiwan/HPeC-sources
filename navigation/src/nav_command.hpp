@@ -120,19 +120,27 @@ class NavCommand
     };
 
     // Attributes to follow a target (TRACKING_MOVE)
+    // Pixels data
     int     target_x_, target_y_;
     int     previous_target_x_, previous_target_y_;
+    int     absolute_target_x_, absolute_target_y_;
     int     delta_target_x_, delta_target_y_;
+    // Timing data
     double  target_time_, previous_target_time_, delta_time_;
+    // Confidence data
     float   target_confidence_, prev_target_confidence_;
-    bool    is_target_;
-    bool    first_detection_;
+    // Latitude Longitude data
     double  target_latitude_, target_longitude_;
     double  prev_target_latitude_,prev_target_longitude_;
+    // Distance data in meters
     double  delta_target_meters_x_, delta_target_meters_y_;
     double  distance_from_prev_position_, target_uav_distance_;
-    double  target_speed_, prev_target_speed;
     double  uav_dist_x_, uav_dist_y_;
+    // Speed data
+    double  target_speed_, prev_target_speed;
+    // Flags
+    bool    is_target_;
+    bool    first_detection_;
     bool    tracking_online_;
     bool    updated_tracking_data;
     
@@ -148,8 +156,10 @@ class NavCommand
     static constexpr double kHFOV           = 60.0; //1.0472 in radian
     static constexpr int    kCamWidthPixel  = 640;
     static constexpr int    kCamHeightPixel = 480;
-    // Minimal UAV speed used for tracking
-    static constexpr double kMinUAVSpeed    = 1.0;
+    // Min and max UAV speed used for tracking in m/s
+    static constexpr double kMinUAVSpeed        = 0.2;
+    static constexpr double kMaxUAVSpeed        = 1;
+    static constexpr double kDistanceThreshold  = 2.5;
 
     // ### Methods ###
     void InitializeSubscribers();

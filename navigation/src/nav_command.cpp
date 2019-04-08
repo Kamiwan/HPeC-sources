@@ -187,8 +187,15 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
         prev_target_latitude_   = target_latitude_;
         prev_target_longitude_  = target_longitude_;
         
+        // This is the position according the picture origin
+        // 0,0 is in the top left corner of the picture
         target_x_    = target->x + target->width/2;
         target_y_    = target->y + target->height/2;
+        // We change the origin to the middle of the picture
+        target_x_    = target_x_ - kCamWidthPixel/2;
+        target_y_    = -(target_y_ - kCamHeightPixel/2); 
+        // And we negate y to get the right orientation
+
         target_time_ = target->header.stamp.toSec(); 
         target_confidence_ = target->confidence;
 
@@ -208,7 +215,6 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
         }
 
         double h_fov = HorizontalFOVLenght(current_altitude_ - kHomeAltitude, kHFOV);
-
         XYinPicToGpsPosition(target_x_, target_y_, 
                             current_latitude_, current_longitude_,
                             h_fov, kCamWidthPixel, kCamHeightPixel,
@@ -217,7 +223,6 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
                                     prev_target_longitude_, target_longitude_, 
                                     delta_target_meters_x_, delta_target_meters_y_);
         distance_from_prev_position_ = XYLenghtsToHypotenuse(delta_target_meters_x_, delta_target_meters_y_);
-
         if( (target_time_ - previous_target_time_) > 0) // EM, avoid infinite speed
             target_speed_ = distance_from_prev_position_ / (target_time_ - previous_target_time_);
         else
@@ -226,9 +231,14 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
         }
 
         // Target-UAV distance computation
-        DistanceTwoGpsPositions(current_latitude_, target_latitude_, 
-                                current_longitude_, target_longitude_, 
-                                uav_dist_x_, uav_dist_y_);
+        // To get right velocity orders, we have to convert UAV relative x,y position
+        // into absolute x',y' North East position (NED)
+        // The Heading given by MAVLINK is clockwise so we have to negate it
+        XYPositionAxisRotation(target_x_, target_y_, current_heading_.data,
+                                absolute_target_x_, absolute_target_y_);
+        
+        XYLenghtOffsetPixels(absolute_target_x_, absolute_target_y_, 0, 0,
+                            h_fov, kCamWidthPixel, uav_dist_x_, uav_dist_y_);
         target_uav_distance_ = XYLenghtsToHypotenuse(uav_dist_x_, uav_dist_y_);
 
         updated_tracking_data = true;
@@ -469,7 +479,7 @@ void NavCommand::VelMoveOrder(double vel_linear_x,
             highest_vel = vel_linear_z;
     }
 
-    double time_to_send = distance / highest_vel;
+    double time_to_send = distance / std::abs(highest_vel);
     ros::Rate rate(20.0);
     int count = (int)time_to_send * 20;
 
@@ -502,45 +512,76 @@ void NavCommand::TrackingOrder()
     while(ros::ok() && tracking_online_){
 
         double  foresee_target_x = uav_dist_x_; //+ delta_target_meters_x_;
-        double  foresee_target_y = -uav_dist_y_; //+ delta_target_meters_y_;
+        double  foresee_target_y = uav_dist_y_; //+ delta_target_meters_y_;
         double  distance         = XYLenghtsToHypotenuse(foresee_target_x, foresee_target_y);
 
-        if(distance > 1 && updated_tracking_data) //No movements if the UAV is within 1 meter from the target
+        if(updated_tracking_data) 
         {
+            double  speed_ratio_x   = foresee_target_x / distance;
+            double  speed_ratio_y   = foresee_target_y / distance;
+            double  vel_linear_x, vel_linear_y;
+            if( distance > kDistanceThreshold ) //No movements if the UAV is within threshold distance from the target
+            {
+                target_speed_ =0.5;    // EM, TODO: FIX THIS, the speed computing is false for instance so 0.5 m/s
+                if(target_speed_ < kMinUAVSpeed)
+                {
+                    vel_linear_x = kMinUAVSpeed * speed_ratio_x;
+                    vel_linear_y = kMinUAVSpeed * speed_ratio_y;
+                } else
+                {
+                    if(target_speed_ > kMaxUAVSpeed)
+                    {
+                    vel_linear_x = kMaxUAVSpeed * speed_ratio_x;
+                    vel_linear_y = kMaxUAVSpeed * speed_ratio_y;
+                    } else
+                    {
+                        vel_linear_x = target_speed_ * speed_ratio_x;
+                        vel_linear_y = target_speed_ * speed_ratio_y;
+                    }
+                }
+            } else
+            {
+                vel_linear_x = 0;
+                vel_linear_y = 0;
+            }
+
+            /*ROS_INFO_STREAM(" ; foresee_target_x = " << foresee_target_x 
+                << " ; foresee_target_y = " << foresee_target_y << " ; target speed = " << target_speed_);
+            ROS_INFO_STREAM(" ; speed_ratio_x = " << speed_ratio_x 
+                            << " ; speed_ratio_y = " << speed_ratio_y  
+                            << " ; vel_linear_x = " << vel_linear_x 
+                            << " ; vel_linear_y = " << vel_linear_y 
+                            << " distance = " << distance );*/
+            
+            ROS_INFO_STREAM(   " ; target_x = "  << target_x_
+                            << " ; target_y_ = " << target_y_  
+                            << " ; \nNEW_x_ = " << absolute_target_x_
+                            << " ; NEW_y_ = " << absolute_target_y_
+                            << " ; heading = " << current_heading_
+                            << " ; \nx_dist = " << uav_dist_x_
+                            << " ; y_dist = " << uav_dist_y_ 
+                            << " ; distance = " << distance 
+                            << " ; vel_linear_x = " << vel_linear_x 
+                            << " ; vel_linear_y = " << vel_linear_y );
+
+            geometry_msgs::TwistStamped vel_msg;
+            vel_msg.header.stamp     = ros::Time::now();
+            vel_msg.header.frame_id  = "9"; //FRAME_BODY_OFFSET_NED
+            vel_msg.twist.linear.x   = vel_linear_x;
+            vel_msg.twist.linear.y   = vel_linear_y;
+            vel_msg.twist.linear.z   = 0;
+            //cmd_vel_pub_.publish(vel_msg);
+
+            updated_tracking_data = false;
+        }
+            /*
             double  foresee_target_lat, foresee_target_long;
             LatLongOffsetMeters(foresee_target_x, foresee_target_y,
                                 current_latitude_, current_longitude_,
                                 foresee_target_lat, foresee_target_long);
-            //double  yaw = (current_heading_.data > 180) ? (current_heading_.data - 360) * M_PI / 180 : current_heading_.data * M_PI / 180;
             //Keep the current yaw
             NoYawGpsMoveOrder(current_altitude_, foresee_target_lat, foresee_target_long); 
-            updated_tracking_data = false;
-
-            ROS_INFO_STREAM(" ; foresee_target_x = " << foresee_target_x 
-                            << " ; foresee_target_y = " << foresee_target_y );
-        }
-
-        /*
-        double  speed_ratio_x   = foresee_target_x / distance;
-        double  speed_ratio_y   = foresee_target_y / distance;
-
-        double  vel_linear_x, vel_linear_y;
-        if(target_speed_ < kMinUAVSpeed)
-        {
-            vel_linear_x = kMinUAVSpeed * speed_ratio_x;
-            vel_linear_y = kMinUAVSpeed * speed_ratio_y;
-        } else
-        {
-            vel_linear_x = target_speed_ * speed_ratio_x;
-            vel_linear_y = target_speed_ * speed_ratio_y;
-        }
-        ROS_INFO_STREAM(" ; speed_ratio_x = " << speed_ratio_x 
-                        << " ; speed_ratio_y = " << speed_ratio_y  
-                        << " ; vel_linear_x = " << vel_linear_x 
-                        << " ; vel_linear_y = " << vel_linear_y 
-                        << " distance = " << distance );
-        VelMoveOrder(vel_linear_x, vel_linear_y, 0, distance);
-        */
+            */
     
         rate.sleep();        
         ros::spinOnce();

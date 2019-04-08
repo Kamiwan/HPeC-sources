@@ -155,3 +155,47 @@ void    LatLongOffsetMeters(double x_lenght, double y_lenght,
 
 
 
+/*******************************************************************
+ * XYLenghtOffsetPixels
+ * Author : EM 
+ * @param x_pix, y_pix,                       (in pixels)
+ * @param x_origin_pix, y_origin_pix          (in pixels)
+ * @param cam_width_pixel                     (in pixels)
+ * @param hfov_lenght                         (in meters)
+ * @out   x_lenght, y_lenght                  (in meters)
+ * 
+ * Give the x and y distance in meters of 2 pixels in a picture
+ *******************************************************************/
+void    XYLenghtOffsetPixels(int x_pix, int y_pix, 
+        int x_origin_pix, int  y_origin_pix,
+        double hfov_lenght, double cam_width_pixel, 
+        double & x_lenght, double & y_lenght)
+{
+    int x_distance_px  = x_pix - x_origin_pix;
+    int y_distance_px  = y_pix - y_origin_pix;
+
+    double  meters_per_px = hfov_lenght / cam_width_pixel;  // EM, pixels are squares so we only use hfov, 
+                                                            // no need to use vfov
+    x_lenght = x_distance_px * meters_per_px;
+    y_lenght = y_distance_px * meters_per_px;
+}
+         
+
+/*******************************************************************
+ * XYPositionAxisRotation
+ * Author : EM 
+ * @param x_pix, y_pix,                 (in pixels)
+ * @param theta                         (in degrees)
+ * @out   rotated_x_pix, rotated_y_pix  (in pixels)
+ * 
+ * x' and y' axes are obtained by rotating the x and y axes 
+ * counterclockwise through an angle theta
+ *******************************************************************/
+void    XYPositionAxisRotation(int x_pix, int y_pix, double theta,
+                                int & rotated_x_pix, int & rotated_y_pix)
+{
+    double rad_theta = theta * M_PI / 180;
+    rotated_x_pix =  x_pix * std::cos(rad_theta) + y_pix * std::sin(rad_theta);
+    rotated_y_pix = -x_pix * std::sin(rad_theta) + y_pix * std::cos(rad_theta);
+}
+

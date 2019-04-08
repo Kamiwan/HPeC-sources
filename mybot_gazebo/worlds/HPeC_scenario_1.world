@@ -239,6 +239,22 @@
   </include>
 </model>
 
+<model name="trumpy_box2">
+  <include>
+        <uri>model:///Gazebo/Cube_Target</uri>
+        <pose>8 0 1 0 0 0 </pose>
+        <name>"Cube_Target2"</name>
+  </include>
+</model>
+
+<model name="trumpy_box3">
+  <include>
+        <uri>model:///Gazebo/Cube_Target</uri>
+        <pose>-8 0 1 0 0 -3.14 </pose>
+        <name>"Cube_Target2"</name>
+  </include>
+</model>
+
 
 <!-- FOR GAZEBO 8 OR HIGHER  -->
 <actor name="animated_box"> 
@@ -264,11 +280,11 @@
           </waypoint>
           <waypoint>
             <time>6</time>
-            <pose>20 -17 1 0 0 0</pose>
+            <pose>18 -19 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>9</time>
-            <pose>20 -15 1 0 0 0</pose>
+            <pose>18 -17 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>12</time>
@@ -282,7 +298,7 @@
     
       <include>
         <uri>model:///Gazebo/Cube_Target</uri>
-        <pose>4 4 1 0 0 0 </pose>
+        <pose>4 4 1 0 0 -3.14 </pose>
         <name>"Cube_Target2"</name>
       </include>
     

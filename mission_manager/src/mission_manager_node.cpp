@@ -437,20 +437,19 @@ void StaticScenario_1()
       ROS_INFO("Send TAKEOFF order!");
       communication::nav_control nav_order_msg;
       nav_order_msg.order     = "TAKEOFF"; 
-      nav_order_msg.altitude  = altitude + 11;
+      nav_order_msg.altitude  = altitude + ALTITUDE_OFFSET + 1;
 
       nav_order_pub.publish(nav_order_msg);
       step_1 = true;
    }
 
-   if(Compare( altitude, HOME_ALTITUDE+10, 0) && !step_2)
+   if(Compare( altitude, HOME_ALTITUDE+ALTITUDE_OFFSET, 0) && !step_2)
    {
       // EM, Predefined area                          A           B           C           D
       area_cover_path = SetWaypointsAreaCovering(-35.363086,  -35.363086, -35.362561, -35.362561, 
                                                  149.165250,  149.165923, 149.165923, 149.165250,
                                                  altitude); 
 
-      ROS_INFO("GO TO RESEARCH AREA!");
       communication::nav_control nav_order_msg;
       nav_order_msg = area_cover_path.front(); 
       ROS_INFO_STREAM("Nav order = " << nav_order_msg.order 
@@ -461,7 +460,7 @@ void StaticScenario_1()
       nav_order_pub.publish(nav_order_msg);
       target_latitude         = nav_order_msg.latitude;
       target_longitude        = nav_order_msg.longitude;
-
+      
       step_2 = true;
 
       ROS_INFO("Application activation!");
@@ -498,7 +497,6 @@ void StaticScenario_1()
       communication::nav_control nav_order_msg;
       nav_order_msg.order     = "TRACKING_MOVE"; 
       nav_order_pub.publish(nav_order_msg);
-
    }
 
 

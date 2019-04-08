@@ -63,6 +63,7 @@
 #define VERBOSITY_HIGH      3
 
 #define HOME_ALTITUDE       603.4486
+#define ALTITUDE_OFFSET     15
 #define PI                  3.14159265
 #define HFOV_ANGLE_CAMERA   60  //1.0472 in radian
 #define PIXEL_CAMERA_WIDTH  640
