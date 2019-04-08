@@ -570,7 +570,7 @@ void NavCommand::TrackingOrder()
             vel_msg.twist.linear.x   = vel_linear_x;
             vel_msg.twist.linear.y   = vel_linear_y;
             vel_msg.twist.linear.z   = 0;
-            //cmd_vel_pub_.publish(vel_msg);
+            cmd_vel_pub_.publish(vel_msg);
 
             updated_tracking_data = false;
         }

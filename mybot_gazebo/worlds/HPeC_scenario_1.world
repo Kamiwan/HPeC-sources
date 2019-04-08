@@ -255,6 +255,23 @@
   </include>
 </model>
 
+<model name="trumpy_box4">
+  <include>
+        <uri>model:///Gazebo/Cube_Target</uri>
+        <pose>0 20 1 0 0 1.57 </pose>
+        <name>"Cube_Target2"</name>
+  </include>
+</model>
+
+<model name="trumpy_box5">
+  <include>
+        <uri>model:///Gazebo/Cube_Target</uri>
+        <pose>-0 -20 1 0 0 -1.57 </pose>
+        <name>"Cube_Target2"</name>
+  </include>
+</model>
+
+
 
 <!-- FOR GAZEBO 8 OR HIGHER  -->
 <actor name="animated_box"> 
