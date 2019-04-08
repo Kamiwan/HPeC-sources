@@ -297,11 +297,11 @@
           </waypoint>
           <waypoint>
             <time>6</time>
-            <pose>18 -19 1 0 0 0</pose>
+            <pose>20 -17 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>9</time>
-            <pose>18 -17 1 0 0 0</pose>
+            <pose>20 -15 1 0 0 0</pose>
           </waypoint>
           <waypoint>
             <time>12</time>

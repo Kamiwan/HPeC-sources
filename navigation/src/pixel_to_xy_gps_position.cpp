@@ -87,37 +87,46 @@ void    DistanceTwoGpsPositions(double latitude_1, double latitude_2,
 
 
 
-/*******************************************************************
+/******************************************************************************
  * XYinPicToGpsPosition
  * Author : EM 
- * @param x, y (pixels coordinates)
- * @param curr_lat curr_long, (in DEGREES!)
- * @param hfov_lenght (in meters)
+ * @param x, y                              (pixels coordinates)
  * @param cam_width_pixel, cam_height_pixel (in pixels)
+ * @param hfov_lenght                       (in meters)
+ * @param theta                             (in degrees)
+ * @param curr_lat curr_long,               (in DEGREES!)
  * 
- * @out lat long, (in DEGREES)
+ * @out lat long,                           (in DEGREES)
  * 
  * Give the latitude and longitude coordinates to a given pixel position
- *******************************************************************/
-void    XYinPicToGpsPosition(double x, double y, 
-                            double origin_latitude, double origin_longitude,
-                            double hfov_lenght, int cam_width_pixel, int cam_height_pixel,
+ * 
+ * x and y coordinates are based as the topleft corner of the picture is 0,0
+ * theta is the orientation angle of the picture compared to the North
+ * curr_lat curr_long are GPS coordinates that represents the picture center
+ *****************************************************************************/
+void    XYinPicToGpsPosition(double x, double y, int cam_width_pixel, int cam_height_pixel,
+                            double hfov_lenght, double theta, 
+                            double current_latitude, double current_longitude,
                             double & latitude, double & longitude)
 {
-    int center_x       = cam_width_pixel  >> 1; // EM, Divide by 2 so >> 1
-    int center_y       = cam_height_pixel >> 1;
-    int x_distance_px  = x - center_x;
-    int y_distance_px  = y - center_y;
+    // We have to translate the origin of the coordinate system to the picture center
+    int relative_to_center_x = x - cam_width_pixel/2;
+    int relative_to_center_y = -(y - cam_height_pixel/2);
+    //We negate y because in the picture axis, y increases by going down and we want the opposite
 
-    double  meters_per_px = hfov_lenght / cam_width_pixel;  // EM, pixels are squares so we only use hfov, 
-                                                            // no need to use vfov
+    int absolute_x, absolute_y;
+    XYPositionAxisRotation(relative_to_center_x, relative_to_center_y, theta,
+                           absolute_x, absolute_y);
+        
+    double x_center_distance, y_center_distance;
+    XYLenghtOffsetPixels(absolute_x, absolute_y, 0, 0,
+                         hfov_lenght, cam_width_pixel,
+                         x_center_distance, y_center_distance);
 
-    double x_distance_meters = x_distance_px * meters_per_px;
-    double y_distance_meters = y_distance_px * meters_per_px;
-
-    latitude  = origin_latitude  + ( y_distance_meters / kMetersPerLatDegree );
+    LatLongOffsetMeters(x_center_distance, y_center_distance, 
+        current_latitude, current_longitude, 
+        latitude, longitude);
     //longitude = current_longitude + ( x_distance_meters / (kMetersPerLatDegree * std::cos(current_latitude * M_PI / 180)) );
-    longitude = origin_longitude + (x_distance_meters / kEarthRadiusMeters) * (M_PI / 180) / std::cos(origin_latitude * M_PI / 180);
 }                            
 
 

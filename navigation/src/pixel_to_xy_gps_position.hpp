@@ -35,9 +35,9 @@ void    DistanceTwoGpsPositions(double latitude_1, double latitude_2,
                             double longitude_1, double longitude_2, 
                             double & x_lenght, double & y_lenght);
 
-void    XYinPicToGpsPosition(double x, double y, 
+void    XYinPicToGpsPosition(double x, double y, int cam_width_pixel, int cam_height_pixel,
+                            double hfov_lenght, double theta, 
                             double current_latitude, double current_longitude,
-                            double hfov_lenght, int cam_width_pixel, int cam_height_pixel,
                             double & latitude, double & longitude);
 
 double  XYLenghtsToHypotenuse(double x_lenght, double y_lenght);

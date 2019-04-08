@@ -215,10 +215,22 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
         }
 
         double h_fov = HorizontalFOVLenght(current_altitude_ - kHomeAltitude, kHFOV);
-        XYinPicToGpsPosition(target_x_, target_y_, 
-                            current_latitude_, current_longitude_,
-                            h_fov, kCamWidthPixel, kCamHeightPixel,
+        
+        // Target-UAV distance computation
+        // To get right velocity orders, we have to convert UAV relative x,y position
+        // into absolute x',y' North East position (NED)
+        XYPositionAxisRotation(target_x_, target_y_, current_heading_.data,
+                                absolute_target_x_, absolute_target_y_);
+        
+        XYLenghtOffsetPixels(absolute_target_x_, absolute_target_y_, 0, 0,
+                            h_fov, kCamWidthPixel, uav_dist_x_, uav_dist_y_);
+        target_uav_distance_ = XYLenghtsToHypotenuse(uav_dist_x_, uav_dist_y_);
+
+        //Target GPS position and Speed computation
+        LatLongOffsetMeters(uav_dist_x_, uav_dist_y_, 
+                            current_latitude_, current_longitude_, 
                             target_latitude_, target_longitude_);
+
         DistanceTwoGpsPositions(prev_target_latitude_ , target_latitude_ , 
                                     prev_target_longitude_, target_longitude_, 
                                     delta_target_meters_x_, delta_target_meters_y_);
@@ -229,19 +241,6 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
         {
             target_speed_ = 0;
         }
-
-        // Target-UAV distance computation
-        // To get right velocity orders, we have to convert UAV relative x,y position
-        // into absolute x',y' North East position (NED)
-        // The Heading given by MAVLINK is clockwise so we have to negate it
-        XYPositionAxisRotation(target_x_, target_y_, current_heading_.data,
-                                absolute_target_x_, absolute_target_y_);
-        
-        XYLenghtOffsetPixels(absolute_target_x_, absolute_target_y_, 0, 0,
-                            h_fov, kCamWidthPixel, uav_dist_x_, uav_dist_y_);
-        target_uav_distance_ = XYLenghtsToHypotenuse(uav_dist_x_, uav_dist_y_);
-
-        updated_tracking_data = true;
                 
         /*
         ROS_INFO_STREAM("\n Target locked: latitude = " << std::setprecision (10) << target_latitude_  
@@ -250,6 +249,8 @@ void NavCommand::TrackingCallback(const tld_msgs::BoundingBox::ConstPtr& target)
                         << " m ; Target-UAV disance = " << target_uav_distance_ 
                         << " m ; Speed = " << target_speed_ << " m/s");
         */
+
+       updated_tracking_data = true;
     } else
     {
         first_detection_ = true;
@@ -522,7 +523,6 @@ void NavCommand::TrackingOrder()
             double  vel_linear_x, vel_linear_y;
             if( distance > kDistanceThreshold ) //No movements if the UAV is within threshold distance from the target
             {
-                target_speed_ =0.5;    // EM, TODO: FIX THIS, the speed computing is false for instance so 0.5 m/s
                 if(target_speed_ < kMinUAVSpeed)
                 {
                     vel_linear_x = kMinUAVSpeed * speed_ratio_x;
@@ -544,15 +544,7 @@ void NavCommand::TrackingOrder()
                 vel_linear_x = 0;
                 vel_linear_y = 0;
             }
-
-            /*ROS_INFO_STREAM(" ; foresee_target_x = " << foresee_target_x 
-                << " ; foresee_target_y = " << foresee_target_y << " ; target speed = " << target_speed_);
-            ROS_INFO_STREAM(" ; speed_ratio_x = " << speed_ratio_x 
-                            << " ; speed_ratio_y = " << speed_ratio_y  
-                            << " ; vel_linear_x = " << vel_linear_x 
-                            << " ; vel_linear_y = " << vel_linear_y 
-                            << " distance = " << distance );*/
-            
+           
             ROS_INFO_STREAM(   " ; target_x = "  << target_x_
                             << " ; target_y_ = " << target_y_  
                             << " ; \nNEW_x_ = " << absolute_target_x_
@@ -561,6 +553,7 @@ void NavCommand::TrackingOrder()
                             << " ; \nx_dist = " << uav_dist_x_
                             << " ; y_dist = " << uav_dist_y_ 
                             << " ; distance = " << distance 
+                            << " ; target_speed_ = " << target_speed_ 
                             << " ; vel_linear_x = " << vel_linear_x 
                             << " ; vel_linear_y = " << vel_linear_y );
 
@@ -574,15 +567,7 @@ void NavCommand::TrackingOrder()
 
             updated_tracking_data = false;
         }
-            /*
-            double  foresee_target_lat, foresee_target_long;
-            LatLongOffsetMeters(foresee_target_x, foresee_target_y,
-                                current_latitude_, current_longitude_,
-                                foresee_target_lat, foresee_target_long);
-            //Keep the current yaw
-            NoYawGpsMoveOrder(current_altitude_, foresee_target_lat, foresee_target_long); 
-            */
-    
+
         rate.sleep();        
         ros::spinOnce();
     }
