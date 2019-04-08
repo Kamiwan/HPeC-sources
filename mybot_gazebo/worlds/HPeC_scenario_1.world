@@ -50,22 +50,6 @@
             </friction>
           </surface>
         </collision>
-        <visual name="runway">
-          <pose>000 0 0.004 0 0 0</pose>
-          <cast_shadows>false</cast_shadows>
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>400 45</size>
-            </plane>
-          </geometry>
-          <material>
-            <script>
-              <uri>file://media/materials/scripts/gazebo.material</uri>
-              <name>Gazebo/Runway</name>
-            </script>
-          </material>
-        </visual>
 
         <visual name="playground">
           <pose>000 0 0.009 0 0 0</pose>
