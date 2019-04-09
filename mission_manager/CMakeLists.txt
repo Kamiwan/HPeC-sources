@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   communication
   image_transport
- #message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -144,6 +143,7 @@ include_directories(
 
 add_executable(mission_manager_node 
   src/mission_manager_node.cpp
+  src/pixel_to_xy_gps_position.cpp
 )
 
 

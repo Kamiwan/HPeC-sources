@@ -74,7 +74,7 @@ extern"C"{
 #include "reconfiguration_automate.h"
 #include "reconfig.h"
 
-#include "CommSharedMemory.hpp" //EM, shared_memory_lib header
+#include "comm_shared_memory.hpp" //EM, shared_memory_lib header
 
 #define MUTEX_NAME_BTS_LOAD		"Mutex_BTS_load"
 

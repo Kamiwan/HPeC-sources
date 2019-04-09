@@ -20,15 +20,14 @@ Defense Mapping Agency. 1987b. DMA Technical Report: Supplement to Department of
 */
 
 
-
-void LLtoUTM(int ReferenceEllipsoid, const double Lat, const double Long, 
-			 double &UTMNorthing, double &UTMEasting, char* UTMZone)
-{
 //converts lat/long to UTM coords.  Equations from USGS Bulletin 1532 
 //East Longitudes are positive, West longitudes are negative. 
 //North latitudes are positive, South latitudes are negative
 //Lat and Long are in decimal degrees
 	//Written by Chuck Gantz- chuck.gantz@globalstar.com
+void LLtoUTM(int ReferenceEllipsoid, const double Lat, const double Long, 
+			 double &UTMNorthing, double &UTMEasting, char* UTMZone)
+{
 
 	double a = ellipsoid[ReferenceEllipsoid].EquatorialRadius;
 	double eccSquared = ellipsoid[ReferenceEllipsoid].eccentricitySquared;

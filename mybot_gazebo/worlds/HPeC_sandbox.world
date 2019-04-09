@@ -424,7 +424,7 @@
     <!-- FOR GAZEBO 8 OR HIGHER  -->
 
     <wind>
-      <linear_velocity>0 1 0</linear_velocity>
+      <linear_velocity>0 0 0</linear_velocity>
     </wind>
 
     <plugin name="wind" filename="libWindPlugin.so">

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(shared_memory_lib)
+project(navigation)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
 add_definitions(-std=c++11)
@@ -12,16 +12,18 @@ add_definitions(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  #cv_bridge
   message_generation
-  REQUIRED
+  communication REQUIRED
 )
 
-SET(CMAKE_CXX_FLAGS " -I/usr/local/include ")
-set (CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lpthread -lrt")
+#find_package(OpenCV REQUIRED)
+
+
 
 ## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS system)
-
+# find_package(Boost REQUIRED COMPONENTS system)
+#blabla blabla 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -109,7 +111,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES shared_memory_lib
+#  LIBRARIES navigation
 CATKIN_DEPENDS 
 roscpp 
 std_msgs 
@@ -127,24 +129,27 @@ communication
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS} 
+  #${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-add_library(${PROJECT_NAME} SHARED
-    src/comm_shared_memory.cpp
-)
+#add_library(${PROJECT_NAME}(
+#   src/${PROJECT_NAME}/navigation.cpp /opt/ros/kinetic/lib/libimage_transport.so
+#)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(shared_memory_lib shared_memory_lib_generate_messages_cpp)
+#add_dependencies(navigation navigation_generate_messages_cpp)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-#add_executable(shared_memory_lib_node
-#			src/shared_memory_lib.cpp
-#)
+add_executable(navigation_node
+			src/navigation_node.cpp
+      src/nav_command.cpp
+      src/pixel_to_xy_gps_position.cpp
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -155,12 +160,13 @@ add_dependencies(shared_memory_lib shared_memory_lib_generate_messages_cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_dependencies(shared_memory_lib_node shared_memory_lib_generate_messages_cpp)
-#add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(navigation_node navigation_generate_messages_cpp)
+add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
- target_link_libraries(shared_memory_lib
+ target_link_libraries(navigation_node
    ${catkin_LIBRARIES}
+   #${OpenCV_LIBRARIES}
  )
 
 #############
@@ -203,7 +209,7 @@ add_dependencies(shared_memory_lib shared_memory_lib_generate_messages_cpp)
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_shared_memory_lib.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_navigation.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

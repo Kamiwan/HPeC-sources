@@ -10,7 +10,6 @@ project(communication)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
-  std_msgs
   geometry_msgs
   message_generation
 )
@@ -56,6 +55,7 @@ find_package(catkin REQUIRED COMPONENTS
    goalGPSList_msg.msg
    path_msg.msg
    area_location.msg
+   nav_control.msg
  )
 
 ## Generate services in the 'srv' folder

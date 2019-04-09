@@ -264,7 +264,7 @@ int main (int argc, char ** argv)
                                 got_path = false;
                                 ROS_INFO("take off order sent");
                                 in_flight = true;
-                                ROS_INFO_STREAM("I'm I flying? = " << in_flight);
+                                ROS_INFO_STREAM("Am I flying? = " << in_flight);
                             }
                         }
                     }
@@ -279,8 +279,7 @@ int main (int argc, char ** argv)
                             {	
                                 got_path = false;
                                 in_flight = true;
-                                ROS_INFO("I SHOULD BE MOVING! AM I MOVING? PLZ SAY YES!");
-                                ROS_INFO_STREAM("I'm I flying? = " << in_flight);
+                                ROS_INFO_STREAM("Am I flying? = " << in_flight);
                             }
                         }
                     }

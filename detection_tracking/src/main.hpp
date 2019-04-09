@@ -56,7 +56,7 @@
 #include <std_msgs/Float32.h>
 #include <string>
 
-#include "CommSharedMemory.hpp" //EM, shared_memory_lib header
+#include "comm_shared_memory.hpp" //EM, shared_memory_lib header
 
 #define HIL		//EM, Code modifications for Hardware In the Loop
 #define TLD_INPUT_TOPIC "/iris/camera2/image_raw" 

@@ -105,13 +105,13 @@ You should get something like **"Your branch is up-to-date with 'origin/master'.
 Now we configure the project to compile it.
 
 Replace the path of *image_transport* lib by yours in the CMakeLists.txt of following packages:
+* detection_tracking
 * emergency_landing
 * generic_task_wrapper
-* rosnode_model
 * harris_detector
-* detection_tracking
-* stabilisation_imu
 * mission_manager
+* rosnode_model
+* stabilisation_imu
 
 in the include directories
 ```bash 
