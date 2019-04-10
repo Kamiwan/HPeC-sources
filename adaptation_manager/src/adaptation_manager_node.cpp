@@ -38,6 +38,8 @@ int verbose;
 boost::shared_ptr<boost::thread> sequence_thread[TILE_NUMBER];
 bool active_thread[TILE_NUMBER];
 App_scheduler sequence_apps[2];
+
+int ncc_heptagon;
 /****** GLOBAL VARIABLES ********/
 
 boost::shared_ptr<ros::Publisher> search_land_pub = NULL;
@@ -198,8 +200,9 @@ void notify_Callback(const std_msgs::Int32::ConstPtr& msg)
 int main (int argc, char ** argv)
 {   
     ros::init(argc, argv, "adaptation_manager_node");
-    ros::NodeHandle nh;     //EM non-private Node Handle to get topics notifications from other nodes
-    ros::NodeHandle n("~"); //EM, use ~ for private parameters, here it's for verbose
+    ros::NodeHandle nh;     // EM non-private Node Handle to get topics notifications from other nodes
+    ros::NodeHandle n("~"); // EM, use ~ for private parameters, here it's for verbose
+    ncc_heptagon = 0;       // Mandatory data bridge for reconfiguration automaton
 
     ROS_INFO("[ADAPTATION MANAGER] [RUNNING] \n");
 
@@ -259,6 +262,7 @@ int main (int argc, char ** argv)
     
 
     //EM, First Step use with start configuration
+    ncc_heptagon = sh_mem_access.Read_QoS(TRACKING);
     automaton_out = do1(automaton_in); //Call reconfiguration automaton
 
     //EM, For the 1st Step, init each attributes of prev_config to 0 
@@ -292,13 +296,20 @@ int main (int argc, char ** argv)
             }
             automaton_in.update_timing_qos(time_qos_data);
             if(count_test ==10)
+            {
+                ncc_heptagon = sh_mem_access.Read_QoS(TRACKING);
                 automaton_out = fake_output2();
-            else
+            } else
             {
                 if(count_test ==20)
+                {
+                    ncc_heptagon = sh_mem_access.Read_QoS(TRACKING);
                     automaton_out = fake_output3();
-                else
+                } else
+                {
+                    ncc_heptagon = sh_mem_access.Read_QoS(TRACKING);
                     automaton_out = do1(automaton_in); //Call reconfiguration automaton
+                }
             }                
 
             prev_app_output_config = app_output_config; 

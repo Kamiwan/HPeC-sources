@@ -151,7 +151,8 @@ void doStep ( Step_in* in, Step_out* out)
   int trk_e= !((in->tracking).req);
 
   /* GD : put here the actual value of ncc (ncc is an integer in interval [0,100]) */
-  int ncc = 80;
+  // EM, declared as a global variable in call.h: ncc_heptagon
+	// ncc_heptagon is updated before each do_step() call
 
 	/***********************************************************
 	* CALLING STEP
@@ -171,7 +172,7 @@ void doStep ( Step_in* in, Step_out* out)
                     maxtexe10, maxtexe11, c_img_r, c_img_e, me_imu_r,
                     me_imu_e, me_img_r, me_img_e, sl_r, sl_e, oa_r, oa_e,
                     tl_r, tl_e, rs_r, rs_e, rb_r, rb_e, rpl_r, rpl_e, dt_r,
-                    dt_e, trk_r, trk_e, ncc, f_1, rp_1, f_2, rp_2, f_3, rp_3,
+                    dt_e, trk_r, trk_e, ncc_heptagon, f_1, rp_1, f_2, rp_2, f_3, rp_3,
                     &_res, &mem);
 	/***********************************************************
 	* AFTER STEP

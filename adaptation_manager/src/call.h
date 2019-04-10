@@ -8,6 +8,7 @@
 
 #include "main.h"
 
+extern int ncc_heptagon;
 
 typedef struct Task_in Task_in;
 struct Task_in
