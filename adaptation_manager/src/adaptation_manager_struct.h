@@ -34,6 +34,8 @@ extern"C"{
 	#include "call.h"
 }
 
+
+
 //EM, new struct to allow timing and qos updates
 struct App_timing_qos
 {  
@@ -43,44 +45,6 @@ struct App_timing_qos
 	//EM, useful functions to use App_timing_qos easily
 	void print();
 };
-
-void 	Task_inRazTimingQos(Task_in & task);
-void 	Task_inRazAll(Task_in & task);
-void 	Task_inPrint(const Task_in & task);
-void	Task_inCopy(const Task_in & task_to_copy, Task_in & new_copy);
-Task_in Task_inUpdateTimeQos(const App_timing_qos & app_feedback,
-				Task_in & task);
-
-
-struct Step_in
-{
-	Task_in contrast_img;
-	Task_in motion_estim_imu;
-	Task_in motion_estim_img;
-	Task_in search_landing; 
-	Task_in obstacle_avoidance;
-	Task_in t_landing;
-	Task_in rotoz_s;
-	Task_in rotoz_b;
-	Task_in replanning;
-	Task_in detection; 
-	Task_in tracking;
-
-	Hw_st h1;
-	Hw_st h2;
-	Hw_st h3;
-
-	//EM, useful functions to use Step_in easily
-	void init();
-	void raz_timing_qos();
-	void load_C3(std::vector<Task_in> const& C3);
-	void update_timing_qos(std::vector<App_timing_qos> time_qos);
-	std::vector<Task_in> record_step_in();
-};
-
-
-
-
 
 struct Map_app_out
 {
@@ -120,6 +84,23 @@ struct Bitstream_map
 	//EM, useful functions to use Bitstream_map easily
 	void print();
 };
+
+
+void 	Task_inRazTimingQos(Task_in & task);
+void 	Task_inRazAll(Task_in & task);
+void 	Task_inPrint(const Task_in & task);
+void	Task_inCopy(const Task_in & task_to_copy, Task_in & new_copy);
+void	Task_inUpdateTimeQos(const App_timing_qos & app_feedback,
+				Task_in & task);
+
+void 	Step_inInit(Step_in & input_step);
+void 	Step_inRazTimingQos(Step_in & input_step);
+void 	Step_inLoadC3(const std::vector<Task_in> & C3, Step_in & input_step);
+void 	Step_inUpdateTimingQos(const std::vector<App_timing_qos> & time_qos, 
+							Step_in & input_step);
+std::vector<Task_in> Step_inRecord(const Step_in & input_step);
+
+
 
 
 #endif

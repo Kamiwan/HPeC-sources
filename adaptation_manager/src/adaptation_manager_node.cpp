@@ -251,7 +251,7 @@ int main (int argc, char ** argv)
     vector<Task_in>         C3_init = read_C3(PATH_TABLE_C3);
     vector<Bitstream_map>   bts_map = read_BTS_MAP(PATH_MAP_TAB);
     raz_timing_qos(C3_init);
-    automaton_in.load_C3(C3_init);
+    Step_inLoadC3(C3_init, automaton_in);
     //EM, Shared Memory setup
     MemoryCoordinator sh_mem_access("Admin");
     sh_mem_setup(sh_mem_access, C3_init);
@@ -291,17 +291,17 @@ int main (int argc, char ** argv)
             if(MM_request) //EM, When the reconfiguration is asked from Mission Manager
             {
                 C3_current    = sh_mem_read_C3(sh_mem_access);
-                automaton_in.load_C3(C3_current);
+                Step_inLoadC3(C3_init, automaton_in);
                 MM_request = false;
             }
-            automaton_in.update_timing_qos(time_qos_data);
+            Step_inUpdateTimingQos(time_qos_data, automaton_in);
             if(count_test ==10)
             {
                 ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
                 automaton_out = fake_output2();
             } else
             {
-                if(count_test ==20)
+                /*if(count_test == 40)
                 {
                     ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
                     automaton_out = fake_output3();
@@ -309,7 +309,7 @@ int main (int argc, char ** argv)
                 {
                     ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
                     automaton_out = do1(automaton_in); //Call reconfiguration automaton
-                }
+                }*/
             }                
 
             prev_app_output_config = app_output_config; 
@@ -662,13 +662,13 @@ void sequence_exec_routine(App_scheduler seq_app[2])
         secured_reconfiguration();
         msg.data = 2; //Start app
         activate_desactivate_task(seq_app[current_app].app_index, msg);	
-        ROS_INFO("Wait DONE, app_index = ", seq_app[current_app].app_index);
+        ROS_INFO("Wait DONE, app_index = %d", seq_app[current_app].app_index);
         end = std::chrono::system_clock::now() + ms;
         while(!shared_memory.done_Read(seq_app[current_app].app_index)
                 && std::chrono::system_clock::now() < end);
         
         msg.data = 0; //Stop app
-        ROS_INFO("Wait app END, app_index = ", seq_app[current_app].app_index);
+        ROS_INFO("Wait app END, app_index = %d", seq_app[current_app].app_index);
         end = std::chrono::system_clock::now() + ms;
         activate_desactivate_task(seq_app[current_app].app_index, msg);	
         while(!shared_memory.release_hw_Read(seq_app[current_app].app_index)
@@ -687,7 +687,7 @@ void secured_reconfiguration()
     {
         boost::this_thread::disable_interruption di; //EM, disable interrupt for this thread
         {
-            //EM, lock access for BTS load in FPGA
+            // EM, lock access for BTS load in FPGA
             bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); 
 
             std::this_thread::sleep_for(std::chrono::seconds(3));
@@ -820,7 +820,3 @@ void	raz_timing_qos(vector<Task_in> & C3)
         Task_inRazTimingQos(C3[i]);
 }
 
-    /*############################## TEST CODE ##############################*/
-    /*std::cout << "Press Enter to continue..." << std::endl;
-    std::cin.get();
-    /*############################## TEST CODE ##############################*/

@@ -72,41 +72,41 @@ void Task_inUpdateTimeQos(const App_timing_qos & app_feedback, Task_in & task)
 
 
 
-void Step_in::init()
+void Step_inInit(Step_in & input_step)
 {
-	Task_inRazAll( contrast_img );
-	Task_inRazAll( motion_estim_imu );
-	Task_inRazAll( motion_estim_img );
-	Task_inRazAll( search_landing );
-	Task_inRazAll( obstacle_avoidance );
-	Task_inRazAll( t_landing );
-	Task_inRazAll( rotoz_s );
-	Task_inRazAll( rotoz_b );
-	Task_inRazAll( replanning );
-	Task_inRazAll( detection );
-	Task_inRazAll( tracking );
+	Task_inRazAll( input_step.contrast_img );
+	Task_inRazAll( input_step.motion_estim_imu );
+	Task_inRazAll( input_step.motion_estim_img );
+	Task_inRazAll( input_step.search_landing );
+	Task_inRazAll( input_step.obstacle_avoidance );
+	Task_inRazAll( input_step.t_landing );
+	Task_inRazAll( input_step.rotoz_s );
+	Task_inRazAll( input_step.rotoz_b );
+	Task_inRazAll( input_step.replanning );
+	Task_inRazAll( input_step.detection );
+	Task_inRazAll( input_step.tracking );
 
-	h1.av =	1;	// EM, Everything is available at the beginning
-	h2.av =	1;
-	h3.av =	1;
+	input_step.h1.av =	1;	// EM, Everything is available at the beginning
+	input_step.h2.av =	1;
+	input_step.h3.av =	1;
 }
 
-void Step_in::raz_timing_qos()
+void Step_inRazTimingQos(Step_in & input_step)
 {
-	Task_inRazTimingQos( contrast_img );
-	Task_inRazTimingQos( motion_estim_imu );
-	Task_inRazTimingQos( motion_estim_img );
-	Task_inRazTimingQos( search_landing );
-	Task_inRazTimingQos( obstacle_avoidance );
-	Task_inRazTimingQos( t_landing );
-	Task_inRazTimingQos( rotoz_s );
-	Task_inRazTimingQos( rotoz_b );
-	Task_inRazTimingQos( replanning );
-	Task_inRazTimingQos( detection );
-	Task_inRazTimingQos( tracking );
+	Task_inRazTimingQos( input_step.contrast_img );
+	Task_inRazTimingQos( input_step.motion_estim_imu );
+	Task_inRazTimingQos( input_step.motion_estim_img );
+	Task_inRazTimingQos( input_step.search_landing );
+	Task_inRazTimingQos( input_step.obstacle_avoidance );
+	Task_inRazTimingQos( input_step.t_landing );
+	Task_inRazTimingQos( input_step.rotoz_s );
+	Task_inRazTimingQos( input_step.rotoz_b );
+	Task_inRazTimingQos( input_step.replanning );
+	Task_inRazTimingQos( input_step.detection );
+	Task_inRazTimingQos( input_step.tracking );
 }
 
-void Step_in::load_C3(std::vector<Task_in> const& C3)
+void Step_inLoadC3(const std::vector<Task_in> & C3, Step_in & input_step)
 {
 	if(C3.size() < APPLICATION_NUMBER)
 	{
@@ -114,20 +114,20 @@ void Step_in::load_C3(std::vector<Task_in> const& C3)
 		return; // EM, to leave a void function
 	}
 	// EM, I know it's dirty, it would have been better with an array of attributes...
-	Task_inCopy( C3[0],  contrast_img );
-	Task_inCopy( C3[1],  motion_estim_imu );
-	Task_inCopy( C3[2],  motion_estim_img );
-	Task_inCopy( C3[3],  search_landing );
-	Task_inCopy( C3[4],  obstacle_avoidance );
-	Task_inCopy( C3[5],  t_landing );
-	Task_inCopy( C3[6],  rotoz_s );
-	Task_inCopy( C3[7],  rotoz_b );
-	Task_inCopy( C3[8],  replanning );
-	Task_inCopy( C3[9],  detection );
-	Task_inCopy( C3[10], tracking );
+	Task_inCopy( C3[0],  input_step.contrast_img );
+	Task_inCopy( C3[1],  input_step.motion_estim_imu );
+	Task_inCopy( C3[2],  input_step.motion_estim_img );
+	Task_inCopy( C3[3],  input_step.search_landing );
+	Task_inCopy( C3[4],  input_step.obstacle_avoidance );
+	Task_inCopy( C3[5],  input_step.t_landing );
+	Task_inCopy( C3[6],  input_step.rotoz_s );
+	Task_inCopy( C3[7],  input_step.rotoz_b );
+	Task_inCopy( C3[8],  input_step.replanning );
+	Task_inCopy( C3[9],  input_step.detection );
+	Task_inCopy( C3[10], input_step.tracking );
 }
 
-void Step_in::update_timing_qos(std::vector<App_timing_qos> time_qos)
+void Step_inUpdateTimingQos(const std::vector<App_timing_qos> & time_qos, Step_in & input_step)
 {
 	if(time_qos.size() < APPLICATION_NUMBER)
 	{
@@ -135,35 +135,35 @@ void Step_in::update_timing_qos(std::vector<App_timing_qos> time_qos)
 		return; // EM, to leave a void function
 	}
 	// EM, I know it's dirty, it would have been better with an array of attributes...
-	Task_inUpdateTimeQos( time_qos[0],  contrast_img );
-	Task_inUpdateTimeQos( time_qos[1],  motion_estim_imu );
-	Task_inUpdateTimeQos( time_qos[2],  motion_estim_img );
-	Task_inUpdateTimeQos( time_qos[3],  search_landing );
-	Task_inUpdateTimeQos( time_qos[4],  obstacle_avoidance );
-	Task_inUpdateTimeQos( time_qos[5],  t_landing );
-	Task_inUpdateTimeQos( time_qos[6],  rotoz_s );
-	Task_inUpdateTimeQos( time_qos[7],  rotoz_b );
-	Task_inUpdateTimeQos( time_qos[8],  replanning );
-	Task_inUpdateTimeQos( time_qos[9],  detection );
-	Task_inUpdateTimeQos( time_qos[10], tracking );
+	Task_inUpdateTimeQos( time_qos[0],  input_step.contrast_img );
+	Task_inUpdateTimeQos( time_qos[1],  input_step.motion_estim_imu );
+	Task_inUpdateTimeQos( time_qos[2],  input_step.motion_estim_img );
+	Task_inUpdateTimeQos( time_qos[3],  input_step.search_landing );
+	Task_inUpdateTimeQos( time_qos[4],  input_step.obstacle_avoidance );
+	Task_inUpdateTimeQos( time_qos[5],  input_step.t_landing );
+	Task_inUpdateTimeQos( time_qos[6],  input_step.rotoz_s );
+	Task_inUpdateTimeQos( time_qos[7],  input_step.rotoz_b );
+	Task_inUpdateTimeQos( time_qos[8],  input_step.replanning );
+	Task_inUpdateTimeQos( time_qos[9],  input_step.detection );
+	Task_inUpdateTimeQos( time_qos[10], input_step.tracking );
 }
 
 
-std::vector<Task_in> Step_in::record_step_in()
+std::vector<Task_in> Step_inRecord(const Step_in & input_step)
 {
 	std::vector<Task_in> C3;
 
-	C3.push_back(contrast_img);
-	C3.push_back(motion_estim_imu);
-	C3.push_back(motion_estim_img);
-	C3.push_back(search_landing);
-	C3.push_back(obstacle_avoidance);
-	C3.push_back(t_landing);
-	C3.push_back(rotoz_s);
-	C3.push_back(rotoz_b);
-	C3.push_back(replanning);
-	C3.push_back(detection);
-	C3.push_back(tracking);
+	C3.push_back(input_step.contrast_img);
+	C3.push_back(input_step.motion_estim_imu);
+	C3.push_back(input_step.motion_estim_img);
+	C3.push_back(input_step.search_landing);
+	C3.push_back(input_step.obstacle_avoidance);
+	C3.push_back(input_step.t_landing);
+	C3.push_back(input_step.rotoz_s);
+	C3.push_back(input_step.rotoz_b);
+	C3.push_back(input_step.replanning);
+	C3.push_back(input_step.detection);
+	C3.push_back(input_step.tracking);
 
 	return C3;
 }
