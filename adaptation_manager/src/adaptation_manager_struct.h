@@ -30,6 +30,9 @@
 #include <vector>
 
 #include "am_defines.h"
+extern"C"{
+	#include "call.h"
+}
 
 //EM, new struct to allow timing and qos updates
 struct App_timing_qos
@@ -41,32 +44,13 @@ struct App_timing_qos
 	void print();
 };
 
-struct Task_in
-{
-    int req; // 1 : activation, 0 : stop
+void 	Task_inRazTimingQos(Task_in & task);
+void 	Task_inRazAll(Task_in & task);
+void 	Task_inPrint(const Task_in & task);
+void	Task_inCopy(const Task_in & task_to_copy, Task_in & new_copy);
+Task_in Task_inUpdateTimeQos(const App_timing_qos & app_feedback,
+				Task_in & task);
 
-    int texec; // texec , [mintexec, maxtexec]
-    int mintexec;
-    int maxtexec;
-
-    int qos;      //qos , [minqos, maxqos]
-    int minqos;
-    int maxqos;
-
-	int priority; //task priority  
-
-	//EM, useful functions to use Task_in easily
-	void raz_timing_qos();
-	void raz_all();
-	void print();
-	Task_in& operator=(Task_in const& rhs);
-	Task_in& operator=(App_timing_qos const& rhs);
-};
-
-struct Hw_st 
-{
-	int av; // 1 (YES : Available) , 0 (NO)
-};
 
 struct Step_in
 {
@@ -95,36 +79,8 @@ struct Step_in
 };
 
 
-//*********** sortie automate
-struct Task_out
-{  
-    int act; 	 // 1 : active, 0: stop 
-    int version; // -1, (SW =>) 0,  (HW/tile =>) 1, 2, 3
 
-    int code;
 
-    int achievable; // 0 (NO), 1 (YES)
-
-    int up_pos;   // 1 si l'automate peut choisir une version plus rapide sinon 0
-    int down_pos; // 1 si l'automate peut choisir une version moins rapide sinon 0
-    int keep_pos; // 1 si l'automate peut conserver la version courante sinon 0
-    int qos_pos;  // 1 si possible, sinon 0
-};
-
-struct Step_out
-{
-	Task_out contrast_img;
-	Task_out motion_estim_imu;
-	Task_out motion_estim_img;
-	Task_out search_landing; 
-	Task_out obstacle_avoidance;
-	Task_out t_landing;
-	Task_out rotoz_s;
-	Task_out rotoz_b;
-	Task_out replanning;
-	Task_out detection; 
-	Task_out tracking;
-};
 
 struct Map_app_out
 {

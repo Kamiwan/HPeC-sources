@@ -23,99 +23,87 @@
 
 #include "adaptation_manager_struct.h"
 
-void Task_in::raz_timing_qos()
+void Task_inRazTimingQos(Task_in & task)
 {
-	texec	= 0;
-    qos		= 0;
+	task.texec	= 0;
+    task.qos	= 0;
 }
 
-void Task_in::raz_all()
+void Task_inRazAll(Task_in & task)
 {
- req		= 0; // 1 : activation, 0 : arrêt
-
- texec		= 0; // texec , [mintexec, maxtexec]
- mintexec	= 0;
- maxtexec	= 0;
-
- qos		= 0; //qos , [minqos, maxqos]
- minqos 	= 0;
- maxqos 	= 0;
-
- priority	= 0;
+	task.req		= 0; // 1 : activation, 0 : arrêt
+	task.texec		= 0; // texec , [mintexec, maxtexec]
+	task.mintexec	= 0;
+	task.maxtexec	= 0;
+	task.qos		= 0; //qos , [minqos, maxqos]
+	task.minqos 	= 0;
+	task.maxqos 	= 0;
+	task.priority	= 0;
 }
 
-void Task_in::print(){
-	std::cout 	<< "req = " << req << std::endl
-				<< "texec = " << texec << std::endl
-				<< "mintexec = " << mintexec << std::endl
-				<< "maxtexec = " << maxtexec << std::endl
-				<< "qos = " << qos << std::endl
-				<< "minqos = " << minqos << std::endl
-				<< "maxqos = " << maxqos << std::endl
-				<< "priority = " << priority << std::endl;
+void Task_inPrint(const Task_in & task){
+	std::cout 	<< "req = " 	<< task.req << std::endl
+				<< "texec = "   << task.texec << std::endl
+				<< "mintexec = "<< task.mintexec << std::endl
+				<< "maxtexec = "<< task.maxtexec << std::endl
+				<< "qos = " 	<< task.qos << std::endl
+				<< "minqos = "  << task.minqos << std::endl
+				<< "maxqos = "  << task.maxqos << std::endl
+				<< "priority = "<< task.priority << std::endl;
 }
 
-Task_in& Task_in::operator=( Task_in const& rhs )
+void	Task_inCopy(const Task_in & task_to_copy, Task_in & new_copy)
 {
-	// Check for self-assignment!
-    if (this == &rhs)
-    	return *this;        
-
-	req			= rhs.req; 		// 1 : activation, 0 : stop
-
-	texec		= rhs.texec; 	// texec , [mintexec, maxtexec]
-	mintexec	= rhs.mintexec;
-	maxtexec	= rhs.maxtexec;
-
-	qos			= rhs.qos; 		//qos , [minqos, maxqos]
-	minqos 		= rhs.minqos;
-	maxqos 		= rhs.maxqos;
-
-	priority	= rhs.priority;
-	return *this;
+	new_copy.priority	= task_to_copy.priority;
+    new_copy.req		= task_to_copy.req;
+    new_copy.texec		= task_to_copy.texec;
+    new_copy.mintexec	= task_to_copy.mintexec;
+    new_copy.maxtexec	= task_to_copy.maxtexec;
+    new_copy.qos    	= task_to_copy.qos;
+    new_copy.minqos		= task_to_copy.minqos;
+    new_copy.maxqos		= task_to_copy.maxqos;
 }
 
-Task_in& Task_in::operator=(App_timing_qos const& rhs)
+void Task_inUpdateTimeQos(const App_timing_qos & app_feedback, Task_in & task)
 {
-	texec		= rhs.texec; 	// texec , [mintexec, maxtexec]
-	qos			= rhs.qos; 		//qos , [minqos, maxqos]
-	return *this;
+	task.texec	= app_feedback.texec; 	// texec, [mintexec, maxtexec]
+	task.qos	= app_feedback.qos; 	// qos,   [minqos, maxqos]
 }
 
 
 
 void Step_in::init()
 {
-	contrast_img.raz_all();
-	motion_estim_imu.raz_all();
-	motion_estim_img.raz_all();
-	search_landing.raz_all();
-	obstacle_avoidance.raz_all();
-	t_landing.raz_all();
-	rotoz_s.raz_all();
-	rotoz_b.raz_all();
-	replanning.raz_all();
-	detection.raz_all();
-	tracking.raz_all();
+	Task_inRazAll( contrast_img );
+	Task_inRazAll( motion_estim_imu );
+	Task_inRazAll( motion_estim_img );
+	Task_inRazAll( search_landing );
+	Task_inRazAll( obstacle_avoidance );
+	Task_inRazAll( t_landing );
+	Task_inRazAll( rotoz_s );
+	Task_inRazAll( rotoz_b );
+	Task_inRazAll( replanning );
+	Task_inRazAll( detection );
+	Task_inRazAll( tracking );
 
-	h1.av =	1;	//EM, Everything is available at the beginning
+	h1.av =	1;	// EM, Everything is available at the beginning
 	h2.av =	1;
 	h3.av =	1;
 }
 
 void Step_in::raz_timing_qos()
 {
-	contrast_img.raz_timing_qos();
-	motion_estim_imu.raz_timing_qos();
-	motion_estim_img.raz_timing_qos();
-	search_landing.raz_timing_qos();
-	obstacle_avoidance.raz_timing_qos();
-	t_landing.raz_timing_qos();
-	rotoz_s.raz_timing_qos();
-	rotoz_b.raz_timing_qos();
-	replanning.raz_timing_qos();
-	detection.raz_timing_qos();
-	tracking.raz_timing_qos();
+	Task_inRazTimingQos( contrast_img );
+	Task_inRazTimingQos( motion_estim_imu );
+	Task_inRazTimingQos( motion_estim_img );
+	Task_inRazTimingQos( search_landing );
+	Task_inRazTimingQos( obstacle_avoidance );
+	Task_inRazTimingQos( t_landing );
+	Task_inRazTimingQos( rotoz_s );
+	Task_inRazTimingQos( rotoz_b );
+	Task_inRazTimingQos( replanning );
+	Task_inRazTimingQos( detection );
+	Task_inRazTimingQos( tracking );
 }
 
 void Step_in::load_C3(std::vector<Task_in> const& C3)
@@ -123,21 +111,20 @@ void Step_in::load_C3(std::vector<Task_in> const& C3)
 	if(C3.size() < APPLICATION_NUMBER)
 	{
 		std::cout << "The C3 table provided is too small! C3 size=" << C3.size() << std::endl;
-		return; //EM, to leave a void function
+		return; // EM, to leave a void function
 	}
-	//EM, I know it's dirty, it would have been better with an array of attributes...
-	//Operator overload = with Step_in and Task_in
-	contrast_img 		= C3[0];
-	motion_estim_imu 	= C3[1];
-	motion_estim_img 	= C3[2];
-	search_landing 		= C3[3];
-	obstacle_avoidance 	= C3[4];
-	t_landing 			= C3[5];
-	rotoz_s 			= C3[6];
-	rotoz_b 			= C3[7];
-	replanning 			= C3[8];
-	detection 			= C3[9];
-	tracking 			= C3[10];
+	// EM, I know it's dirty, it would have been better with an array of attributes...
+	Task_inCopy( C3[0],  contrast_img );
+	Task_inCopy( C3[1],  motion_estim_imu );
+	Task_inCopy( C3[2],  motion_estim_img );
+	Task_inCopy( C3[3],  search_landing );
+	Task_inCopy( C3[4],  obstacle_avoidance );
+	Task_inCopy( C3[5],  t_landing );
+	Task_inCopy( C3[6],  rotoz_s );
+	Task_inCopy( C3[7],  rotoz_b );
+	Task_inCopy( C3[8],  replanning );
+	Task_inCopy( C3[9],  detection );
+	Task_inCopy( C3[10], tracking );
 }
 
 void Step_in::update_timing_qos(std::vector<App_timing_qos> time_qos)
@@ -145,21 +132,20 @@ void Step_in::update_timing_qos(std::vector<App_timing_qos> time_qos)
 	if(time_qos.size() < APPLICATION_NUMBER)
 	{
 		std::cout << "The time_qos table provided is too small! time_qos size=" << time_qos.size() << std::endl;
-		return; //EM, to leave a void function
+		return; // EM, to leave a void function
 	}
-	//EM, I know it's dirty, it would have been better with an array of attributes...
-	//Operator overload = with Step_in and App_timing_qos
-	contrast_img 		= time_qos[0];
-	motion_estim_imu 	= time_qos[1];
-	motion_estim_img 	= time_qos[2];
-	search_landing 		= time_qos[3];
-	obstacle_avoidance 	= time_qos[4];
-	t_landing 			= time_qos[5];
-	rotoz_s 			= time_qos[6];
-	rotoz_b 			= time_qos[7];
-	replanning 			= time_qos[8];
-	detection 			= time_qos[9];
-	tracking 			= time_qos[10];
+	// EM, I know it's dirty, it would have been better with an array of attributes...
+	Task_inUpdateTimeQos( time_qos[0],  contrast_img );
+	Task_inUpdateTimeQos( time_qos[1],  motion_estim_imu );
+	Task_inUpdateTimeQos( time_qos[2],  motion_estim_img );
+	Task_inUpdateTimeQos( time_qos[3],  search_landing );
+	Task_inUpdateTimeQos( time_qos[4],  obstacle_avoidance );
+	Task_inUpdateTimeQos( time_qos[5],  t_landing );
+	Task_inUpdateTimeQos( time_qos[6],  rotoz_s );
+	Task_inUpdateTimeQos( time_qos[7],  rotoz_b );
+	Task_inUpdateTimeQos( time_qos[8],  replanning );
+	Task_inUpdateTimeQos( time_qos[9],  detection );
+	Task_inUpdateTimeQos( time_qos[10], tracking );
 }
 
 
@@ -203,7 +189,7 @@ std::string Map_app_out::set_fusion(Map_app_out const& config_app)
 
 Map_app_out& Map_app_out::operator=(Task_out const& rhs)
 {
-	Map_app_out curr_app_out; //EM, intermediate variable to set fusion_sequence
+	Map_app_out curr_app_out; // EM, intermediate variable to set fusion_sequence
 	curr_app_out.active			= rhs.act;
 	curr_app_out.version_code	= rhs.code;
 	curr_app_out.region_id		= rhs.code %10;
@@ -211,7 +197,7 @@ Map_app_out& Map_app_out::operator=(Task_out const& rhs)
 	active			= rhs.act;
 	version_code	= rhs.code;
 	region_id		= curr_app_out.region_id;
-	fusion_sequence	= set_fusion(curr_app_out); //EM, function needed for this attribute
+	fusion_sequence	= set_fusion(curr_app_out); // EM, function needed for this attribute
 	return *this;
 }
 

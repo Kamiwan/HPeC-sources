@@ -262,7 +262,7 @@ int main (int argc, char ** argv)
     
 
     //EM, First Step use with start configuration
-    ncc_heptagon = sh_mem_access.Read_QoS(TRACKING);
+    ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
     automaton_out = do1(automaton_in); //Call reconfiguration automaton
 
     //EM, For the 1st Step, init each attributes of prev_config to 0 
@@ -297,17 +297,17 @@ int main (int argc, char ** argv)
             automaton_in.update_timing_qos(time_qos_data);
             if(count_test ==10)
             {
-                ncc_heptagon = sh_mem_access.Read_QoS(TRACKING);
+                ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
                 automaton_out = fake_output2();
             } else
             {
                 if(count_test ==20)
                 {
-                    ncc_heptagon = sh_mem_access.Read_QoS(TRACKING);
+                    ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
                     automaton_out = fake_output3();
                 } else
                 {
-                    ncc_heptagon = sh_mem_access.Read_QoS(TRACKING);
+                    ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
                     automaton_out = do1(automaton_in); //Call reconfiguration automaton
                 }
             }                
@@ -352,7 +352,7 @@ vector<Task_in> read_C3(const char* path)
            for (size_t i = 0; i < res.size(); i++)
         {
             cout << "Task " << i << " : " <<  endl;
-            res[i].print();
+            Task_inPrint(res[i]);
         }
     }
     return res;
@@ -783,7 +783,7 @@ vector<Task_in>	sh_mem_read_C3(MemoryCoordinator & shared_memory)
     vector<int> shared_data;
     for(int i=0; i<APPLICATION_NUMBER; i++)
     {
-        shared_data = shared_memory.C3_table_Read(i);
+        shared_data     = shared_memory.C3_table_Read(i);
         tmp.req			= shared_data[C3_ACTIVE_REQUEST];
         tmp.texec	    = shared_data[C3_CURRENT_TEXEC];
         tmp.mintexec	= shared_data[C3_MIN_TEXEC];
@@ -817,7 +817,7 @@ vector<App_timing_qos> 	sh_mem_read_time_qos(MemoryCoordinator & shared_memory)
 void	raz_timing_qos(vector<Task_in> & C3)
 {
     for(size_t i = 0; i < C3.size(); i++)
-        C3[i].raz_timing_qos();
+        Task_inRazTimingQos(C3[i]);
 }
 
     /*############################## TEST CODE ##############################*/
