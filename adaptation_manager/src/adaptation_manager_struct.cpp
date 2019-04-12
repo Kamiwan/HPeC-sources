@@ -42,7 +42,7 @@ void Task_inRazAll(Task_in & task)
 }
 
 void Task_inPrint(const Task_in & task){
-	std::cout 	<< "req = " 	<< task.req << std::endl
+	std::cout 	<< "; req = " 	<< task.req << std::endl
 				<< "texec = "   << task.texec << std::endl
 				<< "mintexec = "<< task.mintexec << std::endl
 				<< "maxtexec = "<< task.maxtexec << std::endl
@@ -166,6 +166,20 @@ std::vector<Task_in> Step_inRecord(const Step_in & input_step)
 	C3.push_back(input_step.tracking);
 
 	return C3;
+}
+
+
+void 	Task_outPrint(const Task_out & task)
+{
+	std::cout 	<< "; act = " 		<< task.act << std::endl
+				<< "size = "   		<< task.size << std::endl
+				<< "version = "		<< task.version << std::endl
+				<< "code = "		<< task.code << std::endl
+				<< "achievable = " 	<< task.achievable << std::endl
+				<< "up_pos = "  	<< task.up_pos << std::endl
+				<< "down_pos = "  	<< task.down_pos << std::endl
+				<< "keep_pos = "  	<< task.keep_pos << std::endl
+				<< "qos_pos = "		<< task.qos_pos << std::endl;
 }
 
 void App_timing_qos::print(){

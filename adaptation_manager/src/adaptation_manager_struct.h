@@ -99,7 +99,7 @@ void 	Step_inLoadC3(const std::vector<Task_in> & C3, Step_in & input_step);
 void 	Step_inUpdateTimingQos(const std::vector<App_timing_qos> & time_qos, 
 							Step_in & input_step);
 std::vector<Task_in> Step_inRecord(const Step_in & input_step);
-
+void 	Task_outPrint(const Task_out & task);
 
 
 

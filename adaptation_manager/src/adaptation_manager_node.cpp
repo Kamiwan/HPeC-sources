@@ -245,27 +245,77 @@ int main (int argc, char ** argv)
         notify_from_MM_sub = nh.subscribe("/notify_from_MM_topic", 1000, notify_Callback);
 
 
-    //EM, Data structure setup
+    // EM, Data structure setup
     Step_in     automaton_in;
     Step_out    automaton_out;
     vector<Task_in>         C3_init = read_C3(PATH_TABLE_C3);
     vector<Bitstream_map>   bts_map = read_BTS_MAP(PATH_MAP_TAB);
-    raz_timing_qos(C3_init);
+    //raz_timing_qos(C3_init);
     Step_inLoadC3(C3_init, automaton_in);
-    //EM, Shared Memory setup
+    // EM, Shared Memory setup
     MemoryCoordinator sh_mem_access("Admin");
     sh_mem_setup(sh_mem_access, C3_init);
     
     for(int i = 0; i < TILE_NUMBER; i++)
         active_thread[i] = false;
-    
-    
 
-    //EM, First Step use with start configuration
+    // EM, First Step use with start configuration
     ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
-    automaton_out = do1(automaton_in); //Call reconfiguration automaton
+    //automaton_out = do1(automaton_in); //Call reconfiguration automaton
+    Step_in  * ptr_automaton_in  = &automaton_in;
+    Step_out * ptr_automaton_out = &automaton_out;
+    doStep(ptr_automaton_in, ptr_automaton_out);
 
-    //EM, For the 1st Step, init each attributes of prev_config to 0 
+    std::cout << "***** DOSTEP INPUT *****" << std::endl;
+    std::cout << "\ncontrast_img";
+    Task_inPrint(automaton_in.contrast_img);
+    std::cout << "\nmotion_estim_imu";
+    Task_inPrint(automaton_in.motion_estim_imu);
+    std::cout << "\nmotion_estim_img";
+    Task_inPrint(automaton_in.motion_estim_img);
+    std::cout << "\nsearch_landing";
+    Task_inPrint(automaton_in.search_landing);
+    std::cout << "\nobstacle_avoidance";
+    Task_inPrint(automaton_in.obstacle_avoidance);
+    std::cout << "\nt_landing";
+    Task_inPrint(automaton_in.t_landing);
+    std::cout << "\nrotoz_s";
+    Task_inPrint(automaton_in.rotoz_s);
+    std::cout << "\nrotoz_b";
+    Task_inPrint(automaton_in.rotoz_b);
+    std::cout << "\nreplanning";
+    Task_inPrint(automaton_in.replanning);
+    std::cout << "\ndetection";
+    Task_inPrint(automaton_in.detection);
+    std::cout << "\ntracking";
+    Task_inPrint(automaton_in.tracking);
+
+    std::cout << "***** DOSTEP OUTPUT *****" << std::endl;
+    std::cout << "\ncontrast_img";
+    Task_outPrint(automaton_out.contrast_img);
+    std::cout << "\nmotion_estim_imu";
+    Task_outPrint(automaton_out.motion_estim_imu);
+    std::cout << "\nmotion_estim_img";
+    Task_outPrint(automaton_out.motion_estim_img);
+    std::cout << "\nsearch_landing";
+    Task_outPrint(automaton_out.search_landing);
+    std::cout << "\nobstacle_avoidance";
+    Task_outPrint(automaton_out.obstacle_avoidance);
+    std::cout << "\nt_landing";
+    Task_outPrint(automaton_out.t_landing);
+    std::cout << "\nrotoz_s";
+    Task_outPrint(automaton_out.rotoz_s);
+    std::cout << "\nrotoz_b";
+    Task_outPrint(automaton_out.rotoz_b);
+    std::cout << "\nreplanning";
+    Task_outPrint(automaton_out.replanning);
+    std::cout << "\ndetection";
+    Task_outPrint(automaton_out.detection);
+    std::cout << "\ntracking";
+    Task_outPrint(automaton_out.tracking);
+
+
+    // EM, For the 1st Step, init each attributes of prev_config to 0 
     Map_app_out empty_map;
     empty_map.init();
     for(size_t i = 0; i < APPLICATION_NUMBER; i++)
@@ -286,30 +336,28 @@ int main (int argc, char ** argv)
         ros::spinOnce();
 
         time_qos_data = sh_mem_read_time_qos(sh_mem_access);
-        if(!compare(time_qos_data,C3_current) || MM_request || count_test == 10 || count_test == 20 || count_test == 30 )
+        if(!compare(time_qos_data,C3_current) || MM_request || count_test == 20 )
         {
-            if(MM_request) //EM, When the reconfiguration is asked from Mission Manager
+            if(MM_request) // EM, When the reconfiguration is asked from Mission Manager
             {
                 C3_current    = sh_mem_read_C3(sh_mem_access);
-                Step_inLoadC3(C3_init, automaton_in);
+                Step_inLoadC3(C3_current, automaton_in);
                 MM_request = false;
             }
             Step_inUpdateTimingQos(time_qos_data, automaton_in);
+            ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
             if(count_test ==10)
             {
-                ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
                 automaton_out = fake_output2();
             } else
             {
-                /*if(count_test == 40)
+                if(count_test == 20)
                 {
-                    ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
                     automaton_out = fake_output3();
                 } else
                 {
-                    ncc_heptagon  = sh_mem_access.Read_QoS(TRACKING);
                     automaton_out = do1(automaton_in); //Call reconfiguration automaton
-                }*/
+                }
             }                
 
             prev_app_output_config = app_output_config; 
@@ -332,7 +380,7 @@ vector<Task_in> read_C3(const char* path)
     Task_in tmp;
     for(int i=0; i<file_content.size(); i+=9)
     {
-        //EM, The first string every 9 rows is the Task name, ex: [0],[9]...
+        // EM, The first string every 9 rows is the Task name, ex: [0],[9]...
         tmp.req			= stoi(file_content[i+1]);
         tmp.texec		= stoi(file_content[i+2]);
         tmp.mintexec	= stoi(file_content[i+3]);
@@ -369,7 +417,7 @@ vector<App_timing_qos> read_time_qos(const char* path)
     App_timing_qos tmp;
     for(int i=0; i<file_content.size(); i+=3)
     {
-        //EM, The first string every 3 rows is the Task name, ex: [0],[3]...
+        // EM, The first string every 3 rows is the Task name, ex: [0],[3]...
         tmp.texec		= stoi(file_content[i+1]);
         tmp.qos			= stoi(file_content[i+2]);
         res.push_back(tmp);
@@ -391,14 +439,14 @@ vector<App_timing_qos> read_time_qos(const char* path)
 
 vector<Map_app_out>	init_output(Step_out const& step_output)
 {
-    //EM, instantiation of the returned structure
+    // EM, instantiation of the returned structure
     vector<Map_app_out> res;
     Map_app_out tmp;
     tmp.init();
     for(int i=0; i < APPLICATION_NUMBER; i++)
         res.push_back(tmp);
 
-    //EM, I know it's dirty, it would have been better with an array of attributes...
+    // EM, I know it's dirty, it would have been better with an array of attributes...
     //Operator overload = with Map_app_out and Step_out
     res[0] 	= step_output.contrast_img;
     res[1] 	= step_output.motion_estim_imu;
@@ -421,22 +469,25 @@ void check_sequence(vector<Map_app_out> & map_config_app)
     if(map_config_app.size() < APPLICATION_NUMBER)
     {
         std::cout << "The map_config_app table provided is too small! map_config_app size=" << map_config_app.size() << std::endl;
-        return; //EM, to leave a void function
+        return; // EM, to leave a void function
     }
 
-    //EM, check if 2 active apps have the same HW Tile location 
+    // EM, check if 2 active apps have the same HW Tile location 
     //	  => meaning sequence execution
     for(int i=0; i < (APPLICATION_NUMBER - 1); i++)
         if( map_config_app[i].active == 1
             && map_config_app[i].version_code < MULTI_APP_THRESHOLD_CODE
             && map_config_app[i].region_id != 0)
+        {
             for(int j=i+1; j < APPLICATION_NUMBER; j++)
                 if(map_config_app[i].region_id == map_config_app[j].region_id
                     && map_config_app[j].active == 1)
                 {
                     map_config_app[i].fusion_sequence = "s";
                     map_config_app[j].fusion_sequence = "s";
+                    std::cout << "Apps " << i << " and " << j << " are in sequence!" << std::endl;
                 }
+        }
 }
 
 vector<Bitstream_map> read_BTS_MAP(const char* path)
@@ -483,9 +534,9 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
     vector<App_scheduler> scheduler_array = create_scheduler_tab(map_config_app, prev_map_config_app,bitstream_map);
     std_msgs::Int32 msg;
 
-    //EM, First loop: disable each Task, not only those that have to be stopped,
-    //in order to free HW Tiles. This is not a problem since all tasks in 
-    //scheduler change of state, involving a Stop at a time.
+    // EM, First loop: disable each Task, not only those that have to be stopped,
+    // in order to free HW Tiles. This is not a problem since all tasks in 
+    // scheduler change of state, involving a Stop at a time.
     cout << endl;
     for(size_t i = 0; i < scheduler_array.size(); i++)
     {
@@ -493,15 +544,12 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         activate_desactivate_task(scheduler_array[i].app_index, msg);	
         cout << "\033[1;31m Disable Task no: " << scheduler_array[i].app_index << "\033[0m"  << endl;
 
-        if(i == scheduler_array.size()-1 || i == scheduler_array.size()-2)
-            scheduler_array[i].print();
-
         if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 0)
         { 
-            //EM, write in shared memory the state of each Tile that are released thanks to HW tasks shutdown
-            shared_memory.busy_tile_Write(0, scheduler_array[i].region_id-1); //EM, -1 because sh_vector index starts at 0
+            // EM, write in shared memory the state of each Tile that are released thanks to HW tasks shutdown
+            shared_memory.busy_tile_Write(0, scheduler_array[i].region_id-1); // EM, -1 because sh_vector index starts at 0
 
-            //EM, Stop the ongoing sequence process
+            // EM, Stop the ongoing sequence process
             if(active_thread[scheduler_array[i].region_id-1])
             {
                 cout << " Disable thread of Tile no: " << scheduler_array[i].region_id << endl;
@@ -511,7 +559,7 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         }
     }
 
-    //EM, Second loop: Ensure that all Tiles that are gonna be configured are freed.
+    // EM, Second loop: Ensure that all Tiles that are gonna be configured are freed.
     for(size_t i = 0; i < scheduler_array.size(); i++)
     {
         if(scheduler_array[i].region_id != 0 && scheduler_array[i].active ==1) 
@@ -520,7 +568,7 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         }
     }
 
-    //EM, Third loop: activation of each Task except those in sequence "s"
+    // EM, Third loop: activation of each Task except those in sequence "s"
     for(size_t i = 0; i < scheduler_array.size(); i++)
     {
         //Enable SW tasks
@@ -535,36 +583,36 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 1
             && scheduler_array[i].fusion_sequence != "f" && scheduler_array[i].fusion_sequence != "s") 
         {
-            //EM, TODO: finish reconfiguration FPGA!!! 
+            // EM, TODO: finish reconfiguration FPGA!!! 
             secured_reconfiguration();
             msg.data = 2; 
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[1;36m Enable HW version of Task no: " << scheduler_array[i].app_index 
                     << " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
-            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id-1); //EM, notify the Tile reservation in sh mem
-            //EM, -1 because sh_vector index starts at 0
+            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id-1); // EM, notify the Tile reservation in sh mem
+            // EM, -1 because sh_vector index starts at 0
         }
 
         //Enable HW tasks in fusion "f"
         if(scheduler_array[i].region_id != 0 && scheduler_array[i].active == 1
             && scheduler_array[i].fusion_sequence == "f")
         {
-            //EM, TODO: finish reconfiguration FPGA!!! 
+            // EM, TODO: finish reconfiguration FPGA!!! 
             secured_reconfiguration();
             msg.data = scheduler_array[i].version_code - scheduler_array[i].region_id; 
             //The 2 fusionned tasks will be activated, only one ROS node can understand the msg.data and launch the fusion
             activate_desactivate_task(scheduler_array[i].app_index, msg);
             cout << "\033[36m Enable HW FUSION version of Task no: " << scheduler_array[i].app_index 
                     << " in Tile no: " << scheduler_array[i].region_id << "\033[0m" << endl;
-            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id-1); //EM, notify the Tile reservation in sh mem
-            //EM, -1 because sh_vector index starts at 0
+            shared_memory.busy_tile_Write(1, scheduler_array[i].region_id-1); // EM, notify the Tile reservation in sh mem
+            // EM, -1 because sh_vector index starts at 0
         }
     }
     cout << endl;
     
-    //EM, Forth loop: activation of routines for sequence "s"
+    // EM, Forth loop: activation of routines for sequence "s"
     int tile_used[TILE_NUMBER] = {0,0,0};
-    for(size_t i = 0; i < scheduler_array.size(); i++)
+    for(size_t i = 0; i < scheduler_array.size()-1; i++)
     {
         if(scheduler_array[i].region_id != 0 
             && scheduler_array[i].active == 1
@@ -573,7 +621,8 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
         {
             sequence_apps[0] = scheduler_array[i];
             for(int j = i+1; j < scheduler_array.size(); j++)
-                if(scheduler_array[j].region_id == scheduler_array[i].region_id)
+                if(scheduler_array[j].region_id == scheduler_array[i].region_id
+                    && scheduler_array[j].active == 1)
                 {
                     sequence_apps[1] = scheduler_array[j];
                     tile_used[scheduler_array[j].region_id-1] = 1;
@@ -598,14 +647,14 @@ vector<App_scheduler>	create_scheduler_tab(vector<Map_app_out> const& map_config
 {
     vector<App_scheduler> res;
     App_scheduler tmp;
-    //EM, we add in the scheduler only applications with a different configuration from previous doStep()
+    // EM, we add in the scheduler only applications with a different configuration from previous doStep()
     for(int i = 0; i < map_config_app.size(); i++)
-        if( map_config_app[i].active != prev_map_config_app[i].active //EM, different state OR different version_code
+        if( map_config_app[i].active != prev_map_config_app[i].active // EM, different state OR different version_code
           || map_config_app[i].version_code != prev_map_config_app[i].version_code)
         {
             tmp.app_index = i;
             tmp = map_config_app[i];
-            if(map_config_app[i].region_id != 0) //EM, if HW version -> need bitstream addr
+            if(map_config_app[i].region_id != 0) // EM, if HW version -> need bitstream addr
                 tmp.bitstream_addr = find_BTS_addr(bitstream_map, map_config_app[i].version_code);
             else
                 tmp.bitstream_addr = 0;
@@ -651,7 +700,7 @@ void sequence_exec_routine(App_scheduler seq_app[2])
     seq_app[0].print();
     seq_app[1].print();
 
-    //EM, notify the Tile reservation in sh mem
+    // EM, notify the Tile reservation in sh mem
     shared_memory.busy_tile_Write(1, seq_app[0].region_id-1); //-1 because sh_vector index starts at 0
 
     std::chrono::seconds ms(5);
@@ -674,27 +723,28 @@ void sequence_exec_routine(App_scheduler seq_app[2])
         while(!shared_memory.release_hw_Read(seq_app[current_app].app_index)
                 && std::chrono::system_clock::now() < end);
 
-        current_app = 1 - current_app; //EM, to alternate between 1 and 0
+        current_app = 1 - current_app; // EM, to alternate between 1 and 0
     }
 }
 
 void secured_reconfiguration()
 {
-    ROS_INFO("Try to load bts");
-    bip::named_mutex bts_load_mutex{ //EM, add mutex for secured bitsream load
-        bip::open_or_create
-        , MUTEX_NAME_BTS_LOAD};
     {
-        boost::this_thread::disable_interruption di; //EM, disable interrupt for this thread
+    boost::this_thread::disable_interruption di; // EM, disable interrupt for this thread
         {
-            // EM, lock access for BTS load in FPGA
-            bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); 
+            ROS_INFO("Try to load bts");
+            bip::named_mutex bts_load_mutex{ // EM, add mutex for secured bitsream load
+                bip::open_or_create
+                , MUTEX_NAME_BTS_LOAD};
+            {
+                // EM, lock access for BTS load in FPGA
+                bip::scoped_lock<bip::named_mutex> lock(bts_load_mutex); 
 
-            std::this_thread::sleep_for(std::chrono::seconds(3));
-            //EM, TODO: PUT here FPGA reconfiguration
-
+                std::this_thread::sleep_for(std::chrono::seconds(3));
+                // EM, TODO: PUT here FPGA reconfiguration
+                ROS_INFO("Bitstream loaded in FPGA!");
+            }
         }
-        ROS_INFO("Bitstream loaded in FPGA!");
     }
 }
 
@@ -748,12 +798,12 @@ void sh_mem_setup(MemoryCoordinator & shared_memory, vector<Task_in> C3)
     std::vector<int> busy_tile_init;
     for(int i = 0; i < APPLICATION_NUMBER; i++)
     {
-        achievable_init.push_back(1);   //EM, everything achievable by default
+        achievable_init.push_back(1);   // EM, everything achievable by default
         release_hw_init.push_back(1);   //  everything released by default
         done_init.push_back(0);         //  nothing done by default
 
         if(i < TILE_NUMBER)
-            busy_tile_init.push_back(0); //EM, no tile used by default
+            busy_tile_init.push_back(0); // EM, no tile used by default
     }
 
     std::vector<int> Sh_C3_init;

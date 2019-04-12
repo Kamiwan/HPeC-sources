@@ -199,7 +199,7 @@ extern boost::shared_ptr<boost::thread> sequence_thread[TILE_NUMBER];
 extern bool active_thread[TILE_NUMBER];
 extern App_scheduler sequence_apps[2];
 
-extern int ncc_heptagon; //Global variable for scheduler
+extern int ncc_heptagon; //Global variable for reconfiguration automaton
 
 #endif
 
