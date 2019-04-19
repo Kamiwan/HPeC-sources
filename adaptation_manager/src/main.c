@@ -1,6 +1,6 @@
-/* --- Generated the 15/3/2019 at 16:20 --- */
-/* --- heptagon compiler, version 1.05.00 (compiled mon. mar. 11 14:26:46 CET 2019) --- */
-/* --- Command line: /home/gwen/.opam/4.05.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
+/* --- Generated the 18/4/2019 at 16:40 --- */
+/* --- heptagon compiler, version 1.05.00 (compiled mon. apr. 15 12:21:51 CET 2019) --- */
+/* --- Command line: /scratch/gdelaval/opam/4.05.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
 
 #include <stdio.h>
 #include <string.h>
@@ -344,6 +344,7 @@ void Main__detection_tracking_step(int dt_r, int dt_e, int ncc,
   int nr_1;
   int act_d;
   int act_t;
+  _out->dummy = 0;
   switch (self->ck) {
     case Main__St_4_Active:
       if (dt_e) {
@@ -601,6 +602,7 @@ void Main__detection_tracking_step(int dt_r, int dt_e, int ncc,
 }
 
 void Main__main_reset(Main__main_mem* self) {
+  Main__detection_tracking_reset(&self->detection_tracking);
   Main__pref_ver_task_reset(&self->pref_ver_task);
   Main__pref_ver_task_reset(&self->pref_ver_task_1);
   Main__pref_ver_task_reset(&self->pref_ver_task_2);
@@ -612,7 +614,6 @@ void Main__main_reset(Main__main_mem* self) {
   Main__pref_ver_task_reset(&self->pref_ver_task_8);
   Main__pref_ver_task_reset(&self->pref_ver_task_9);
   Main__pref_ver_task_reset(&self->pref_ver_task_10);
-  Main__detection_tracking_reset(&self->detection_tracking);
   self->ck = Main__St_18_Idle;
   self->pnr_14 = false;
   self->ck_10 = Main__St_17_Idle;
@@ -691,9 +692,13 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
   Main_controller__main_ctrlr10_out Main_controller__main_ctrlr10_out_st;
   Main_controller__main_ctrlr9_out Main_controller__main_ctrlr9_out_st;
   Main_controller__main_ctrlr6_out Main_controller__main_ctrlr6_out_st;
-  Main_controller__main_ctrlr1_out Main_controller__main_ctrlr1_out_st;
   Main__detection_tracking_out Main__detection_tracking_out_st;
+  Main_controller__main_ctrlr1_out Main_controller__main_ctrlr1_out_st;
   
+  int v_27;
+  int v_26;
+  int v_25;
+  int v_24;
   int v_23;
   int v_22;
   int v_21;
@@ -1089,6 +1094,15 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
   int max_occ_2_St_5_Free;
   int err_5_St_5_Free;
   Main__st_5 ck_45;
+  int v_139;
+  int v_138;
+  int v_137;
+  int v_136;
+  int v_135;
+  int v_134;
+  int v_133;
+  int v_132;
+  int v_131;
   int v_130;
   int v_129;
   int v_128;
@@ -1192,10 +1206,6 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
   int v_30;
   int v_29;
   int v_28;
-  int v_27;
-  int v_26;
-  int v_25;
-  int v_24;
   Main__st_18 s_14;
   Main__st_18 ns_14;
   int r_17;
@@ -1549,24 +1559,33 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
   int detection_e;
   int tracking_r;
   int tracking_e;
+  int dummy;
   pref_ver_task_assume_10 = true;
-  v_24 = !(pref_ver_task_assume_10);
+  v_28 = !(pref_ver_task_assume_10);
+  Main__detection_tracking_step(dt_r, dt_e, ncc,
+                                &Main__detection_tracking_out_st,
+                                &self->detection_tracking);
+  detection_r = Main__detection_tracking_out_st.det_r;
+  detection_e = Main__detection_tracking_out_st.det_e;
+  tracking_r = Main__detection_tracking_out_st.track_r;
+  tracking_e = Main__detection_tracking_out_st.track_e;
+  dummy = Main__detection_tracking_out_st.dummy;
   Main_controller__main_ctrlr0_step(c_img_e, c_img_r, self->ck, self->ck_10,
                                     self->ck_13, self->ck_16, self->ck_19,
                                     self->ck_22, self->ck_25, self->ck_28,
                                     self->ck_31, self->ck_34, self->ck_37,
                                     self->ck_40, self->ck_42, self->ck_44,
-                                    dt_e, dt_r, f_1, f_2, f_3, max1, max10,
-                                    max11, max2, max3, max4, max5, max6,
-                                    max7, max8, max9, me_img_e, me_img_r,
-                                    me_imu_e, me_imu_r, min1, min10, min11,
-                                    min2, min3, min4, min5, min6, min7, min8,
-                                    min9, ncc, oa_e, oa_r, self->pnr,
-                                    self->pnr_10, self->pnr_11, self->pnr_12,
-                                    self->pnr_13, self->pnr_14, self->pnr_2,
-                                    self->pnr_3, self->pnr_4, self->pnr_5,
-                                    self->pnr_6, self->pnr_7, self->pnr_8,
-                                    self->pnr_9,
+                                    detection_e, detection_r, dt_e, dt_r,
+                                    dummy, f_1, f_2, f_3, max1, max10, max11,
+                                    max2, max3, max4, max5, max6, max7, max8,
+                                    max9, me_img_e, me_img_r, me_imu_e,
+                                    me_imu_r, min1, min10, min11, min2, min3,
+                                    min4, min5, min6, min7, min8, min9, ncc,
+                                    oa_e, oa_r, self->pnr, self->pnr_10,
+                                    self->pnr_11, self->pnr_12, self->pnr_13,
+                                    self->pnr_14, self->pnr_2, self->pnr_3,
+                                    self->pnr_4, self->pnr_5, self->pnr_6,
+                                    self->pnr_7, self->pnr_8, self->pnr_9,
                                     self->pref_ver_task_assume_10_1,
                                     self->pref_ver_task_assume_12,
                                     self->pref_ver_task_assume_1_1,
@@ -1593,13 +1612,13 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     rs_e, rs_r, sl_e, sl_r, texe1, texe10,
                                     texe11, texe2, texe3, texe4, texe5,
                                     texe6, texe7, texe8, texe9, tl_e, tl_r,
-                                    trk_e, trk_r,
+                                    tracking_e, tracking_r, trk_e, trk_r,
                                     &Main_controller__main_ctrlr0_out_st);
   c_c_img_ver = Main_controller__main_ctrlr0_out_st.c_c_img_ver;
   _out->c_img_ver = c_c_img_ver;
   task_ver_10 = _out->c_img_ver;
   task_ver_12 = task_ver_10;
-  texe_10 = texe1;
+  texe_10 = (texe1+dummy);
   current_texec = texe_10;
   tmin_10 = min1;
   tmin_12 = tmin_10;
@@ -1614,9 +1633,10 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     self->ck_19, self->ck_22, self->ck_25,
                                     self->ck_28, self->ck_31, self->ck_34,
                                     self->ck_37, self->ck_40, self->ck_42,
-                                    self->ck_44, dt_e, dt_r, f_1, f_2, f_3,
-                                    max1, max10, max11, max2, max3, max4,
-                                    max5, max6, max7, max8, max9, me_img_e,
+                                    self->ck_44, detection_e, detection_r,
+                                    dt_e, dt_r, dummy, f_1, f_2, f_3, max1,
+                                    max10, max11, max2, max3, max4, max5,
+                                    max6, max7, max8, max9, me_img_e,
                                     me_img_r, me_imu_e, me_imu_r, min1,
                                     min10, min11, min2, min3, min4, min5,
                                     min6, min7, min8, min9, ncc, oa_e, oa_r,
@@ -1652,7 +1672,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     rs_e, rs_r, sl_e, sl_r, texe1, texe10,
                                     texe11, texe2, texe3, texe4, texe5,
                                     texe6, texe7, texe8, texe9, tl_e, tl_r,
-                                    trk_e, trk_r,
+                                    tracking_e, tracking_r, trk_e, trk_r,
                                     &Main_controller__main_ctrlr1_out_st);
   c_me_imu_ver = Main_controller__main_ctrlr1_out_st.c_me_imu_ver;
   _out->me_imu_ver = c_me_imu_ver;
@@ -1675,18 +1695,18 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     self->ck_22, self->ck_25, self->ck_28,
                                     self->ck_31, self->ck_34, self->ck_37,
                                     self->ck_40, self->ck_42, self->ck_44,
-                                    dt_e, dt_r, f_1, f_2, f_3, max1, max10,
-                                    max11, max2, max3, max4, max5, max6,
-                                    max7, max8, max9, me_img_e, me_img_r,
-                                    me_imu_e, me_imu_r, min1, min10, min11,
-                                    min2, min3, min4, min5, min6, min7, min8,
-                                    min9, ncc, oa_e, oa_r, obj_12, obj_13,
-                                    self->pnr, self->pnr_10, self->pnr_11,
-                                    self->pnr_12, self->pnr_13, self->pnr_14,
-                                    self->pnr_2, self->pnr_3, self->pnr_4,
-                                    self->pnr_5, self->pnr_6, self->pnr_7,
-                                    self->pnr_8, self->pnr_9, pref_ver_12,
-                                    pref_ver_13,
+                                    detection_e, detection_r, dt_e, dt_r,
+                                    dummy, f_1, f_2, f_3, max1, max10, max11,
+                                    max2, max3, max4, max5, max6, max7, max8,
+                                    max9, me_img_e, me_img_r, me_imu_e,
+                                    me_imu_r, min1, min10, min11, min2, min3,
+                                    min4, min5, min6, min7, min8, min9, ncc,
+                                    oa_e, oa_r, obj_12, obj_13, self->pnr,
+                                    self->pnr_10, self->pnr_11, self->pnr_12,
+                                    self->pnr_13, self->pnr_14, self->pnr_2,
+                                    self->pnr_3, self->pnr_4, self->pnr_5,
+                                    self->pnr_6, self->pnr_7, self->pnr_8,
+                                    self->pnr_9, pref_ver_12, pref_ver_13,
                                     self->pref_ver_task_assume_10_1,
                                     self->pref_ver_task_assume_12,
                                     self->pref_ver_task_assume_1_1,
@@ -1713,7 +1733,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     rs_e, rs_r, sl_e, sl_r, texe1, texe10,
                                     texe11, texe2, texe3, texe4, texe5,
                                     texe6, texe7, texe8, texe9, tl_e, tl_r,
-                                    trk_e, trk_r,
+                                    tracking_e, tracking_r, trk_e, trk_r,
                                     &Main_controller__main_ctrlr2_out_st);
   c_me_img_ver = Main_controller__main_ctrlr2_out_st.c_me_img_ver;
   _out->me_img_ver = c_me_img_ver;
@@ -1736,9 +1756,10 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     self->ck_19, self->ck_22, self->ck_25,
                                     self->ck_28, self->ck_31, self->ck_34,
                                     self->ck_37, self->ck_40, self->ck_42,
-                                    self->ck_44, dt_e, dt_r, f_1, f_2, f_3,
-                                    max1, max10, max11, max2, max3, max4,
-                                    max5, max6, max7, max8, max9, me_img_e,
+                                    self->ck_44, detection_e, detection_r,
+                                    dt_e, dt_r, dummy, f_1, f_2, f_3, max1,
+                                    max10, max11, max2, max3, max4, max5,
+                                    max6, max7, max8, max9, me_img_e,
                                     me_img_r, me_imu_e, me_imu_r, min1,
                                     min10, min11, min2, min3, min4, min5,
                                     min6, min7, min8, min9, ncc, oa_e, oa_r,
@@ -1775,7 +1796,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     rs_e, rs_r, sl_e, sl_r, texe1, texe10,
                                     texe11, texe2, texe3, texe4, texe5,
                                     texe6, texe7, texe8, texe9, tl_e, tl_r,
-                                    trk_e, trk_r,
+                                    tracking_e, tracking_r, trk_e, trk_r,
                                     &Main_controller__main_ctrlr3_out_st);
   c_sl_ver = Main_controller__main_ctrlr3_out_st.c_sl_ver;
   _out->sl_ver = c_sl_ver;
@@ -1798,9 +1819,10 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     self->ck_16, self->ck_19, self->ck_22,
                                     self->ck_25, self->ck_28, self->ck_31,
                                     self->ck_34, self->ck_37, self->ck_40,
-                                    self->ck_42, self->ck_44, dt_e, dt_r,
-                                    f_1, f_2, f_3, max1, max10, max11, max2,
-                                    max3, max4, max5, max6, max7, max8, max9,
+                                    self->ck_42, self->ck_44, detection_e,
+                                    detection_r, dt_e, dt_r, dummy, f_1, f_2,
+                                    f_3, max1, max10, max11, max2, max3,
+                                    max4, max5, max6, max7, max8, max9,
                                     me_img_e, me_img_r, me_imu_e, me_imu_r,
                                     min1, min10, min11, min2, min3, min4,
                                     min5, min6, min7, min8, min9, ncc, oa_e,
@@ -1837,7 +1859,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     rs_e, rs_r, sl_e, sl_r, texe1, texe10,
                                     texe11, texe2, texe3, texe4, texe5,
                                     texe6, texe7, texe8, texe9, tl_e, tl_r,
-                                    trk_e, trk_r,
+                                    tracking_e, tracking_r, trk_e, trk_r,
                                     &Main_controller__main_ctrlr4_out_st);
   c_oa_ver = Main_controller__main_ctrlr4_out_st.c_oa_ver;
   _out->oa_ver = c_oa_ver;
@@ -1861,19 +1883,20 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     self->ck_22, self->ck_25, self->ck_28,
                                     self->ck_31, self->ck_34, self->ck_37,
                                     self->ck_40, self->ck_42, self->ck_44,
-                                    dt_e, dt_r, f_1, f_2, f_3, max1, max10,
-                                    max11, max2, max3, max4, max5, max6,
-                                    max7, max8, max9, me_img_e, me_img_r,
-                                    me_imu_e, me_imu_r, min1, min10, min11,
-                                    min2, min3, min4, min5, min6, min7, min8,
-                                    min9, ncc, oa_e, oa_r, obj_12, obj_13,
-                                    obj_14, obj_15, obj_16, self->pnr,
-                                    self->pnr_10, self->pnr_11, self->pnr_12,
-                                    self->pnr_13, self->pnr_14, self->pnr_2,
-                                    self->pnr_3, self->pnr_4, self->pnr_5,
-                                    self->pnr_6, self->pnr_7, self->pnr_8,
-                                    self->pnr_9, pref_ver_12, pref_ver_13,
-                                    pref_ver_14, pref_ver_15, pref_ver_16,
+                                    detection_e, detection_r, dt_e, dt_r,
+                                    dummy, f_1, f_2, f_3, max1, max10, max11,
+                                    max2, max3, max4, max5, max6, max7, max8,
+                                    max9, me_img_e, me_img_r, me_imu_e,
+                                    me_imu_r, min1, min10, min11, min2, min3,
+                                    min4, min5, min6, min7, min8, min9, ncc,
+                                    oa_e, oa_r, obj_12, obj_13, obj_14,
+                                    obj_15, obj_16, self->pnr, self->pnr_10,
+                                    self->pnr_11, self->pnr_12, self->pnr_13,
+                                    self->pnr_14, self->pnr_2, self->pnr_3,
+                                    self->pnr_4, self->pnr_5, self->pnr_6,
+                                    self->pnr_7, self->pnr_8, self->pnr_9,
+                                    pref_ver_12, pref_ver_13, pref_ver_14,
+                                    pref_ver_15, pref_ver_16,
                                     self->pref_ver_task_assume_10_1,
                                     self->pref_ver_task_assume_12,
                                     self->pref_ver_task_assume_1_1,
@@ -1900,7 +1923,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     rs_e, rs_r, sl_e, sl_r, texe1, texe10,
                                     texe11, texe2, texe3, texe4, texe5,
                                     texe6, texe7, texe8, texe9, tl_e, tl_r,
-                                    trk_e, trk_r,
+                                    tracking_e, tracking_r, trk_e, trk_r,
                                     &Main_controller__main_ctrlr5_out_st);
   c_tl_ver = Main_controller__main_ctrlr5_out_st.c_tl_ver;
   _out->tl_ver = c_tl_ver;
@@ -1924,9 +1947,10 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     self->ck_19, self->ck_22, self->ck_25,
                                     self->ck_28, self->ck_31, self->ck_34,
                                     self->ck_37, self->ck_40, self->ck_42,
-                                    self->ck_44, dt_e, dt_r, f_1, f_2, f_3,
-                                    max1, max10, max11, max2, max3, max4,
-                                    max5, max6, max7, max8, max9, me_img_e,
+                                    self->ck_44, detection_e, detection_r,
+                                    dt_e, dt_r, dummy, f_1, f_2, f_3, max1,
+                                    max10, max11, max2, max3, max4, max5,
+                                    max6, max7, max8, max9, me_img_e,
                                     me_img_r, me_imu_e, me_imu_r, min1,
                                     min10, min11, min2, min3, min4, min5,
                                     min6, min7, min8, min9, ncc, oa_e, oa_r,
@@ -1964,7 +1988,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     rs_e, rs_r, sl_e, sl_r, texe1, texe10,
                                     texe11, texe2, texe3, texe4, texe5,
                                     texe6, texe7, texe8, texe9, tl_e, tl_r,
-                                    trk_e, trk_r,
+                                    tracking_e, tracking_r, trk_e, trk_r,
                                     &Main_controller__main_ctrlr6_out_st);
   c_rs_ver = Main_controller__main_ctrlr6_out_st.c_rs_ver;
   _out->rs_ver = c_rs_ver;
@@ -1988,9 +2012,10 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     self->ck_19, self->ck_22, self->ck_25,
                                     self->ck_28, self->ck_31, self->ck_34,
                                     self->ck_37, self->ck_40, self->ck_42,
-                                    self->ck_44, dt_e, dt_r, f_1, f_2, f_3,
-                                    max1, max10, max11, max2, max3, max4,
-                                    max5, max6, max7, max8, max9, me_img_e,
+                                    self->ck_44, detection_e, detection_r,
+                                    dt_e, dt_r, dummy, f_1, f_2, f_3, max1,
+                                    max10, max11, max2, max3, max4, max5,
+                                    max6, max7, max8, max9, me_img_e,
                                     me_img_r, me_imu_e, me_imu_r, min1,
                                     min10, min11, min2, min3, min4, min5,
                                     min6, min7, min8, min9, ncc, oa_e, oa_r,
@@ -2029,7 +2054,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     rs_e, rs_r, sl_e, sl_r, texe1, texe10,
                                     texe11, texe2, texe3, texe4, texe5,
                                     texe6, texe7, texe8, texe9, tl_e, tl_r,
-                                    trk_e, trk_r,
+                                    tracking_e, tracking_r, trk_e, trk_r,
                                     &Main_controller__main_ctrlr7_out_st);
   c_rb_ver = Main_controller__main_ctrlr7_out_st.c_rb_ver;
   _out->rb_ver = c_rb_ver;
@@ -2053,9 +2078,10 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     self->ck_16, self->ck_19, self->ck_22,
                                     self->ck_25, self->ck_28, self->ck_31,
                                     self->ck_34, self->ck_37, self->ck_40,
-                                    self->ck_42, self->ck_44, dt_e, dt_r,
-                                    f_1, f_2, f_3, max1, max10, max11, max2,
-                                    max3, max4, max5, max6, max7, max8, max9,
+                                    self->ck_42, self->ck_44, detection_e,
+                                    detection_r, dt_e, dt_r, dummy, f_1, f_2,
+                                    f_3, max1, max10, max11, max2, max3,
+                                    max4, max5, max6, max7, max8, max9,
                                     me_img_e, me_img_r, me_imu_e, me_imu_r,
                                     min1, min10, min11, min2, min3, min4,
                                     min5, min6, min7, min8, min9, ncc, oa_e,
@@ -2095,7 +2121,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     rs_e, rs_r, sl_e, sl_r, texe1, texe10,
                                     texe11, texe2, texe3, texe4, texe5,
                                     texe6, texe7, texe8, texe9, tl_e, tl_r,
-                                    trk_e, trk_r,
+                                    tracking_e, tracking_r, trk_e, trk_r,
                                     &Main_controller__main_ctrlr8_out_st);
   c_rpl_ver = Main_controller__main_ctrlr8_out_st.c_rpl_ver;
   _out->rpl_ver = c_rpl_ver;
@@ -2120,14 +2146,15 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     self->ck_22, self->ck_25, self->ck_28,
                                     self->ck_31, self->ck_34, self->ck_37,
                                     self->ck_40, self->ck_42, self->ck_44,
-                                    dt_e, dt_r, f_1, f_2, f_3, max1, max10,
-                                    max11, max2, max3, max4, max5, max6,
-                                    max7, max8, max9, me_img_e, me_img_r,
-                                    me_imu_e, me_imu_r, min1, min10, min11,
-                                    min2, min3, min4, min5, min6, min7, min8,
-                                    min9, ncc, oa_e, oa_r, obj_12, obj_13,
-                                    obj_14, obj_15, obj_16, obj_17, obj_18,
-                                    obj_19, obj_20, self->pnr, self->pnr_10,
+                                    detection_e, detection_r, dt_e, dt_r,
+                                    dummy, f_1, f_2, f_3, max1, max10, max11,
+                                    max2, max3, max4, max5, max6, max7, max8,
+                                    max9, me_img_e, me_img_r, me_imu_e,
+                                    me_imu_r, min1, min10, min11, min2, min3,
+                                    min4, min5, min6, min7, min8, min9, ncc,
+                                    oa_e, oa_r, obj_12, obj_13, obj_14,
+                                    obj_15, obj_16, obj_17, obj_18, obj_19,
+                                    obj_20, self->pnr, self->pnr_10,
                                     self->pnr_11, self->pnr_12, self->pnr_13,
                                     self->pnr_14, self->pnr_2, self->pnr_3,
                                     self->pnr_4, self->pnr_5, self->pnr_6,
@@ -2161,7 +2188,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                     rs_e, rs_r, sl_e, sl_r, texe1, texe10,
                                     texe11, texe2, texe3, texe4, texe5,
                                     texe6, texe7, texe8, texe9, tl_e, tl_r,
-                                    trk_e, trk_r,
+                                    tracking_e, tracking_r, trk_e, trk_r,
                                     &Main_controller__main_ctrlr9_out_st);
   c_dt_ver = Main_controller__main_ctrlr9_out_st.c_dt_ver;
   _out->dt_ver = c_dt_ver;
@@ -2186,7 +2213,8 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                      self->ck_22, self->ck_25, self->ck_28,
                                      self->ck_31, self->ck_34, self->ck_37,
                                      self->ck_40, self->ck_42, self->ck_44,
-                                     dt_e, dt_r, f_1, f_2, f_3, max1, max10,
+                                     detection_e, detection_r, dt_e, dt_r,
+                                     dummy, f_1, f_2, f_3, max1, max10,
                                      max11, max2, max3, max4, max5, max6,
                                      max7, max8, max9, me_img_e, me_img_r,
                                      me_imu_e, me_imu_r, min1, min10, min11,
@@ -2229,7 +2257,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                      rs_e, rs_r, sl_e, sl_r, texe1, texe10,
                                      texe11, texe2, texe3, texe4, texe5,
                                      texe6, texe7, texe8, texe9, tl_e, tl_r,
-                                     trk_e, trk_r,
+                                     tracking_e, tracking_r, trk_e, trk_r,
                                      &Main_controller__main_ctrlr10_out_st);
   c_trk_ver = Main_controller__main_ctrlr10_out_st.c_trk_ver;
   _out->trk_ver = c_trk_ver;
@@ -2247,67 +2275,67 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
   pref_ver_22 = Main__pref_ver_task_out_st.pref_ver;
   obj_22 = Main__pref_ver_task_out_st.obj;
   pref_ver_task_guarantee_10 = obj_22;
-  v_25 = (v_24||pref_ver_task_guarantee_10);
+  v_29 = (v_28||pref_ver_task_guarantee_10);
   pref_ver_task_assume_9 = true;
-  v_26 = !(pref_ver_task_assume_9);
+  v_30 = !(pref_ver_task_assume_9);
   pref_ver_task_guarantee_9 = obj_21;
-  v_27 = (v_26||pref_ver_task_guarantee_9);
+  v_31 = (v_30||pref_ver_task_guarantee_9);
   pref_ver_task_assume_8 = true;
-  v_28 = !(pref_ver_task_assume_8);
+  v_32 = !(pref_ver_task_assume_8);
   pref_ver_task_guarantee_8 = obj_20;
-  v_29 = (v_28||pref_ver_task_guarantee_8);
+  v_33 = (v_32||pref_ver_task_guarantee_8);
   pref_ver_task_assume_7 = true;
-  v_30 = !(pref_ver_task_assume_7);
+  v_34 = !(pref_ver_task_assume_7);
   pref_ver_task_guarantee_7 = obj_19;
-  v_31 = (v_30||pref_ver_task_guarantee_7);
+  v_35 = (v_34||pref_ver_task_guarantee_7);
   pref_ver_task_assume_6 = true;
-  v_32 = !(pref_ver_task_assume_6);
+  v_36 = !(pref_ver_task_assume_6);
   pref_ver_task_guarantee_6 = obj_18;
-  v_33 = (v_32||pref_ver_task_guarantee_6);
+  v_37 = (v_36||pref_ver_task_guarantee_6);
   pref_ver_task_assume_5 = true;
-  v_34 = !(pref_ver_task_assume_5);
+  v_38 = !(pref_ver_task_assume_5);
   pref_ver_task_guarantee_5 = obj_17;
-  v_35 = (v_34||pref_ver_task_guarantee_5);
+  v_39 = (v_38||pref_ver_task_guarantee_5);
   pref_ver_task_assume_4 = true;
-  v_36 = !(pref_ver_task_assume_4);
+  v_40 = !(pref_ver_task_assume_4);
   pref_ver_task_guarantee_4 = obj_16;
-  v_37 = (v_36||pref_ver_task_guarantee_4);
+  v_41 = (v_40||pref_ver_task_guarantee_4);
   pref_ver_task_assume_3 = true;
-  v_38 = !(pref_ver_task_assume_3);
+  v_42 = !(pref_ver_task_assume_3);
   pref_ver_task_guarantee_3 = obj_15;
-  v_39 = (v_38||pref_ver_task_guarantee_3);
+  v_43 = (v_42||pref_ver_task_guarantee_3);
   pref_ver_task_assume_2 = true;
-  v_40 = !(pref_ver_task_assume_2);
+  v_44 = !(pref_ver_task_assume_2);
   pref_ver_task_guarantee_2 = obj_14;
-  v_41 = (v_40||pref_ver_task_guarantee_2);
+  v_45 = (v_44||pref_ver_task_guarantee_2);
   pref_ver_task_assume_1 = true;
-  v_42 = !(pref_ver_task_assume_1);
+  v_46 = !(pref_ver_task_assume_1);
   pref_ver_task_guarantee_1 = obj_13;
-  v_43 = (v_42||pref_ver_task_guarantee_1);
+  v_47 = (v_46||pref_ver_task_guarantee_1);
   pref_ver_task_assume = true;
-  v_44 = !(pref_ver_task_assume);
+  v_48 = !(pref_ver_task_assume);
   pref_ver_task_guarantee = obj_12;
-  v_45 = (v_44||pref_ver_task_guarantee);
-  v_46 = (v_43&&v_45);
-  v_47 = (v_41&&v_46);
-  v_48 = (v_39&&v_47);
-  v_49 = (v_37&&v_48);
-  v_50 = (v_35&&v_49);
-  v_51 = (v_33&&v_50);
-  v_52 = (v_31&&v_51);
-  v_53 = (v_29&&v_52);
-  v_54 = (v_27&&v_53);
-  v_55 = (v_25&&v_54);
-  v_56 = (pref_ver_task_assume_1&&pref_ver_task_assume);
-  v_57 = (pref_ver_task_assume_2&&v_56);
-  v_58 = (pref_ver_task_assume_3&&v_57);
-  v_59 = (pref_ver_task_assume_4&&v_58);
-  v_60 = (pref_ver_task_assume_5&&v_59);
-  v_61 = (pref_ver_task_assume_6&&v_60);
-  v_62 = (pref_ver_task_assume_7&&v_61);
-  v_63 = (pref_ver_task_assume_8&&v_62);
-  v_64 = (pref_ver_task_assume_9&&v_63);
-  v_65 = (pref_ver_task_assume_10&&v_64);
+  v_49 = (v_48||pref_ver_task_guarantee);
+  v_50 = (v_47&&v_49);
+  v_51 = (v_45&&v_50);
+  v_52 = (v_43&&v_51);
+  v_53 = (v_41&&v_52);
+  v_54 = (v_39&&v_53);
+  v_55 = (v_37&&v_54);
+  v_56 = (v_35&&v_55);
+  v_57 = (v_33&&v_56);
+  v_58 = (v_31&&v_57);
+  v_59 = (v_29&&v_58);
+  v_60 = (pref_ver_task_assume_1&&pref_ver_task_assume);
+  v_61 = (pref_ver_task_assume_2&&v_60);
+  v_62 = (pref_ver_task_assume_3&&v_61);
+  v_63 = (pref_ver_task_assume_4&&v_62);
+  v_64 = (pref_ver_task_assume_5&&v_63);
+  v_65 = (pref_ver_task_assume_6&&v_64);
+  v_66 = (pref_ver_task_assume_7&&v_65);
+  v_67 = (pref_ver_task_assume_8&&v_66);
+  v_68 = (pref_ver_task_assume_9&&v_67);
+  v_69 = (pref_ver_task_assume_10&&v_68);
   rp_5 = rp_1;
   switch (self->ck_44) {
     case Main__St_5_Fail:
@@ -2830,13 +2858,6 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
   _out->rpl_act = act_2;
   wt_2 = false;
   _out->rpl_wt = wt_2;
-  Main__detection_tracking_step(dt_r, dt_e, ncc,
-                                &Main__detection_tracking_out_st,
-                                &self->detection_tracking);
-  detection_r = Main__detection_tracking_out_st.det_r;
-  detection_e = Main__detection_tracking_out_st.det_e;
-  tracking_r = Main__detection_tracking_out_st.track_r;
-  tracking_e = Main__detection_tracking_out_st.track_e;
   end_task_1 = detection_e;
   switch (self->ck_10) {
     case Main__St_17_Active:
@@ -2991,7 +3012,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   me_imu_t1 = t1_9;
-  v_66 = (c_img_t1+me_imu_t1);
+  v_70 = (c_img_t1+me_imu_t1);
   switch (ck_32) {
     case Main__St_10_Active:
       ck_33 = task_ver_8;
@@ -3025,7 +3046,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   me_img_t1 = t1_8;
-  v_67 = (v_66+me_img_t1);
+  v_71 = (v_70+me_img_t1);
   switch (ck_29) {
     case Main__St_11_Active:
       ck_30 = task_ver_7;
@@ -3059,7 +3080,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   sl_t1 = t1_7;
-  v_68 = (v_67+sl_t1);
+  v_72 = (v_71+sl_t1);
   switch (ck_26) {
     case Main__St_12_Active:
       ck_27 = task_ver_6;
@@ -3093,7 +3114,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   oa_t1 = t1_6;
-  v_69 = (v_68+oa_t1);
+  v_73 = (v_72+oa_t1);
   switch (ck_23) {
     case Main__St_13_Active:
       ck_24 = task_ver_5;
@@ -3127,7 +3148,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   tl_t1 = t1_5;
-  v_70 = (v_69+tl_t1);
+  v_74 = (v_73+tl_t1);
   switch (ck_20) {
     case Main__St_14_Active:
       ck_21 = task_ver_4;
@@ -3161,7 +3182,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   rs_t1 = t1_4;
-  v_71 = (v_70+rs_t1);
+  v_75 = (v_74+rs_t1);
   switch (ck_17) {
     case Main__St_15_Active:
       ck_18 = task_ver_3;
@@ -3195,7 +3216,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   rb_t1 = t1_3;
-  v_72 = (v_71+rb_t1);
+  v_76 = (v_75+rb_t1);
   switch (ck_11) {
     case Main__St_17_Active:
       ck_12 = task_ver_1;
@@ -3229,7 +3250,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   dt_t1 = t1_1;
-  v_73 = (v_72+dt_t1);
+  v_77 = (v_76+dt_t1);
   switch (ck_14) {
     case Main__St_16_Active:
       ck_15 = task_ver_2;
@@ -3263,7 +3284,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   rpl_t1 = t1_2;
-  v_74 = (v_73+rpl_t1);
+  v_78 = (v_77+rpl_t1);
   switch (ck_8) {
     case Main__St_18_Active:
       ck_9 = task_ver;
@@ -3297,7 +3318,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   trk_t1 = t1;
-  occ_t1 = (v_74+trk_t1);
+  occ_t1 = (v_78+trk_t1);
   switch (ck_45) {
     case Main__St_5_Fail:
       max_occ_2_St_5_Fail = 0;
@@ -3311,7 +3332,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   max_occ_t1 = max_occ_2;
-  v_93 = (occ_t1<=max_occ_t1);
+  v_97 = (occ_t1<=max_occ_t1);
   switch (ck_38) {
     case Main__St_8_Active:
       switch (ck_39) {
@@ -3376,7 +3397,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   me_imu_t2 = t2_9;
-  v_75 = (c_img_t2+me_imu_t2);
+  v_79 = (c_img_t2+me_imu_t2);
   switch (ck_32) {
     case Main__St_10_Active:
       switch (ck_33) {
@@ -3409,7 +3430,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   me_img_t2 = t2_8;
-  v_76 = (v_75+me_img_t2);
+  v_80 = (v_79+me_img_t2);
   switch (ck_29) {
     case Main__St_11_Active:
       switch (ck_30) {
@@ -3442,7 +3463,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   sl_t2 = t2_7;
-  v_77 = (v_76+sl_t2);
+  v_81 = (v_80+sl_t2);
   switch (ck_26) {
     case Main__St_12_Active:
       switch (ck_27) {
@@ -3475,7 +3496,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   oa_t2 = t2_6;
-  v_78 = (v_77+oa_t2);
+  v_82 = (v_81+oa_t2);
   switch (ck_23) {
     case Main__St_13_Active:
       switch (ck_24) {
@@ -3508,7 +3529,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   tl_t2 = t2_5;
-  v_79 = (v_78+tl_t2);
+  v_83 = (v_82+tl_t2);
   switch (ck_20) {
     case Main__St_14_Active:
       switch (ck_21) {
@@ -3541,7 +3562,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   rs_t2 = t2_4;
-  v_80 = (v_79+rs_t2);
+  v_84 = (v_83+rs_t2);
   switch (ck_17) {
     case Main__St_15_Active:
       switch (ck_18) {
@@ -3574,7 +3595,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   rb_t2 = t2_3;
-  v_81 = (v_80+rb_t2);
+  v_85 = (v_84+rb_t2);
   switch (ck_11) {
     case Main__St_17_Active:
       switch (ck_12) {
@@ -3607,7 +3628,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   dt_t2 = t2_1;
-  v_82 = (v_81+dt_t2);
+  v_86 = (v_85+dt_t2);
   switch (ck_14) {
     case Main__St_16_Active:
       switch (ck_15) {
@@ -3640,7 +3661,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   rpl_t2 = t2_2;
-  v_83 = (v_82+rpl_t2);
+  v_87 = (v_86+rpl_t2);
   switch (ck_8) {
     case Main__St_18_Active:
       switch (ck_9) {
@@ -3673,7 +3694,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   trk_t2 = t2;
-  occ_t2 = (v_83+trk_t2);
+  occ_t2 = (v_87+trk_t2);
   switch (ck_43) {
     case Main__St_6_Fail:
       max_occ_1_St_6_Fail = 0;
@@ -3687,8 +3708,8 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   max_occ_t2 = max_occ_1;
-  v_94 = (occ_t2<=max_occ_t2);
-  v_95 = (v_93&&v_94);
+  v_98 = (occ_t2<=max_occ_t2);
+  v_99 = (v_97&&v_98);
   switch (ck_38) {
     case Main__St_8_Active:
       switch (ck_39) {
@@ -3753,7 +3774,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   me_imu_t3 = t3_9;
-  v_84 = (c_img_t3+me_imu_t3);
+  v_88 = (c_img_t3+me_imu_t3);
   switch (ck_32) {
     case Main__St_10_Active:
       switch (ck_33) {
@@ -3786,7 +3807,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   me_img_t3 = t3_8;
-  v_85 = (v_84+me_img_t3);
+  v_89 = (v_88+me_img_t3);
   switch (ck_29) {
     case Main__St_11_Active:
       switch (ck_30) {
@@ -3819,7 +3840,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   sl_t3 = t3_7;
-  v_86 = (v_85+sl_t3);
+  v_90 = (v_89+sl_t3);
   switch (ck_26) {
     case Main__St_12_Active:
       switch (ck_27) {
@@ -3852,7 +3873,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   oa_t3 = t3_6;
-  v_87 = (v_86+oa_t3);
+  v_91 = (v_90+oa_t3);
   switch (ck_23) {
     case Main__St_13_Active:
       switch (ck_24) {
@@ -3885,7 +3906,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   tl_t3 = t3_5;
-  v_88 = (v_87+tl_t3);
+  v_92 = (v_91+tl_t3);
   switch (ck_20) {
     case Main__St_14_Active:
       switch (ck_21) {
@@ -3918,7 +3939,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   rs_t3 = t3_4;
-  v_89 = (v_88+rs_t3);
+  v_93 = (v_92+rs_t3);
   switch (ck_17) {
     case Main__St_15_Active:
       switch (ck_18) {
@@ -3951,7 +3972,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   rb_t3 = t3_3;
-  v_90 = (v_89+rb_t3);
+  v_94 = (v_93+rb_t3);
   switch (ck_11) {
     case Main__St_17_Active:
       switch (ck_12) {
@@ -3984,7 +4005,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   dt_t3 = t3_1;
-  v_91 = (v_90+dt_t3);
+  v_95 = (v_94+dt_t3);
   switch (ck_14) {
     case Main__St_16_Active:
       switch (ck_15) {
@@ -4017,7 +4038,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   rpl_t3 = t3_2;
-  v_92 = (v_91+rpl_t3);
+  v_96 = (v_95+rpl_t3);
   switch (ck_8) {
     case Main__St_18_Active:
       switch (ck_9) {
@@ -4050,7 +4071,7 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   trk_t3 = t3;
-  occ_t3 = (v_92+trk_t3);
+  occ_t3 = (v_96+trk_t3);
   switch (ck_41) {
     case Main__St_7_Fail:
       max_occ_St_7_Fail = 0;
@@ -4064,12 +4085,17 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
       break;
   };
   max_occ_t3 = max_occ;
-  v_96 = (occ_t3<=max_occ_t3);
-  _out->obj_occ = (v_95&&v_96);
-  v_97 = (_out->me_imu_ver==Main__S);
-  v_98 = (_out->rb_ver==Main__S);
-  v_99 = !(v_98);
-  _out->obj_tasks = (v_97&&v_99);
+  v_100 = (occ_t3<=max_occ_t3);
+  _out->obj_occ = (v_99&&v_100);
+  v_101 = (_out->me_imu_ver==Main__S);
+  v_102 = (_out->rb_ver==Main__S);
+  v_103 = !(v_102);
+  v_104 = (v_101&&v_103);
+  v_105 = (_out->oa_ver==Main__S);
+  v_106 = (v_104&&v_105);
+  v_107 = (_out->me_img_ver==Main__S);
+  v_108 = !(v_107);
+  _out->obj_tasks = (v_106&&v_108);
   Main_controller__main_ctrlr11_step(c_c_img_ver, c_dt_ver, c_img_e, c_img_r,
                                      c_me_img_ver, c_me_imu_ver, c_oa_ver,
                                      c_rb_ver, c_rpl_ver, c_rs_ver, c_sl_ver,
@@ -4079,23 +4105,23 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
                                      self->ck_28, self->ck_31, self->ck_34,
                                      self->ck_37, self->ck_40, self->ck_42,
                                      self->ck_44, detection_e, detection_r,
-                                     dt_e, dt_r, f_1, f_2, f_3, max1, max10,
-                                     max11, max2, max3, max4, max5, max6,
-                                     max7, max8, max9, me_img_e, me_img_r,
-                                     me_imu_e, me_imu_r, min1, min10, min11,
-                                     min2, min3, min4, min5, min6, min7,
-                                     min8, min9, ncc, oa_e, oa_r, obj_12,
-                                     obj_13, obj_14, obj_15, obj_16, obj_17,
-                                     obj_18, obj_19, obj_20, obj_21, obj_22,
-                                     self->pnr, self->pnr_10, self->pnr_11,
-                                     self->pnr_12, self->pnr_13,
-                                     self->pnr_14, self->pnr_2, self->pnr_3,
-                                     self->pnr_4, self->pnr_5, self->pnr_6,
-                                     self->pnr_7, self->pnr_8, self->pnr_9,
-                                     pref_ver_12, pref_ver_13, pref_ver_14,
-                                     pref_ver_15, pref_ver_16, pref_ver_17,
-                                     pref_ver_18, pref_ver_19, pref_ver_20,
-                                     pref_ver_21, pref_ver_22,
+                                     dt_e, dt_r, dummy, f_1, f_2, f_3, max1,
+                                     max10, max11, max2, max3, max4, max5,
+                                     max6, max7, max8, max9, me_img_e,
+                                     me_img_r, me_imu_e, me_imu_r, min1,
+                                     min10, min11, min2, min3, min4, min5,
+                                     min6, min7, min8, min9, ncc, oa_e, oa_r,
+                                     obj_12, obj_13, obj_14, obj_15, obj_16,
+                                     obj_17, obj_18, obj_19, obj_20, obj_21,
+                                     obj_22, self->pnr, self->pnr_10,
+                                     self->pnr_11, self->pnr_12,
+                                     self->pnr_13, self->pnr_14, self->pnr_2,
+                                     self->pnr_3, self->pnr_4, self->pnr_5,
+                                     self->pnr_6, self->pnr_7, self->pnr_8,
+                                     self->pnr_9, pref_ver_12, pref_ver_13,
+                                     pref_ver_14, pref_ver_15, pref_ver_16,
+                                     pref_ver_17, pref_ver_18, pref_ver_19,
+                                     pref_ver_20, pref_ver_21, pref_ver_22,
                                      self->pref_ver_task_assume_10_1,
                                      self->pref_ver_task_assume_12,
                                      self->pref_ver_task_assume_1_1,
@@ -4137,58 +4163,58 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
   c_trk_pref = Main_controller__main_ctrlr11_out_st.c_trk_pref;
   pref_ver_10 = pref_ver_12;
   c_img_pref = pref_ver_10;
-  v_100 = (c_c_img_ver==c_img_pref);
-  v_101 = (!(c_c_img_pref)||v_100);
+  v_109 = (c_c_img_ver==c_img_pref);
+  v_110 = (!(c_c_img_pref)||v_109);
   pref_ver_9 = pref_ver_13;
   me_imu_pref = pref_ver_9;
-  v_102 = (c_me_imu_ver==me_imu_pref);
-  v_103 = (!(c_me_imu_pref)||v_102);
-  v_104 = (v_101&&v_103);
+  v_111 = (c_me_imu_ver==me_imu_pref);
+  v_112 = (!(c_me_imu_pref)||v_111);
+  v_113 = (v_110&&v_112);
   pref_ver_8 = pref_ver_14;
   me_img_pref = pref_ver_8;
-  v_105 = (c_me_img_ver==me_img_pref);
-  v_106 = (!(c_me_img_pref)||v_105);
-  v_107 = (v_104&&v_106);
+  v_114 = (c_me_img_ver==me_img_pref);
+  v_115 = (!(c_me_img_pref)||v_114);
+  v_116 = (v_113&&v_115);
   pref_ver_7 = pref_ver_15;
   sl_pref = pref_ver_7;
-  v_108 = (c_sl_ver==sl_pref);
-  v_109 = (!(c_sl_pref)||v_108);
-  v_110 = (v_107&&v_109);
+  v_117 = (c_sl_ver==sl_pref);
+  v_118 = (!(c_sl_pref)||v_117);
+  v_119 = (v_116&&v_118);
   pref_ver_6 = pref_ver_16;
   oa_pref = pref_ver_6;
-  v_111 = (c_oa_ver==oa_pref);
-  v_112 = (!(c_oa_pref)||v_111);
-  v_113 = (v_110&&v_112);
+  v_120 = (c_oa_ver==oa_pref);
+  v_121 = (!(c_oa_pref)||v_120);
+  v_122 = (v_119&&v_121);
   pref_ver_5 = pref_ver_17;
   tl_pref = pref_ver_5;
-  v_114 = (c_tl_ver==tl_pref);
-  v_115 = (!(c_tl_pref)||v_114);
-  v_116 = (v_113&&v_115);
+  v_123 = (c_tl_ver==tl_pref);
+  v_124 = (!(c_tl_pref)||v_123);
+  v_125 = (v_122&&v_124);
   pref_ver_4 = pref_ver_18;
   rs_pref = pref_ver_4;
-  v_117 = (c_rs_ver==rs_pref);
-  v_118 = (!(c_rs_pref)||v_117);
-  v_119 = (v_116&&v_118);
+  v_126 = (c_rs_ver==rs_pref);
+  v_127 = (!(c_rs_pref)||v_126);
+  v_128 = (v_125&&v_127);
   pref_ver_3 = pref_ver_19;
   rb_pref = pref_ver_3;
-  v_120 = (c_rb_ver==rb_pref);
-  v_121 = (!(c_rb_pref)||v_120);
-  v_122 = (v_119&&v_121);
+  v_129 = (c_rb_ver==rb_pref);
+  v_130 = (!(c_rb_pref)||v_129);
+  v_131 = (v_128&&v_130);
   pref_ver_1 = pref_ver_21;
   dt_pref = pref_ver_1;
-  v_123 = (c_dt_ver==dt_pref);
-  v_124 = (!(c_dt_pref)||v_123);
-  v_125 = (v_122&&v_124);
+  v_132 = (c_dt_ver==dt_pref);
+  v_133 = (!(c_dt_pref)||v_132);
+  v_134 = (v_131&&v_133);
   pref_ver_2 = pref_ver_20;
   rpl_pref = pref_ver_2;
-  v_126 = (c_rpl_ver==rpl_pref);
-  v_127 = (!(c_rpl_pref)||v_126);
-  v_128 = (v_125&&v_127);
+  v_135 = (c_rpl_ver==rpl_pref);
+  v_136 = (!(c_rpl_pref)||v_135);
+  v_137 = (v_134&&v_136);
   pref_ver = pref_ver_22;
   trk_pref = pref_ver;
-  v_129 = (c_trk_ver==trk_pref);
-  v_130 = (!(c_trk_pref)||v_129);
-  _out->obj_pref = (v_128&&v_130);
+  v_138 = (c_trk_ver==trk_pref);
+  v_139 = (!(c_trk_pref)||v_138);
+  _out->obj_pref = (v_137&&v_139);
   obj = obj_22;
   switch (self->ck) {
     case Main__St_18_Active:
@@ -4867,8 +4893,12 @@ void Main__main_step(int texe1, int texe2, int texe3, int texe4, int texe5,
   self->pref_ver_task_assume_12 = pref_ver_task_assume;
   self->pref_ver_task_guarantee_12 = pref_ver_task_guarantee;
   v = (_out->err_1&&_out->err_2);
-  v_21 = !(v);
-  v_22 = (_out->obj_occ&&_out->obj_tasks);
-  v_23 = (v_22&&_out->obj_pref);;
+  v_21 = (_out->err_1&&_out->err_3);
+  v_22 = (v||v_21);
+  v_23 = (_out->err_2&&_out->err_3);
+  v_24 = (v_22||v_23);
+  v_25 = !(v_24);
+  v_26 = (_out->obj_occ&&_out->obj_tasks);
+  v_27 = (v_26&&_out->obj_pref);;
 }
 

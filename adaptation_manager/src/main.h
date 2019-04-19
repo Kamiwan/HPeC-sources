@@ -1,6 +1,6 @@
-/* --- Generated the 15/3/2019 at 16:20 --- */
-/* --- heptagon compiler, version 1.05.00 (compiled mon. mar. 11 14:26:46 CET 2019) --- */
-/* --- Command line: /home/gwen/.opam/4.05.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
+/* --- Generated the 18/4/2019 at 16:40 --- */
+/* --- heptagon compiler, version 1.05.00 (compiled mon. apr. 15 12:21:51 CET 2019) --- */
+/* --- Command line: /scratch/gdelaval/opam/4.05.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
 
 #ifndef MAIN_H
 #define MAIN_H
@@ -55,6 +55,7 @@ typedef struct Main__detection_tracking_out {
   int det_e;
   int track_r;
   int track_e;
+  int dummy;
 } Main__detection_tracking_out;
 
 void Main__detection_tracking_reset(Main__detection_tracking_mem* self);
@@ -114,7 +115,6 @@ typedef struct Main__main_mem {
   int pref_ver_task_assume_9_1;
   int pref_ver_task_guarantee_10_1;
   int pref_ver_task_assume_10_1;
-  Main__detection_tracking_mem detection_tracking;
   Main__pref_ver_task_mem pref_ver_task_10;
   Main__pref_ver_task_mem pref_ver_task_9;
   Main__pref_ver_task_mem pref_ver_task_8;
@@ -126,6 +126,7 @@ typedef struct Main__main_mem {
   Main__pref_ver_task_mem pref_ver_task_2;
   Main__pref_ver_task_mem pref_ver_task_1;
   Main__pref_ver_task_mem pref_ver_task;
+  Main__detection_tracking_mem detection_tracking;
 } Main__main_mem;
 
 typedef struct Main__main_out {
