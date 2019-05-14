@@ -46,14 +46,15 @@
 #include <sensor_msgs/image_encodings.h>
 #include "std_msgs/Int32.h"
 #include "std_msgs/Float32.h"
+
 #include <iosfwd>
 #include <iostream>
 #include <fstream>
 #include <string>
-
 #include <thread>
 #include <boost/thread.hpp>
 #include <boost/interprocess/sync/named_mutex.hpp>
+#include <atomic>
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
@@ -171,7 +172,7 @@ void 	task_mapping(vector<Map_app_out> const& map_config_app
 Launch a thread which performs the sequence execution of 2 apps in the same Tile
 @param seq_app[2]		The two application configuration		
 */
-void sequence_exec_routine(App_scheduler seq_app[2]);
+void sequence_exec_routine(App_scheduler seq_app[2], int tile_index);
 /* secured_load_BTS
 Function wrapper to allow user to perform 
 @param ? TODO: complete it
@@ -197,6 +198,8 @@ extern vector<Map_app_out> app_output_config;
 extern int	verbose;
 extern boost::shared_ptr<boost::thread> sequence_thread[TILE_NUMBER];
 extern bool active_thread[TILE_NUMBER];
+extern std::atomic<bool>  stop_sequence_thread[TILE_NUMBER];
+extern std::atomic<bool>  running_sequence_thread[TILE_NUMBER];
 extern App_scheduler sequence_apps[2];
 #endif
 
