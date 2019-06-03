@@ -660,7 +660,7 @@ void sequence_exec_routine(App_scheduler seq_app[2], int tile_index)
         secured_reconfiguration();
         msg.data = 2; //Start app
         activate_desactivate_task(seq_app[current_app].app_index, msg);	
-        ROS_INFO("Wait DONE, app_index = ", seq_app[current_app].app_index);
+        ROS_INFO("Wait DONE, app_index = %d", seq_app[current_app].app_index);
         end = std::chrono::system_clock::now() + ms;
         while(!shared_memory.Done_Read(seq_app[current_app].app_index)
                 && std::chrono::system_clock::now() < end
