@@ -118,6 +118,8 @@ class Main
 		{
 			delete tld;
 			delete ptr_sh_mem_access;
+			if(picture != NULL)
+				delete picture;
 			ROS_INFO("**** DESTRUCTOR DONE! ****");
 		}
 
