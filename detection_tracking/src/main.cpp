@@ -256,11 +256,10 @@ void Main::hpec_process(const boost::shared_ptr<ros::NodeHandle> &workerHandle_p
                     ptr_sh_mem_access->Update_QoS(0, TRACKING);
     
                 #ifdef HIL
-                    if (img_acquired && picture != NULL)
+                    if (picture != NULL)
                     {
                         delete picture;
                         picture = NULL;
-                        img_acquired = false;
                     }
                 #endif
             }
@@ -319,7 +318,7 @@ void Main::hpecImageReceivedCB(const sensor_msgs::ImageConstPtr &msg)
     get_first_image = true;
 
     #ifdef HIL
-        if (!img_acquired) //EM, condition to avoid useless multiple img captures
+        if (picture == NULL) //EM, condition to avoid useless multiple img captures
         {
             try
             {
@@ -331,8 +330,6 @@ void Main::hpecImageReceivedCB(const sensor_msgs::ImageConstPtr &msg)
                     std::cout << "HIL SPECIAL hpecImageReceivedCB cvtColor, cols = " << img_buffer_ptr->image.cols << " ; rows = " << img_buffer_ptr->image.rows  << " ; nb channels = " << img_buffer_ptr->image.dims << std::endl;
                     cv::cvtColor(img_buffer_ptr->image, img_buffer_ptr->image, CV_GRAY2BGR);
                 }
-
-                img_acquired = true; //EM, boolean used to know if a cv::Mat release is needed           
 
                 if(img_buffer_ptr->image.cols > 0 && 
                     img_buffer_ptr->image.rows > 0 && 
@@ -354,7 +351,6 @@ void Main::hpecImageReceivedCB(const sensor_msgs::ImageConstPtr &msg)
                         ROS_ERROR("BAD Img properties, delete current image");
                         delete picture;
                         picture = NULL;
-                        img_acquired = false;
                     }
                     imcpy_end = clock();
                     std::cout << "cvtColor DONE, The error is after " << std::endl;
@@ -362,7 +358,6 @@ void Main::hpecImageReceivedCB(const sensor_msgs::ImageConstPtr &msg)
                 } else 
                 {
                     ROS_ERROR("HIL : Bad input image from Image Callback");
-                    img_acquired = false; //EM, to avoid segmentation faults
                     img_buffer_ptr.reset();
                     ros::Duration(5).sleep(); // sleep for 5 seconds
                     return;
