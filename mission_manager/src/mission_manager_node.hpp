@@ -27,6 +27,10 @@
 #ifndef MISSION_MANAGER_NODE_HPP
 #define MISSION_MANAGER_NODE_HPP
 
+#include "comm_shared_memory.hpp" //EM, shared_memory_lib header
+#include "pixel_to_xy_gps_position.hpp" //EM, tools for camera to position data
+#include "tb_mdp_global.hpp"
+
 #include <ros/ros.h>
 #include <boost/thread.hpp>
 #include <image_transport/image_transport.h>
@@ -51,9 +55,6 @@
 
 #include "communication/obstacle_detection_msg.h"
 #include "communication/nav_control.h"
-
-#include "comm_shared_memory.hpp" //EM, shared_memory_lib header
-#include "pixel_to_xy_gps_position.hpp" //EM, tools for camera to position data
 
 //EM, Verbosity levels
 #define VERBOSITY_DEFAULT   0

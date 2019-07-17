@@ -392,6 +392,14 @@ int main(int argc, char **argv)
    step_5 = false;
    is_target = false;
 
+   // EM, test of the MDP
+   time_t start, ends;
+   start = clock();
+   main_tb();
+   ends = clock();
+	std::cout << "MDP Execution Test duration : " << ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC << " ms !" << std::endl;
+
+
    ros::Rate loop_rate(1); //10hz = 100ms, 0.1hz=10s
    while (ros::ok())
    {

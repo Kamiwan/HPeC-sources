@@ -22,8 +22,7 @@
  * Created on: July 17, 2019
  * 
  *************************************************************************************/
-
-#include "mdp_global.hpp"
+#include "tb_mdp_global.hpp"
 
 void global_mission_spec_tb(float proba_vect[PROBA_VECT_SIZE], float reward_vect[REWARD_VECT_SIZE],
 							 float P[MATRIX_SIZE][MATRIX_SIZE][NB_ACTION], float R[MATRIX_SIZE][NB_ACTION]) {
@@ -357,7 +356,7 @@ int main_tb(){
 */
 	printf("Resultat Policy : \n");
 	for(int i=0; i<MATRIX_SIZE; i++){
-//		printf("Value Function: %f \n", V[i][0]);
+		printf("Value Function: %f \n", V[i][0]);
 		printf("Politique: %f \n", policy[i][0]);
 	}
 }
