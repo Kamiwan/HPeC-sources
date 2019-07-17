@@ -144,6 +144,9 @@ include_directories(
 add_executable(mission_manager_node 
   src/mission_manager_node.cpp
   src/pixel_to_xy_gps_position.cpp
+  src/mdp_global.cpp
+  src/policy_iteration.cpp
+  src/tb_mdp_global.cpp
 )
 
 
