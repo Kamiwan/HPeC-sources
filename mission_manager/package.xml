@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="2">
+<package>
   <name>mission_manager</name>
   <version>0.0.0</version>
   <description>The mission_manager package</description>
@@ -35,15 +35,15 @@
   <!--   <depend>roscpp</depend> -->
   <!--   Note that this is equivalent to the following: -->
   <!--   <build_depend>roscpp</build_depend> -->
-  <!--   <exec_depend>roscpp</exec_depend> -->
+  <!--   <run_depend>roscpp</run_depend> -->
   <!-- Use build_depend for packages you need at compile time: -->
   <!--   <build_depend>message_generation</build_depend> -->
   <!-- Use build_export_depend for packages you need in order to build against this package: -->
   <!--   <build_export_depend>message_generation</build_export_depend> -->
   <!-- Use buildtool_depend for build tool packages: -->
   <!--   <buildtool_depend>catkin</buildtool_depend> -->
-  <!-- Use exec_depend for packages you need at runtime: -->
-  <!--   <exec_depend>message_runtime</exec_depend> -->
+  <!-- Use run_depend for packages you need at runtime: -->
+  <!--   <run_depend>message_runtime</run_depend> -->
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <!-- Use doc_depend for packages you need only for building documentation: -->
@@ -52,20 +52,22 @@
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_depend>communication</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>tld_msgs</build_depend>
   <!--build_depend>message_generation</build_depend-->
 
-  <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>rospy</build_export_depend>
-  <build_export_depend>std_msgs</build_export_depend>
   <!--build_export_depend>message_generation</build_export_depend-->
-<exec_depend>message_runtime</exec_depend>
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>rospy</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
+  <run_depend>message_runtime</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>communication</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>tld_msgs</run_depend>
   
-
-
-  <!-- The export tag contains other, unspecified, tags -->
+  
+ <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
 
