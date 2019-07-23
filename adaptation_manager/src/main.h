@@ -1,6 +1,6 @@
-/* --- Generated the 18/4/2019 at 16:40 --- */
-/* --- heptagon compiler, version 1.05.00 (compiled mon. apr. 15 12:21:51 CET 2019) --- */
-/* --- Command line: /scratch/gdelaval/opam/4.05.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
+/* --- Generated the 23/7/2019 at 16:25 --- */
+/* --- heptagon compiler, version 1.05.00 (compiled mon. may. 20 10:42:2 CET 2019) --- */
+/* --- Command line: /home/gwen/.opam/4.07.0/bin/heptc -nocaus -simple-scheduler -target c -hepts -s main -target ctrln main.ept --- */
 
 #ifndef MAIN_H
 #define MAIN_H
@@ -8,6 +8,7 @@
 #include "main_types.h"
 #include "main_controller.h"
 typedef struct Main__pref_ver_task_mem {
+  int v;
   int texec_h3_11;
   int texec_h2_11;
   int texec_h1_11;
@@ -16,6 +17,10 @@ typedef struct Main__pref_ver_task_mem {
 
 typedef struct Main__pref_ver_task_out {
   Main__version_type pref_ver;
+  int pref_verS;
+  int pref_verH1;
+  int pref_verH2;
+  int pref_verH3;
   int obj;
 } Main__pref_ver_task_out;
 
@@ -43,8 +48,8 @@ void Main__reqend_task_step(int act, Main__reqend_task_out* _out,
 
 typedef struct Main__detection_tracking_mem {
   Main__st_4 ck;
-  Main__st_3 v_19;
-  int v_20;
+  Main__st_3 v_28;
+  int v_29;
   int pnr_1;
   Main__reqend_task_mem reqend_task_1;
   Main__reqend_task_mem reqend_task;
@@ -115,18 +120,29 @@ typedef struct Main__main_mem {
   int pref_ver_task_assume_9_1;
   int pref_ver_task_guarantee_10_1;
   int pref_ver_task_assume_10_1;
-  Main__pref_ver_task_mem pref_ver_task_10;
-  Main__pref_ver_task_mem pref_ver_task_9;
-  Main__pref_ver_task_mem pref_ver_task_8;
-  Main__pref_ver_task_mem pref_ver_task_7;
-  Main__pref_ver_task_mem pref_ver_task_6;
-  Main__pref_ver_task_mem pref_ver_task_5;
-  Main__pref_ver_task_mem pref_ver_task_4;
-  Main__pref_ver_task_mem pref_ver_task_3;
-  Main__pref_ver_task_mem pref_ver_task_2;
-  Main__pref_ver_task_mem pref_ver_task_1;
+  Main__version_type task_ver_22;
+  Main__version_type task_ver_21;
+  Main__version_type task_ver_20;
+  Main__version_type task_ver_19;
+  Main__version_type task_ver_18;
+  Main__version_type task_ver_17;
+  Main__version_type task_ver_16;
+  Main__version_type task_ver_15;
+  Main__version_type task_ver_14;
+  Main__version_type task_ver_13;
+  Main__version_type task_ver_12;
   Main__pref_ver_task_mem pref_ver_task;
   Main__detection_tracking_mem detection_tracking;
+  Main__pref_ver_task_mem pref_ver_task_1;
+  Main__pref_ver_task_mem pref_ver_task_2;
+  Main__pref_ver_task_mem pref_ver_task_3;
+  Main__pref_ver_task_mem pref_ver_task_4;
+  Main__pref_ver_task_mem pref_ver_task_5;
+  Main__pref_ver_task_mem pref_ver_task_6;
+  Main__pref_ver_task_mem pref_ver_task_7;
+  Main__pref_ver_task_mem pref_ver_task_8;
+  Main__pref_ver_task_mem pref_ver_task_9;
+  Main__pref_ver_task_mem pref_ver_task_10;
 } Main__main_mem;
 
 typedef struct Main__main_out {
