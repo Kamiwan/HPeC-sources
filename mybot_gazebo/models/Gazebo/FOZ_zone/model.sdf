@@ -8,7 +8,7 @@
         <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
-            <size>1 1 0.05</size>
+            <size>20 20 0.05</size>
           </box>
         </geometry>
         <surface>
@@ -24,7 +24,7 @@
         <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
-            <size>1 1 0.05</size>
+            <size>20 20 0.05</size>
           </box>
         </geometry>
         <scale>1 1 1</scale>

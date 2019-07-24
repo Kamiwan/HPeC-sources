@@ -24,34 +24,12 @@
  *  2. on another terminal, run the command 
  *     "rostopic pub -1 /detection_tracking_mgt_topic std_msgs/Int32 "0" or "1" or "2""
  *************************************************************************************/
-#include <ros/ros.h>
-#include <ros/callback_queue.h>
-#include <boost/thread.hpp>
+#include "detection_tracking_node.hpp"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <signal.h>
-#include <iostream>
 
-extern "C" {
-#include "debug.h"
-}
-
-#include <opencv2/highgui/highgui.hpp>
-#include <cv_bridge/cv_bridge.h>
-#include <image_transport/image_transport.h>
-
-#include <sensor_msgs/NavSatFix.h>
-#include <sensor_msgs/image_encodings.h>
-#include "std_msgs/Int32.h"
-#include "std_msgs/Float32.h"
-#include "std_msgs/String.h"
-
-#include "main.hpp" //EM, HIL definition there
-#include "utils.h"
-
+/************************************************************************
+ * Global variables 
+**********************************************************************/
 time_t start, ends;
 struct timeval beginning, current, end;
 
@@ -63,15 +41,9 @@ double altitude;
 boost::shared_ptr<boost::thread> worker_thread;
 boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
 boost::shared_ptr<ros::Publisher> detect_track_pub;
-
 /************************************************************************
- * EM, Insert here global variables if needed
+ * Global variables 
 **********************************************************************/
-
-
-void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
-
-void termination_handler(int signum);
 
 
 /*************************************************************
@@ -211,7 +183,7 @@ void stop()
 			
 			if (hardware == 1)
 			{
-				//release(); EM, create a function to release mem allocated for the HW
+				//release(); EM, TODO create a function to release mem allocated for the HW
 				hardware = 0;
 			}
 			ROS_INFO("THREAD CANCELLING DONE");
@@ -304,8 +276,6 @@ int main(int argc, char **argv)
 
 	ROS_INFO("[TASK WRAPPER][RUNNING] TRACKING ONLINE");
 	ros::spin();
-
-	//delete main_node;
 }
 
 
