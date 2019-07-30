@@ -328,10 +328,23 @@ void Mdp_Global_tb(float proba_vect[PROBA_VECT_SIZE], float reward_vect[REWARD_V
 int main_tb(){
 //input
 	float discount = 0.95;
-	float proba_vect[PROBA_VECT_SIZE] = {0.9, 0.5, 0.6, 0.8, 0.5, 0.4, 0.8, 0.9, 0.7207, 0.8467, 0.0, 0.1, 0.7615}; // proba event
+	//float proba_vect[PROBA_VECT_SIZE] = {0.9, 0.5, 0.6, 0.8, 0.5, 0.4, 0.8, 0.9, 0.7207, 0.8467, 0.0, 0.1, 0.7615}; // proba event
 	float reward_vect[REWARD_VECT_SIZE] = {5.0, 40.0, 30.0, 20.0, 20.0, 25.0, 15.0, 15.0, 25.0, 90.0, 85.0, 80.0, 75.0, 60.0, 55.0, 70.0, 65.0, 50.0, 45.0, 40.0, 35.0}; //reward par action
 	float policy[MATRIX_SIZE][1];
 	float V[MATRIX_SIZE][1];
+
+	// EM, associative memory
+	std::map<std::string, int> index_prob_map 	= build_index_prob_map();
+	std::map<std::string, int> index_reward_map = build_index_reward_map();
+	std::map<std::string, float> prob_map		= read_mdp_file( PATH_PROB_VECTOR );
+	std::map<std::string, float> reward_map		= read_mdp_file( PATH_REWARD_VECTOR );
+
+	float proba_vect[PROBA_VECT_SIZE];
+	std::map<std::string, int>::iterator it;
+	for ( it = index_prob_map.begin(); it != index_prob_map.end(); it++ )
+	{
+		proba_vect[it->second] = prob_map[it->first];
+	}
 
 	float P[MATRIX_SIZE][MATRIX_SIZE][NB_ACTION]; float R[MATRIX_SIZE][NB_ACTION];
 
@@ -339,25 +352,161 @@ int main_tb(){
 	Mdp_Global_tb(proba_vect, reward_vect, discount, policy, V);
 	//spec_mission_globale_tb(proba_vect, reward_vect, P, R);
 
-/*	printf("Matrices Transitions P:\n");
-		for (int a=0; a<1; a++) {
-			for (int i=0; i<MATRIX_SIZE; i++) {
-				for(int j=0; j<MATRIX_SIZE; j++){
-					printf("%f \n", P[i][j][a]);
-				}
-			}
-		}
-	/*	printf("Matrice Rewards : \n");
-		for (int i=0; i<MATRIX_SIZE; i++) {
-			for(int j=0; j<NB_ACTION; j++){
-				printf("\n %f \n", R[i][j]);
-			}
-		}
-*/
 	printf("Resultat Policy : \n");
-	for(int i=0; i<MATRIX_SIZE; i++){
+	for(int i=0; i<MATRIX_SIZE; i++)
+	{
 		printf("Value Function: %f \n", V[i][0]);
 		printf("Politique: %f \n", policy[i][0]);
 	}
 }
+
+
+
+std::map<std::string, float> read_mdp_file(const char* path)
+{
+    std::ifstream file(path); 
+   	std::string temp;
+	std::map<std::string, float> output_map;
+	char delimiter = '=';
+
+    if ( file ) 
+    { 
+        while ( std::getline( file, temp) ) 
+        { 
+			if(temp[0] != '#' && temp.size() > 1) // EM, allow comment text in file
+			{
+				std::string key   = temp.substr(0, temp.find(delimiter));
+				std::string value = temp.substr(1, temp.find(delimiter));
+				output_map.insert(std::make_pair(key, std::stof(value)));
+			}
+        }
+	}
+	else
+    {
+        std::cerr << "ERROR: Cannot open input file." << std::endl;
+    }  
+	file.close();
+   	return output_map;
+}
+
+void write_value_file(const char* path, const std::string& key, float value)
+{
+    std::vector<std::string> input_file_content = read_whole_file(path);
+    std::ofstream output_file;
+
+	if(input_file_content.empty())
+	{
+		std::cerr << "ERROR in input file reading " << std::endl;
+	} else
+	{
+    	output_file.open(path);
+		char delimiter = '=';
+    	for(size_t i = 0; i < input_file_content.size(); i++)
+    	{
+			if(input_file_content[i][0] != '#' && input_file_content[i].size() > 1)
+			{
+				if(input_file_content[i].substr(0, input_file_content[i].find(delimiter)) == key)
+					output_file << key << " = " << value << std::endl;
+				else
+					output_file << input_file_content[i] << std::endl;
+			} else
+			{
+				output_file << input_file_content[i] << std::endl;
+			}
+    	}
+    	output_file.close();
+	}
+}
+
+std::vector<std::string> read_whole_file(const char* path)
+{
+    std::ifstream file(path); 
+    std::vector<std::string> lines;
+   	std::string temp;
+    if ( file ) 
+    { 
+        while ( std::getline( file, temp) ) 
+        { 
+		lines.push_back(temp);
+        }
+	}
+	else
+    {
+        std::cerr << "ERROR: Cannot open input file." << std::endl;
+    }  
+	file.close();
+	return lines;
+}
+
+
+
+
+
+std::map<std::string, int> build_index_prob_map()
+{
+	std::map<std::string, int> index_map;	
+	index_map.insert(std::make_pair("P_Sys", 0));
+	index_map.insert(std::make_pair("P_obs", 1));
+	index_map.insert(std::make_pair("P_SI", 2));
+	index_map.insert(std::make_pair("P_Batterie", 3));
+	index_map.insert(std::make_pair("P_zone_T", 4));
+	index_map.insert(std::make_pair("P_SL_Area", 5));
+	index_map.insert(std::make_pair("P_Target", 6));
+	index_map.insert(std::make_pair("P_V0", 7));
+	index_map.insert(std::make_pair("P_V1", 8));
+	index_map.insert(std::make_pair("P_V2", 9));
+	index_map.insert(std::make_pair("P_V3", 10));
+	index_map.insert(std::make_pair("P_V4", 11));
+	index_map.insert(std::make_pair("P_V5", 12));
+
+	return index_map;
+}
+
+std::map<std::string, int> build_index_reward_map()
+{
+	std::map<std::string, int> index_map;
+	index_map.insert(std::make_pair("R_take_off", 0));
+	index_map.insert(std::make_pair("R_FT_ODL", 1));
+	index_map.insert(std::make_pair("R_FT_ODF", 2));
+	index_map.insert(std::make_pair("R_Obs_Avoidance", 3));
+	index_map.insert(std::make_pair("R_SLT", 4));
+	index_map.insert(std::make_pair("R_SLA", 5));
+	index_map.insert(std::make_pair("R_Landing", 6));
+	index_map.insert(std::make_pair("R_replanning_landing", 7));
+	index_map.insert(std::make_pair("R_targetDetection", 8));
+	index_map.insert(std::make_pair("R_track_V0_Lidar", 9));
+	index_map.insert(std::make_pair("R_track_V0_fusion", 10));
+	index_map.insert(std::make_pair("R_track_V1_Lidar", 11));
+	index_map.insert(std::make_pair("R_track_V1_fusion", 12));
+	index_map.insert(std::make_pair("R_track_V2_Lidar", 13));
+	index_map.insert(std::make_pair("R_track_V2_fusion", 14));
+	index_map.insert(std::make_pair("R_track_V3_Lidar", 15));
+	index_map.insert(std::make_pair("R_track_V3_fusion", 16));
+	index_map.insert(std::make_pair("R_track_V4_Lidar", 17));
+	index_map.insert(std::make_pair("R_track_V4_fusion", 18));
+	index_map.insert(std::make_pair("R_track_V5_Lidar", 19));
+	index_map.insert(std::make_pair("R_track_V5_fusion", 20));
+
+	return index_map;
+}
+
+/*int read_value_file(const char* path, const int& app_name_index)
+{
+    int res = -1;
+    std::ifstream file(path); 
+    std::string index_app_name_converter[11] = {"contrast_img", "motion_estim_imu", "motion_estim_img"
+                                            "search_landing", "obstacle_avoidance", "t_landing", 
+                                            "rotoz_s", "rotoz_b", "replanning", "detection",
+                                            "tracking"};
+    std::string temp;
+    while (std::getline( file, temp)) 
+	    if(temp == index_app_name_converter[app_name_index])
+        {
+            std::getline( file, temp);
+            res = std::stoi(temp);
+            break;
+        }
+    file.close();
+    return res;
+}*/
 

@@ -1,0 +1,38 @@
+# *************************************************************************************
+#  File   : mdp_prob_vector.txt
+#  Copyright (C) 2019 Lab-STICC Laboratory
+#  Author(s) :  Chabha Hireche, chabha.hireche@gmail.com
+#  				Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
+#  Created on: July 29, 2019
+#  Configuration file for the mission_manager MDP 
+#  It stores the probability vector
+# ************************************************************************************/
+#
+# — P_Sys : proba de bon fonctionnement du système global.
+# — P_obs : proba qu’un obstacle est detecté.
+# — P_SI : proba de rester dans l’ensemble des WP de la trajectoire (le drone
+# n’a pas encore atteint la zone de recherche de la cible).
+# — P_Batterie : proba de consommation d’énergie (niveau de la batterie).
+# — P_zone_T : proba qu’une zone ’T’ pour landing est detectée.
+# — P_SL_Area : proba qu’une zone libre (hors ’T’) est détectée pour landing.
+# — P_Target : proba qu’une cible est bien détectée.
+# — P_V0 : proba d’activer la version (V0) initiale du tracking.
+# — P_V1 : proba d’activer la version (V1) du tracking.
+# — P_V2 : proba d’activer la version (V2) du tracking.
+# — P_V3 : proba d’activer la version (V3) du tracking.
+# — P_V4 : proba d’activer la version (V4) du tracking.
+# — P_V5 : proba d’activer la version (V5) du tracking.
+
+P_Sys = 0.9
+P_obs = 0.5
+P_SI = 0.6
+P_Batterie = 0.8
+P_zone_T = 0.5
+P_SL_Area = 0.4
+P_Target = 0.8
+P_V0 = 0.9
+P_V1 = 0.7207
+P_V2 = 0.8467
+P_V3 = 0.0
+P_V4 = 0.1
+P_V5 = 0.7615

@@ -1,0 +1,54 @@
+# *************************************************************************************
+#  File   : mdp_prob_vector.txt
+#  Copyright (C) 2019 Lab-STICC Laboratory
+#  Author(s) :  Chabha Hireche, chabha.hireche@gmail.com
+#  				Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
+#  Created on: July 29, 2019
+#  Configuration file for the mission_manager MDP 
+#  It stores the reward vector
+# ************************************************************************************/
+#
+# — R_take_off : reward de l’action take-off.
+# — R_FT_ODL : reward de l’action suivi de trajectoire + détection obstacle par LIDAR.
+# — R_FT_ODF : reward de l’action suivi de trajectoire + détection obstacle par fusion.
+# — R_Obs_Avoidance : reward de l’action évitement d’obstacle.
+# — R_SLT : reward de l’action recherche de zone ’T’ pour atterrissage.
+# — R_SLA : reward de l’action recherche de zone libre pour atterrissage.
+# — R_Landing :reward de l’action atterrissage.
+# — R_replanning_landing : reward de l’action replanning + landing.
+# — R_targetDetection : reward de l’action détection de cible.
+# — R_track_V0_Lidar : reward de l’action tracking (V0)+détection obstacle par LIDAR.
+# — R_track_V0_fusion : reward de l’action tracking (V0)+détection obstacle par fusion.6.6. 
+# Input du MDP monolithique de la mission de tracking 
+# — R_track_V1_Lidar : reward de l’action tracking (V1)+détection obstacle par LIDAR.
+# — R_track_V1_fusion : reward de l’action tracking (V1)+détection obstacle par fusion.
+# — R_track_V2_Lidar : reward de l’action tracking (V2)+détection obstacle par LIDAR.
+# — R_track_V2_fusion : reward de l’action tracking (V2)+détection obstacle par fusion.
+# — R_track_V3_Lidar : reward de l’action tracking (V3)+détection obstacle par LIDAR.
+# — R_track_V3_fusion : reward de l’action tracking (V3)+détection obstacle par fusion.
+# — R_track_V4_Lidar : reward de l’action tracking (V4)+détection obstacle par LIDAR.
+# — R_track_V4_fusion : reward de l’action tracking (V4)+détection obstacle par fusion.
+# — R_track_V5_Lidar : reward de l’action tracking (V5)+détection obstacle par LIDAR.
+# — R_track_V5_fusion : reward de l’action tracking (V5)+détection obstacle par fusion.
+
+R_take_off = 5.0
+R_FT_ODL = 40.0
+R_FT_ODF = 30.0
+R_Obs_Avoidance = 20.0
+R_SLT = 20.0
+R_SLA = 25.0
+R_Landing = 15.0
+R_replanning_landing = 15.0
+R_targetDetection = 25.0
+R_track_V0_Lidar = 90.0
+R_track_V0_fusion = 85.0
+R_track_V1_Lidar = 80.0
+R_track_V1_fusion = 75.0
+R_track_V2_Lidar = 60.0
+R_track_V2_fusion = 55.0
+R_track_V3_Lidar = 70.0
+R_track_V3_fusion = 65.0
+R_track_V4_Lidar = 50.0
+R_track_V4_fusion = 45.0
+R_track_V5_Lidar = 40.0
+R_track_V5_fusion = 35.0

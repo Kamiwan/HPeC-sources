@@ -41,6 +41,7 @@
 #include <thread>
 #include <boost/thread.hpp>
 
+// EM, cannot be relative since it's used by Gazebo program itself
 #define PROJECT_PATH "~/Bureau/HW_in_the_Loop/GitHub/HPeC_ws"
 
 namespace gazebo

@@ -28,11 +28,29 @@
 
 #include "mdp_global.hpp"
 
+#include <map>
+#include <iostream>
+#include <string>
+#include <iterator>
+#include <fstream>
+#include <vector>
+
+#define PATH_PROB_VECTOR 	"./src/parameters/mdp_prob_vector.txt"
+#define PATH_REWARD_VECTOR  "./src/parameters/mdp_reward_vector.txt"
+
 void global_mission_spec_tb(float proba_vect[PROBA_VECT_SIZE], float reward_vect[REWARD_VECT_SIZE],
 							 float P[MATRIX_SIZE][MATRIX_SIZE][NB_ACTION], float R[MATRIX_SIZE][NB_ACTION]);
 
 void Mdp_Global_tb(float proba_vect[PROBA_VECT_SIZE], float reward_vect[REWARD_VECT_SIZE], 
                     float discount, float policy[MATRIX_SIZE][1], float V[MATRIX_SIZE][1]);
+
 int main_tb();
+
+std::map<std::string, float> read_mdp_file(const char* path);
+std::vector<std::string> read_whole_file(const char* path);
+void write_value_file(const char* path, const std::string& key, float value);
+
+std::map<std::string, int> build_index_reward_map();
+std::map<std::string, int> build_index_prob_map();
 
 #endif
