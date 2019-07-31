@@ -329,7 +329,7 @@ int main_tb(){
 //input
 	float discount = 0.95;
 	//float proba_vect[PROBA_VECT_SIZE] = {0.9, 0.5, 0.6, 0.8, 0.5, 0.4, 0.8, 0.9, 0.7207, 0.8467, 0.0, 0.1, 0.7615}; // proba event
-	float reward_vect[REWARD_VECT_SIZE] = {5.0, 40.0, 30.0, 20.0, 20.0, 25.0, 15.0, 15.0, 25.0, 90.0, 85.0, 80.0, 75.0, 60.0, 55.0, 70.0, 65.0, 50.0, 45.0, 40.0, 35.0}; //reward par action
+	//float reward_vect[REWARD_VECT_SIZE] = {5.0, 40.0, 30.0, 20.0, 20.0, 25.0, 15.0, 15.0, 25.0, 90.0, 85.0, 80.0, 75.0, 60.0, 55.0, 70.0, 65.0, 50.0, 45.0, 40.0, 35.0}; //reward par action
 	float policy[MATRIX_SIZE][1];
 	float V[MATRIX_SIZE][1];
 
@@ -343,11 +343,17 @@ int main_tb(){
 	std::map<std::string, int>::iterator it;
 	for ( it = index_prob_map.begin(); it != index_prob_map.end(); it++ )
 	{
+		// EM, get index from index_prob_map with it->second
+		// index_prob_map and prob_map have the same key: it->first
 		proba_vect[it->second] = prob_map[it->first];
+	}
+	float reward_vect[REWARD_VECT_SIZE];
+	for ( it = index_reward_map.begin(); it != index_reward_map.end(); it++ )
+	{
+		reward_vect[it->second] = reward_map[it->first];
 	}
 
 	float P[MATRIX_SIZE][MATRIX_SIZE][NB_ACTION]; float R[MATRIX_SIZE][NB_ACTION];
-
 
 	Mdp_Global_tb(proba_vect, reward_vect, discount, policy, V);
 	//spec_mission_globale_tb(proba_vect, reward_vect, P, R);
@@ -367,7 +373,7 @@ std::map<std::string, float> read_mdp_file(const char* path)
     std::ifstream file(path); 
    	std::string temp;
 	std::map<std::string, float> output_map;
-	char delimiter = '=';
+	std::string delimiter = "=";
 
     if ( file ) 
     { 
@@ -375,8 +381,11 @@ std::map<std::string, float> read_mdp_file(const char* path)
         { 
 			if(temp[0] != '#' && temp.size() > 1) // EM, allow comment text in file
 			{
-				std::string key   = temp.substr(0, temp.find(delimiter));
-				std::string value = temp.substr(1, temp.find(delimiter));
+				int pos = temp.find(delimiter);
+				std::string key   = temp.substr(0, pos);
+				// EM, remove extra spaces
+				key.erase(std::remove_if(key.begin(), key.end(), isspace), key.end());
+				std::string value = temp.substr(pos + delimiter.size());
 				output_map.insert(std::make_pair(key, std::stof(value)));
 			}
         }
@@ -386,7 +395,39 @@ std::map<std::string, float> read_mdp_file(const char* path)
         std::cerr << "ERROR: Cannot open input file." << std::endl;
     }  
 	file.close();
+
+	std::cout << "Display MAP :" << std::endl;
+	std::map<std::string, float>::iterator it;
+	for ( it = output_map.begin(); it != output_map.end(); it++ )
+		std::cout << "Key : " << it->first << " ;  Value : " << it->second << std::endl;  
+
    	return output_map;
+}
+
+void write_whole_map_file(const char* path, const std::map<std::string, float>& data_map)
+{
+    std::vector<std::string> input_file_content = read_whole_file(path);
+    std::ofstream output_file;
+	if(input_file_content.empty())
+	{
+		std::cerr << "ERROR in input file reading " << std::endl;
+	} else
+	{
+    	output_file.open(path);
+		//EM, wrtie comments before data
+    	for(size_t i = 0; i < input_file_content.size(); i++)
+    	{
+			if(input_file_content[i][0] == '#' || input_file_content[i].size() > 1)
+			{
+				output_file << input_file_content[i] << std::endl;
+			}
+    	}
+		// EM, write data
+		for (auto it = data_map.begin(); it != data_map.end(); it++ )
+				output_file <<  it->first << " = " << it->second << std::endl;  
+
+    	output_file.close();
+	}
 }
 
 void write_value_file(const char* path, const std::string& key, float value)
@@ -405,7 +446,11 @@ void write_value_file(const char* path, const std::string& key, float value)
     	{
 			if(input_file_content[i][0] != '#' && input_file_content[i].size() > 1)
 			{
-				if(input_file_content[i].substr(0, input_file_content[i].find(delimiter)) == key)
+				std::string current_key = input_file_content[i].substr(0, 
+											input_file_content[i].find(delimiter));
+				// EM, remove extra spaces
+				current_key.erase(std::remove_if(current_key.begin(), current_key.end(), isspace), current_key.end());
+				if(current_key == key)
 					output_file << key << " = " << value << std::endl;
 				else
 					output_file << input_file_content[i] << std::endl;
@@ -418,6 +463,8 @@ void write_value_file(const char* path, const std::string& key, float value)
 	}
 }
 
+
+
 std::vector<std::string> read_whole_file(const char* path)
 {
     std::ifstream file(path); 
@@ -427,7 +474,7 @@ std::vector<std::string> read_whole_file(const char* path)
     { 
         while ( std::getline( file, temp) ) 
         { 
-		lines.push_back(temp);
+			lines.push_back(temp);
         }
 	}
 	else

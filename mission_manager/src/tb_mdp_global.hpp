@@ -34,6 +34,7 @@
 #include <iterator>
 #include <fstream>
 #include <vector>
+#include <algorithm>
 
 #define PATH_PROB_VECTOR 	"./src/parameters/mdp_prob_vector.txt"
 #define PATH_REWARD_VECTOR  "./src/parameters/mdp_reward_vector.txt"
@@ -49,6 +50,7 @@ int main_tb();
 std::map<std::string, float> read_mdp_file(const char* path);
 std::vector<std::string> read_whole_file(const char* path);
 void write_value_file(const char* path, const std::string& key, float value);
+void write_whole_map_file(const char* path, const std::map<std::string, float>& data_map);
 
 std::map<std::string, int> build_index_reward_map();
 std::map<std::string, int> build_index_prob_map();
