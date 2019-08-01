@@ -51,8 +51,8 @@
 #include "sensor_msgs/BatteryState.h"
 #include <sensor_msgs/NavSatFix.h>
 #include <tf/transform_datatypes.h>
-#include <tld_msgs/BoundingBox.h>
 
+#include "tld_msgs/BoundingBox.h"
 #include "communication/obstacle_detection_msg.h"
 #include "communication/nav_control.h"
 
