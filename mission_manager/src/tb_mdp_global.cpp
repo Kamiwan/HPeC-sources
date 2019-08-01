@@ -325,13 +325,11 @@ void Mdp_Global_tb(float proba_vect[PROBA_VECT_SIZE], float reward_vect[REWARD_V
 // function main
 // EM, renamed to main_tb to compile with mission_manager_node main
 
-int main_tb(){
+int main_tb(float policy[MATRIX_SIZE][1], float V[MATRIX_SIZE][1]){
 //input
 	float discount = 0.95;
 	//float proba_vect[PROBA_VECT_SIZE] = {0.9, 0.5, 0.6, 0.8, 0.5, 0.4, 0.8, 0.9, 0.7207, 0.8467, 0.0, 0.1, 0.7615}; // proba event
 	//float reward_vect[REWARD_VECT_SIZE] = {5.0, 40.0, 30.0, 20.0, 20.0, 25.0, 15.0, 15.0, 25.0, 90.0, 85.0, 80.0, 75.0, 60.0, 55.0, 70.0, 65.0, 50.0, 45.0, 40.0, 35.0}; //reward par action
-	float policy[MATRIX_SIZE][1];
-	float V[MATRIX_SIZE][1];
 
 	// EM, associative memory
 	std::map<std::string, int> index_prob_map 	= build_index_prob_map();

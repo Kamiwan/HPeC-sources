@@ -395,7 +395,11 @@ int main(int argc, char **argv)
    // EM, test of the MDP
    time_t start, ends;
    start = clock();
-   main_tb();
+
+   // EM, Don't know why [][1] is used instead of [] in MDP's program
+   float policy[MATRIX_SIZE][1]; 
+   float V[MATRIX_SIZE][1];
+   main_tb(policy, V);
    ends = clock();
 	std::cout << "MDP Execution Test duration : " << ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC << " ms !" << std::endl;
 

@@ -45,7 +45,7 @@ void global_mission_spec_tb(float proba_vect[PROBA_VECT_SIZE], float reward_vect
 void Mdp_Global_tb(float proba_vect[PROBA_VECT_SIZE], float reward_vect[REWARD_VECT_SIZE], 
                     float discount, float policy[MATRIX_SIZE][1], float V[MATRIX_SIZE][1]);
 
-int main_tb();
+int main_tb(float policy[MATRIX_SIZE][1], float V[MATRIX_SIZE][1]);
 
 std::map<std::string, float> read_mdp_file(const char* path);
 std::vector<std::string> read_whole_file(const char* path);
