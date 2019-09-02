@@ -48,8 +48,7 @@
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/GlobalPositionTarget.h>
 
-#include <tld_msgs/BoundingBox.h>
-
+#include "tld_msgs/BoundingBox.h"
 #include "communication/nav_control.h"
 
 #define RAD_360     6.28319

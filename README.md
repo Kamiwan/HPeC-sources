@@ -24,8 +24,6 @@ You need to install the following applications:
   * MAVLINK, provided with kinetic full install
 * [SITL ardupilot](http://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html)
 * [MAVROS](https://dev.px4.io/en/ros/mavros_installation.html)
-* [Plugin ardupilot_gazebo](https://github.com/khancyr/ardupilot_gazebo)
-  * If you want to work with Gazebo 8 to get _movable objects_, please follow the [part 2](###-**2.-Upgrading-to-Gazebo-8**) of Getting Started before installing this plugin.
 
 * Additional packages:
 
@@ -44,6 +42,11 @@ $ sudo apt-get install ros-kinetic-gazebo-ros-pkgs
 /opt/ros/kinetic/lib/mavros/install_geographiclib_datasets.sh
 ```
 
+4. We need cmake modules to use the catkin_make compilation: 
+```
+$ sudo apt-get install ros-kinetic-cmake-modules
+```
+
 As soon as all programs have been installed, we configure the terminal environment by editing the .bashrc. First, we source ROS to get all commands: 
 ```
 $ echo 'source /opt/ros/kinetic/setup.bash' >> ~/.bashrc
@@ -57,7 +60,7 @@ Now, reload your .bashrc in your terminal:
 $ source ~/.bashrc
 ```
 ### **2. Upgrading to Gazebo 8**
-This section is not mandatory but strongly recommended in order to enjoy all features of the project. The first step is to remove the current gazebo 7 installed with ROS kinetic full install: 
+This section is **mandatory** since the project includes some Gazebo plugins which depend of Gazebo 8 features. The first step is to remove the current gazebo 7 installed with ROS kinetic full install: 
 
 ```
 $ sudo apt-get purge gazebo7
@@ -75,10 +78,16 @@ As well as for the package ros-control:
 ```
 $ sudo apt-get install ros-kinetic-gazebo8-ros-control
 ```
-Once it's done, you can check gazebo version by typing **$ gazebo --verbose**.
+Once it's done, you can check gazebo version by typing **$ gazebo --version**.
 To complete the upgrade, we **MUST** install the [Plugin ardupilot_gazebo](https://github.com/khancyr/ardupilot_gazebo) (or reinstall if you used gazebo 7). 
 
-### **3. Installing the project**
+
+### **3. Ardupilot-Gazebo plugin setup** 
+
+Follow instructions specified in [Plugin ardupilot_gazebo](https://github.com/khancyr/ardupilot_gazebo) without forget to adapt commands to your Gazebo version.
+
+
+### **4. Installing the project**
 
 This section aims at creating a catkin workspace and include sources from this repository. The environment configuration is introduced. Then, compiling and execution of the project are explained. 
 
@@ -92,7 +101,7 @@ $ cd ./catkin_ws/
 Clone the git repository in catkin_ws/ and rename it /src.
 
 ```
-$ git clone https://github.com/Kamiwan/HPeC-sources.git /src
+$ git clone https://github.com/Kamiwan/HPeC-sources.git ./src
 ```
 
 Then, check if the repo is properly in place.
