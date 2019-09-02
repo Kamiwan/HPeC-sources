@@ -38,8 +38,6 @@ int current_ver = 0;
 int hardware = 0;
 double altitude;
 
-bool leak_test_stop = false;
-
 boost::shared_ptr<boost::thread> worker_thread;
 boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
 boost::shared_ptr<ros::Publisher> detect_track_pub;
@@ -228,7 +226,6 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		dbprintf("wrapper_ver %.0f %d\n", ((double)time_micros(&current, &beginning)), value->data);
 		stop();
 		hardware = 0;
-		leak_test_stop = true;
 		break;
 
 	case 1: //starting the Software version
@@ -276,7 +273,6 @@ int main(int argc, char **argv)
 	gettimeofday(&current, NULL);
 
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
-	leak_test_stop = false;
 
 	ROS_INFO("[TASK WRAPPER][RUNNING] TRACKING ONLINE");
 	ros::Rate rate(20.0);
@@ -286,7 +282,6 @@ int main(int argc, char **argv)
 	// workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
 	// worker_thread = boost::make_shared<boost::thread>(&detection_tracking_sw, workerHandle_ptr);
 	
-	// && !leak_test_stop
     while(ros::ok())
     {
         ros::spinOnce();
