@@ -13,6 +13,7 @@
 	<!-- Nodes -->
     <node name="ros_detection_tracking_node" pkg="detection_tracking" type="detection_tracking_node"
 	    output="screen">
+        <!-- launch-prefix="valgrind -/-leak-check=full -/-show-leak-kinds=all " -->
         <!-- remap of topics -->
         <remap from="image" to="$(arg image_topic)"/>
         <remap from="bounding_box" to="tld_gui_bb"/>

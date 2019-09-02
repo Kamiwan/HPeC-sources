@@ -70,7 +70,7 @@ class Main
 			state = INIT;
 
 			get_first_image = false;
-			img_acquired = false;
+			picture = NULL;
 
 			ros::NodeHandle np("~");
 			np.param("showOutput", showOutput, true);
@@ -118,6 +118,8 @@ class Main
 		{
 			delete tld;
 			delete ptr_sh_mem_access;
+			if(picture != NULL)
+				delete picture;
 			ROS_INFO("**** DESTRUCTOR DONE! ****");
 		}
 
@@ -146,7 +148,6 @@ class Main
 		//EM, hpec project attributes
 		bool get_first_image;
 		bool use_hpec_process;
-		bool img_acquired;
 		time_t imcpy_start,imcpy_end;
 		float elapsed_time;
 		cv::Mat * picture;

@@ -275,7 +275,19 @@ int main(int argc, char **argv)
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
 
 	ROS_INFO("[TASK WRAPPER][RUNNING] TRACKING ONLINE");
-	ros::spin();
+	ros::Rate rate(20.0);
+	
+	// DEBUG code
+	// hardware = 0;
+	// workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
+	// worker_thread = boost::make_shared<boost::thread>(&detection_tracking_sw, workerHandle_ptr);
+	
+    while(ros::ok())
+    {
+        ros::spinOnce();
+        rate.sleep();
+    }
+
 }
 
 
