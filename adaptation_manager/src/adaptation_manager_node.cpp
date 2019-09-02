@@ -38,6 +38,9 @@ int verbose;
 boost::shared_ptr<boost::thread> sequence_thread[TILE_NUMBER];
 bool active_thread[TILE_NUMBER];
 App_scheduler sequence_apps[2];
+std::atomic<bool>  stop_sequence_thread[TILE_NUMBER];
+std::atomic<bool>  running_sequence_thread[TILE_NUMBER];
+
 /****** GLOBAL VARIABLES ********/
 
 boost::shared_ptr<ros::Publisher> search_land_pub = NULL;
@@ -254,7 +257,11 @@ int main (int argc, char ** argv)
     sh_mem_setup(sh_mem_access, C3_init);
     
     for(int i = 0; i < TILE_NUMBER; i++)
-        active_thread[i] = false;
+    {
+        active_thread[i]           = false;
+        stop_sequence_thread[i]    = false;
+        running_sequence_thread[i] = false;
+    }
     
     
 
@@ -573,9 +580,10 @@ void task_mapping(vector<Map_app_out> const& map_config_app,
             sequence_apps[0].print();
             sequence_apps[1].print();
             //LAUNCH SEQUENCE THREAD 
-            active_thread[scheduler_array[i].region_id-1] = true;
+            active_thread[scheduler_array[i].region_id-1]        = true;
+            stop_sequence_thread[scheduler_array[i].region_id-1] = false;
             sequence_thread[scheduler_array[i].region_id-1] = 
-                boost::make_shared<boost::thread>(&sequence_exec_routine, sequence_apps);
+                boost::make_shared<boost::thread>(&sequence_exec_routine, sequence_apps, scheduler_array[i].region_id-1);
         }
     }
 }
@@ -631,7 +639,7 @@ void	wait_release(int app, int region_id, vector<Map_app_out> const& prev_map_co
 }
 
 
-void sequence_exec_routine(App_scheduler seq_app[2])
+void sequence_exec_routine(App_scheduler seq_app[2], int tile_index)
 {
     int current_app = 0;
     std_msgs::Int32 msg;
@@ -645,26 +653,30 @@ void sequence_exec_routine(App_scheduler seq_app[2])
 
     std::chrono::seconds ms(5);
     std::chrono::time_point<std::chrono::system_clock> end;
-   
-    while(true)
+    running_sequence_thread[tile_index] = true;
+
+    while(!stop_sequence_thread[tile_index])
     {
         secured_reconfiguration();
         msg.data = 2; //Start app
         activate_desactivate_task(seq_app[current_app].app_index, msg);	
-        ROS_INFO("Wait DONE, app_index = ", seq_app[current_app].app_index);
+        ROS_INFO("Wait DONE, app_index = %d", seq_app[current_app].app_index);
         end = std::chrono::system_clock::now() + ms;
         while(!shared_memory.Done_Read(seq_app[current_app].app_index)
-                && std::chrono::system_clock::now() < end);
+                && std::chrono::system_clock::now() < end
+                && !stop_sequence_thread[tile_index]);
         
         msg.data = 0; //Stop app
-        ROS_INFO("Wait app END, app_index = ", seq_app[current_app].app_index);
+        ROS_INFO("Wait app END, app_index = %d", seq_app[current_app].app_index);
         end = std::chrono::system_clock::now() + ms;
         activate_desactivate_task(seq_app[current_app].app_index, msg);	
         while(!shared_memory.Release_HW_Read(seq_app[current_app].app_index)
-                && std::chrono::system_clock::now() < end);
+                && std::chrono::system_clock::now() < end
+                && !stop_sequence_thread[tile_index]);
 
         current_app = 1 - current_app; //EM, to alternate between 1 and 0
     }
+    running_sequence_thread[tile_index] = false;
 }
 
 void secured_reconfiguration()
@@ -673,6 +685,7 @@ void secured_reconfiguration()
     bip::named_mutex bts_load_mutex{ //EM, add mutex for secured bitsream load
         bip::open_or_create
         , MUTEX_NAME_BTS_LOAD};
+
     {
         boost::this_thread::disable_interruption di; //EM, disable interrupt for this thread
         {
@@ -693,11 +706,18 @@ void stop_sequence(int tile_index)
     ROS_INFO("Try to stop sequence in tile %d!", tile_index+1);
 	if (sequence_thread[tile_index] != NULL)
 	{
-        sequence_thread[tile_index]->interrupt();
-        sequence_thread[tile_index]->timed_join(boost::posix_time::milliseconds(500));
-        //sequence_thread[tile_index]->join();
-        pthread_cancel(sequence_thread[tile_index]->native_handle());
-        ROS_INFO("Thread Stopped");
+        stop_sequence_thread[tile_index] = true;
+        ROS_INFO("Sequence Thread Stop ASKED");
+        if(sequence_thread[tile_index] != NULL && sequence_thread[tile_index]->joinable())
+        {
+            sequence_thread[tile_index]->timed_join(boost::posix_time::milliseconds(3000));
+            ROS_INFO("Thread joined properly");
+            if(running_sequence_thread[tile_index])
+            {
+                pthread_cancel(sequence_thread[tile_index]->native_handle());
+                ROS_ERROR("Sequence Thread CANCELED");
+            }
+        }
 	} 
     else
         ROS_INFO("No thread to stop");
