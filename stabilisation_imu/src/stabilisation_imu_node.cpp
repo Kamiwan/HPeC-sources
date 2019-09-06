@@ -52,6 +52,7 @@ extern "C" {
 #include "std_msgs/Int32.h"
 #include "std_msgs/Float32.h"
 #include "std_msgs/String.h"
+#include "topic_tools/MuxSelect.h"
 
 #include "sensor_msgs/Imu.h"
 #include <tf/transform_datatypes.h>
@@ -79,8 +80,8 @@ double altitude;
 
 boost::shared_ptr<boost::thread> worker_thread;
 boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
+boost::shared_ptr<ros::NodeHandle> main_node_handle_ptr;
 boost::shared_ptr<ros::Publisher> search_land_pub;
-
 
 /*************************************************************
  * stabilisation_imu_hwsw
@@ -97,6 +98,7 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
 
+	// Topic setup
 	image_transport::ImageTransport it(*workerHandle_ptr);
 	image_transport::Subscriber cam_sub = it.subscribe(STAB_IMU_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
@@ -153,12 +155,12 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
 
-	//TOPICS SUBSCRIPTION
+	// TOPICS SUBSCRIPTION
 	image_transport::ImageTransport it(*workerHandle_ptr);
 	image_transport::Subscriber cam_sub = it.subscribe(STAB_IMU_INPUT_TOPIC, 1, image_callback);
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 	ros::Subscriber imu_sub = workerHandle_ptr->subscribe<sensor_msgs::Imu>("mavros/imu/data", 1000, imu_callback);
-	//TOPICS ADVERTISING
+	// TOPICS ADVERTISING
 	image_transport::Publisher img_stab_pub = it.advertise(STAB_IMU_OUTPUT_TOPIC, 1);
 	sensor_msgs::ImagePtr msg;
 
@@ -217,7 +219,7 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 			std::cout << "SOFTWARE stabilisation_imu Processing time : " << elapsed_time.data << std::endl;
 
 			msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", rtz_picture).toImageMsg();
-			cv::waitKey(30);
+			cv::waitKey(10);
 			img_stab_pub.publish(msg);
 
 			#ifdef HIL
@@ -291,11 +293,21 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		**********************************************************************/		
 	}
 
+	// Video flow MUX Service setup
+	// EM, this topic is only used when we turn on/off the image stabilisation
+	ros::ServiceClient mux_select_client = main_node_handle_ptr->serviceClient<topic_tools::MuxSelect>("video_mux/select");
+	topic_tools::MuxSelect mux_select_cmd;
 
 	switch (value->data)
 	{
 	case 0: // stop the task
 		dbprintf("wrapper_ver %.0f %d\n", ((double)time_micros(&current, &beginning)), value->data);
+
+		// EM, switch to camera topic
+		mux_select_cmd.request.topic = CAMERA_MUX_TOPIC;
+		if( mux_select_client.call(mux_select_cmd))
+			ROS_INFO_STREAM("Switch video source to " << mux_select_cmd.request.topic << std::endl);
+
 		stop();
 		hardware = 0;
 		break;
@@ -305,6 +317,12 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		stop();
 		hardware = 0;
 		workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
+
+		// EM, switch to stab_imu video topic
+		mux_select_cmd.request.topic = STAB_IMU_OUTPUT_TOPIC;
+		if( mux_select_client.call(mux_select_cmd))
+			ROS_INFO_STREAM("Switch video source to " << mux_select_cmd.request.topic << std::endl);
+
 		worker_thread = boost::make_shared<boost::thread>(&stabilisation_imu_sw, workerHandle_ptr);
 		break;
 		
@@ -313,6 +331,12 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 		stop();
 		hardware = 1;
 		workerHandle_ptr = boost::make_shared<ros::NodeHandle>();
+
+		// EM, switch to stab_imu video topic
+		mux_select_cmd.request.topic = STAB_IMU_OUTPUT_TOPIC;
+		if( mux_select_client.call(mux_select_cmd))
+			ROS_INFO_STREAM("Switch video source to " << mux_select_cmd.request.topic << std::endl);
+
 		worker_thread = boost::make_shared<boost::thread>(&stabilisation_imu_hwsw, workerHandle_ptr);
 		break;
 
@@ -335,6 +359,7 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "stabilisation_imu_node");
 	ros::NodeHandle nh;
+	main_node_handle_ptr = boost::make_shared<ros::NodeHandle>();
 	
 	gettimeofday(&beginning, NULL);
 	ros::Subscriber mgt_topic;

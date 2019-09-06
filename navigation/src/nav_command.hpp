@@ -158,7 +158,7 @@ class NavCommand
     // Min and max UAV speed used for tracking in m/s
     static constexpr double kMinUAVSpeed        = 0.2;
     static constexpr double kMaxUAVSpeed        = 1;
-    static constexpr double kDistanceThreshold  = 2.5;
+    static constexpr double kDistanceThreshold  = 2.5; // in meters
 
     // ### Methods ###
     void InitializeSubscribers();

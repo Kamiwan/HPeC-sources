@@ -54,7 +54,7 @@ extern "C" {
 #define HIL				 //Code modifications for Hardware In the Loop
 #define AREA_MIN 400	 //TODO : create a function to make it dependent of the UAV height and FOV
 #define AREA_MAX 2073601 //This value exceeds the area of an HD picture 1920 x 1080 in pixels
-#define HARRIS_INPUT_TOPIC "/iris/camera2/image_raw"
+#define HARRIS_INPUT_TOPIC "/video_flow"
 #define HARRIS_OUTPUT_IMAGE_TOPIC "search_output/image"
 //#define HARRIS_OUTPUT_AREA_LOCATION_TOPIC "search_output/areas"
 

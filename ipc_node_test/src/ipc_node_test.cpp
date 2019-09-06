@@ -70,7 +70,7 @@ extern "C" {
  *  - Topic names to subscribe or publish
 **********************************************************************/
 
-#define SL_INPUT_TOPIC "/iris/camera2/image_raw" //example of Topic name def
+#define SL_INPUT_TOPIC "/video_flow" //example of Topic name def
 
 /*******************************************
  * EM, Sample code for image topic

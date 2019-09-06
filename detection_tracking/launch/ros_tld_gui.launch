@@ -1,6 +1,6 @@
 <launch>
 	<!-- declare arg to be passed in -->
-	<arg name="image_topic" default="/iris/camera2/image_raw"/>
+	<arg name="image_topic" default="/video_flow"/>
 
     <!-- Nodes -->
     <node name="ros_tld_gui_node" pkg="detection_tracking" type="tld_gui_node"

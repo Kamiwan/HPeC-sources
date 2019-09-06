@@ -55,7 +55,7 @@ extern "C" {
 //EM, defines for FPGA DPR tests
 #define PIO_PR_RESET_BASEADDR   0xFF214000
 
-#define NM_INPUT_TOPIC "/iris/camera2/image_raw" //example of Topic name def
+#define NM_INPUT_TOPIC "/video_flow" //example of Topic name def
 
 /*******************************************
  * EM, Sample code for image topic
