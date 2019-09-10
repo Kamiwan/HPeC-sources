@@ -15,6 +15,10 @@
 #include <math.h>
 #include "utils.h"
 
+// EM, HW version headers
+#include "pr_internal_host.h"
+#include "mc422.h"
+
 //Erwan Moréac, 05/03/18 
 #define HIL	 //Code modifications for Hardware In the Loop
 
@@ -27,6 +31,20 @@
 #define HFOV 60
 #define VFOV 45
 #define REFRESH_RTZ_PARAM 20 //EM, Number of pictures before update of theta, x and y
+
+// EM, HW version defines
+#define SDRAM_SPAN   ( 0x4000000 )
+#define MC_CTRL_BASEADDR 0xFF201000
+#define FPGA_DDR_BASEADDR 0xC0000000
+// DMA-less HW control
+#define DMA_WRITE_CTRL_REG                  0xFF200000
+#define MATCHING_STATUS_REG_OFFSET	        0x0	
+#define MATCHING_WRITE_ADDR_REG_OFFSET	    0x1	
+#define MATCHING_WRITE_LENGTH_REG_OFFSET	0x2	
+#define MATCHING_CTRL_REG_OFFSET	        0x3	
+
+#define PIO_PR_RESET_BASEADDR 0xFF214000
+
 
 /*!
 * \brief ROS callback functions
@@ -62,3 +80,13 @@ cv::Mat  rotozoom_ins(const cv::Mat & pic, bool first_time,
                         const double theta, const double x, const double y,
 						const double last_theta, const double last_x, const double last_y);
 
+
+/*!
+* \brief Function to set up the picture for the HW rotozoom
+* Author : EM 
+*/
+void mc_input_422_setup(const cv::Mat & YUV_in, 
+                        volatile unsigned char * mem_to_mc_input_buffer,
+                        volatile unsigned char * uv_mem_to_mc_input_buffer);
+
+                        

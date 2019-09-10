@@ -563,3 +563,69 @@ cv::Mat rotozoom_ins(const cv::Mat & pic, bool first_time,
 }// end rotozoom_ins
 
 
+
+
+/*******************************************************************
+ * mc_input_422_setup
+ * Author : EM 
+ * @param YUV_in, image received from a camera by a topic in YUV 
+ * 
+ * Transform an YUV picture in YUV:422 and write results 
+ * on pointer location
+*******************************************************************/
+void mc_input_422_setup(const cv::Mat & YUV_in, 
+                        volatile unsigned char * mem_to_mc_input_buffer,
+                        volatile unsigned char * uv_mem_to_mc_input_buffer)
+{
+    int width  = YUV_in.cols;
+    int height = YUV_in.rows;
+    printf("width = %d, height = %d \n",width, height);
+
+    // Y 422 part setup
+    printf("Image spliting \n");
+    cv::Mat splitted_yuv[3];
+    cv::split(YUV_in,splitted_yuv);
+    unsigned char * ptr_tmp = (unsigned char *)mem_to_mc_input_buffer;
+    int cpt2=0;
+    for(int row = 0; row < height; row++)
+    {
+        for(int col = 0; col < width; col++)
+        {
+            *ptr_tmp = splitted_yuv[0].at<uchar>(row,col);
+            cpt2++;
+            ptr_tmp++;
+        }
+    }
+    printf ("\n nb points y %d \n", cpt2);
+
+    // UV 422 part setup
+    cv::Mat cb = splitted_yuv[1];
+    cv::Mat cr = splitted_yuv[2];
+    printf("CB cols = %d and CB rows = %d.\r\n",cb.cols, cb.rows);
+    printf("CR cols = %d and CR rows = %d.\r\n",cr.cols, cr.rows);
+
+    cv::Mat cb422(height, width/2, CV_8UC1);
+    cv::Mat cr422(height, width/2, CV_8UC1);
+    for(int row = 0; row < height; row++)
+    {
+        for(int col = 0; col < width/2; col++)
+        {
+          cb422.at<uchar>(row,col) = cb.at<uchar>(row,col*2);
+          cr422.at<uchar>(row,col) = cr.at<uchar>(row,col*2);
+        }
+    }
+
+    ptr_tmp = (unsigned char *)uv_mem_to_mc_input_buffer;
+    for(int row = 0; row < height; row++)
+    {
+        for(int col = 0; col < width/2; col++)
+        {
+        *ptr_tmp = cb422.at<uchar>(row,col);
+        ptr_tmp++;
+        *ptr_tmp = cr422.at<uchar>(row,col);
+        ptr_tmp++;
+        }
+    }
+}
+
+
