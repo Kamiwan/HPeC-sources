@@ -20,5 +20,7 @@
  *************************************************************************************/
 #ifndef PR_INTERNAL_HOST_H
 #define PR_INTERNAL_HOST_H
+
 void FPGA_reconfiguration(int fd_mem,char *rbf_path);
+
 #endif

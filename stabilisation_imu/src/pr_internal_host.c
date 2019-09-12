@@ -1,3 +1,4 @@
+#include "pr_internal_host.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -234,8 +235,6 @@ void pr_controler_write_complete(volatile unsigned int *pr_base_iomem)
 		}
 	}
 }
-
-
 
 void FPGA_reconfiguration(int fd_mem,char *rbf_path)
 {

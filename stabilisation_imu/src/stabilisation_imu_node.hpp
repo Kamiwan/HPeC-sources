@@ -11,16 +11,51 @@
  *  3. on another terminal, run the command 
  *     "rostopic pub -1 /stabilisation_imu_mgt_topic std_msgs/Int32 "0" or "1" or "2""
  *************************************************************************************/
-#include <opencv2/opencv.hpp>
-#include <math.h>
+#ifndef STABILISATION_IMU_NODE_HPP
+#define STABILISATION_IMU_NODE_HPP
+
 #include "utils.h"
 
 // EM, HW version headers
-#include "pr_internal_host.h"
-#include "mc422.h"
+#include <sys/mman.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#include <ros/ros.h>
+#include <ros/callback_queue.h>
+#include <boost/thread.hpp>
+
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <iostream>
+
+extern "C" {
+    #include "debug.h"
+    #include "pr_internal_host.h"   // EM, HW version headers
+    #include "mc422.h"              // EM, HW version headers
+}
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <cv_bridge/cv_bridge.h>
+#include <image_transport/image_transport.h>
+
+#include <sensor_msgs/NavSatFix.h>
+#include <sensor_msgs/image_encodings.h>
+#include "std_msgs/Int32.h"
+#include "std_msgs/Float32.h"
+#include "std_msgs/String.h"
+#include "topic_tools/MuxSelect.h"
+
+#include "sensor_msgs/Imu.h"
+#include <tf/transform_datatypes.h>
 
 //Erwan Moréac, 05/03/18 
 #define HIL	 //Code modifications for Hardware In the Loop
+//#define PLATFORM_32_BITS	 // uncomment on target architecture 
 
 #define STAB_IMU_INPUT_TOPIC  "/iris/camera2/image_raw"
 #define STAB_IMU_OUTPUT_TOPIC "/stabilised_camera" 
@@ -31,6 +66,8 @@
 #define HFOV 60
 #define VFOV 45
 #define REFRESH_RTZ_PARAM 20 //EM, Number of pictures before update of theta, x and y
+#define IMAGE_WIDTH  640
+#define IMAGE_HEIGHT 480
 
 // EM, HW version defines
 #define SDRAM_SPAN   ( 0x4000000 )
@@ -82,11 +119,19 @@ cv::Mat  rotozoom_ins(const cv::Mat & pic, bool first_time,
 
 
 /*!
-* \brief Function to set up the picture for the HW rotozoom
+* \brief Functions to use the HW version of the rotozoom
 * Author : EM 
 */
+void rotozoom_compute_params(const cv::Mat & pic, bool first_time,
+                        const double theta, const double x, const double y,
+						const double last_theta, const double last_x, const double last_y,
+						double & theta_cumul, double &  x_cumul, double &  y_cumul);
 void mc_input_422_setup(const cv::Mat & YUV_in, 
                         volatile unsigned char * mem_to_mc_input_buffer,
-                        volatile unsigned char * uv_mem_to_mc_input_buffer);
+                        volatile unsigned char * uv_mem_to_mc_input_buffer);                        
+int  acquire();
+void release();
+void launch_custom_dma();
 
-                        
+
+#endif

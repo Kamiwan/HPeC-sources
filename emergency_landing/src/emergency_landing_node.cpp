@@ -101,7 +101,7 @@ int acquire()
 		sl_descriptor_read.read_addr	= sl_cma_base_addr; 
 		sl_descriptor_read.write_addr 	= sl_cma_base_addr;
 		sl_descriptor_write.read_addr 	= sl_cma_base_addr+0x2000000;
-		sl_descriptor_write.write_addr = sl_cma_base_addr+0x2000000;
+		sl_descriptor_write.write_addr  = sl_cma_base_addr+0x2000000;
 	}
 
 	// We are using packetized streams so set length to max
