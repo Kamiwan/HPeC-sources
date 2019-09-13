@@ -158,8 +158,17 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 			
 			cv::Mat yuv_image;
 			printf("Convert RGB to YUV\n");
+			time_t start_yuv_cvt = clock();
 			cv::cvtColor(*picture, yuv_image, CV_BGR2YCrCb);
+			time_t end_yuv_cvt = clock();
+			elapsed_time.data = ((double)(end_yuv_cvt - start_yuv_cvt)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "HW RGB to YUV conv time : " << elapsed_time.data << std::endl;			
+
+			time_t start_422 = clock();
 			mc_input_422_setup(yuv_image, y_mem_to_mc_input_buffer, uv_mem_to_mc_input_buffer);
+			time_t end_422 = clock();
+			elapsed_time.data = ((double)(end_422 - start_422)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "HW 422 input setup time : " << elapsed_time.data << std::endl;
 
 			launch_custom_dma();
 			        
@@ -171,13 +180,16 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
         	printf("status maching %x \n",*(virtual_dmareg_addr+MATCHING_STATUS_REG_OFFSET));
         	*(virtual_dmareg_addr+MATCHING_CTRL_REG_OFFSET)=0;
 
-			//EM, Compute execution time
-			ends = clock();
-			elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
-			std::cout << "HARDWARE stabilisation_imu Processing time : " << elapsed_time.data << std::endl;
-
 			cv::Mat rtz_picture(IMAGE_HEIGHT, IMAGE_WIDTH, CV_8UC4, (unsigned char *)output_stream_to_mem_dma_buffer ); //zero copy
-			sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", rtz_picture).toImageMsg();
+			cv::Mat rtz_out;
+
+			time_t start_bgr_cvt = clock();
+			cv::cvtColor(rtz_picture, rtz_out, cv::COLOR_BGRA2BGR);
+			time_t end_bgr_cvt = clock();
+			elapsed_time.data = ((double)(end_bgr_cvt - start_bgr_cvt)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "HW BGRA to BGR conv time : " << elapsed_time.data << std::endl;
+
+			sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", rtz_out).toImageMsg();
 			cv::waitKey(1);
 			img_stab_pub.publish(msg);
 
@@ -188,6 +200,11 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 					img_acquired = false;
 				}
 			#endif
+
+			//EM, Compute execution time
+			ends = clock();
+			elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "HARDWARE stabilisation_imu Processing time : " << elapsed_time.data << std::endl;
 		}
 		rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
 	}	 // end while
@@ -236,6 +253,7 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 
 	bool first_time_rtz = true;
 	double theta, x, y, last_theta, last_x, last_y;
+	double theta_cumul, x_cumul, y_cumul;
 	cv::Mat rtz_picture;
 	int count = 0;
 
@@ -258,7 +276,8 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 
 			rtz_picture = rotozoom_ins(*picture, first_time_rtz,
 										theta, x, y,
-										last_theta, last_x, last_y);
+										last_theta, last_x, last_y,
+										theta_cumul, x_cumul, y_cumul);
 
 			if (first_time_rtz)
 				first_time_rtz = false;
@@ -273,11 +292,6 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 				count++;
 			}
 
-			//EM, Compute execution time
-			ends = clock();
-			elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
-			std::cout << "SOFTWARE stabilisation_imu Processing time : " << elapsed_time.data << std::endl;
-
 			msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", rtz_picture).toImageMsg();
 			cv::waitKey(10);
 			img_stab_pub.publish(msg);
@@ -289,6 +303,11 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 					img_acquired = false;
 				}
 			#endif
+
+			//EM, Compute execution time
+			ends = clock();
+			elapsed_time.data = ((double)(ends - start)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "SOFTWARE stabilisation_imu Processing time : " << elapsed_time.data << std::endl;
 		}
 		rate.sleep(); //EM, sleep time computed to respect the node_activation_rate of the app
 	}
@@ -512,44 +531,24 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 		std_msgs::Float32 elapsed_time;
 		img_acquired = true;
 
-		if(hardware==1) //Hardware version
-		{
-			/**********************************************************************
-		 	* EM, Insert here hardware version of image copying 
-			*     It highly depends of the HW configuration
-			*	  a memcpy is mandatory.
-			**********************************************************************/	
-			// EM, TODO: Same code as HIL, possibility to remove this part later
+		#ifdef HIL //mandatory malloc to save image from a remote computer
 			imcpy_start = clock();
 			picture = new cv::Mat(image_DATA->image);
-			
 			imcpy_end = clock();
 
 			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
 			std::cout << "SOFTWARE HIL Image COPY time : " << elapsed_time.data << std::endl;
 			dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
 
-		} else { //Software version
-			#ifdef HIL //mandatory malloc to save image from a remote computer
-				imcpy_start = clock();
-				picture = new cv::Mat(image_DATA->image);
-				
-				imcpy_end = clock();
-
-				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				std::cout << "SOFTWARE HIL Image COPY time : " << elapsed_time.data << std::endl;
-				dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
-
-			#else //Zero-copy transfer
-				imcpy_start = clock();
-				*picture = image_DATA->image;
-				imcpy_end = clock();
-
-				ROS_INFO("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
-				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
-			#endif
-		}
+		#else //Zero-copy transfer
+			imcpy_start = clock();
+			*picture = image_DATA->image;
+			imcpy_end = clock();
+			
+			ROS_INFO("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
+			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
+		#endif
 
 		ROS_INFO("IMAGE RECOVERY SUCCEED");
 	}
@@ -582,9 +581,9 @@ void get_rtz_param_from_ins_values(const cv::Mat&  pic, double yawData, double p
 
 cv::Mat rotozoom_ins(const cv::Mat & pic, bool first_time,
                         const double theta, const double x, const double y,
-						const double last_theta, const double last_x, const double last_y)
+						const double last_theta, const double last_x, const double last_y,
+						double & theta_cumul, double & x_cumul, double & y_cumul)
 {
-	double x_cumul, y_cumul, theta_cumul;
 	if (FILTERING) 
 	{
 		double delta_x_limit = 180 * (pic.cols / HFOV);
@@ -624,6 +623,8 @@ cv::Mat rotozoom_ins(const cv::Mat & pic, bool first_time,
 
     T.at<double>(0,2) = x_cumul;
     T.at<double>(1,2) = y_cumul;
+
+	std::cout << "cumul theta=" << theta_cumul << " x_cumul=" << x_cumul << " y_cumul=" << y_cumul << std::endl;
 
 	cv::Mat rtz_picture; 
 	cv::warpAffine(pic, rtz_picture, T, pic.size());

@@ -115,7 +115,8 @@ void get_rtz_param_from_ins_values(const cv::Mat & pic, double yawData, double p
                                     double initialRoll, double * theta, double * x, double * y);
 cv::Mat  rotozoom_ins(const cv::Mat & pic, bool first_time,
                         const double theta, const double x, const double y,
-						const double last_theta, const double last_x, const double last_y);
+						const double last_theta, const double last_x, const double last_y,
+                        double & theta_cumul, double & x_cumul, double & y_cumul);
 
 
 /*!
