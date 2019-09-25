@@ -10,7 +10,6 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "am_defines.h"
 
 long    elapse_time_u (struct timeval *end, struct timeval *start );
 long    time_micros (struct timeval *end, struct timeval *start );

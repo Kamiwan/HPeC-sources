@@ -23,6 +23,9 @@
 	<rosparam command='load' file="$(find parameters)/drone_features.yaml" ns="drone_features"/>
 	<rosparam command="load" file="$(find parameters)/system_state.yaml"  ns="system_state"/>
 	<rosparam command="load" file="$(find parameters)/camera_features.yaml" ns="camera_features" />
+
+	<node pkg="topic_tools" type="mux" name="video_mux" output="screen"
+		  args="/video_flow /iris/camera2/image_raw /stabilised_camera mux:=video_mux"/>
 		
 	<node pkg="fake_sensors" type="fake_sensors_node" name="fake_sensors" output="screen"/>
 	<node pkg="obstacle_detection" type="obstacle_detection_node" name="obstacle_detection" output="screen"/>

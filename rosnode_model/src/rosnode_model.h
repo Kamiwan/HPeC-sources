@@ -63,7 +63,7 @@ extern "C" {
 #define PERSONNA_2              8028160
 #define DDR_PERSONNA_SPAN       0x800000
 
-#define NM_INPUT_TOPIC "/iris/camera2/image_raw" //example of Topic name def
+#define NM_INPUT_TOPIC "/video_flow" //example of Topic name def
 
 /*******************************************
  * EM, Sample code for image topic

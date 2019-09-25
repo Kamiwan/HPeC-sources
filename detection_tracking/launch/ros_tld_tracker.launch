@@ -7,7 +7,7 @@
 	<arg name="cascade_path" default=
 		"$(env ROS_ROOT)/../OpenCV/haarcascades/haarcascade_frontalface_alt.xml"/>
 
-	<arg name="image_topic" default="/iris/camera2/image_raw"/>
+	<arg name="image_topic" default="/video_flow"/>
 
 	<!-- Nodes -->
     <node name="ros_tld_tracker_node" pkg="tld_tracker" type="tld_tracker_node"
