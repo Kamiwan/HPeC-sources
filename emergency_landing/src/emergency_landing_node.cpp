@@ -232,7 +232,7 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 		queue.callAvailable();
 
 		//EM, Add a test in the case the camera topic is not activated
-		if (img_ibuf_color.h != 0 && img_ibuf_color.w != 0)
+		if (img_ibuf_g.h != 0 && img_ibuf_g.w != 0)
 		{
 			// Start measuring time
 			start = clock();
@@ -270,8 +270,8 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 			dbprintf("TRANSFERT OK ############################################## \n");
 
 			// Copy the edge detected image from the stream-to-mem buffer
-			img_ibuf_ero.w = img_ibuf_color.w;
-			img_ibuf_ero.h = img_ibuf_color.h;
+			img_ibuf_ero.w = img_ibuf_g.w;
+			img_ibuf_ero.h = img_ibuf_g.h;
 
 			img_ibuf_ero.img = (unsigned char *)sl_stream_to_mem_dma_buffer; //zero copy
 			ends = clock();
@@ -323,10 +323,12 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 {
 	ROS_INFO("[THREAD][RUNNING][SW]: Vision Based Autonomous Landing for ppm color images \r\n");
-
-	run = true;
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
+
+	//EM, initalize booleans for imu and image
+	img_acquired = false;
+	run = true;
 
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 
@@ -378,29 +380,15 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 		queue.callAvailable();
 
 		//EM, Add a test in the case the camera topic is not activated
-		if (img_ibuf_color.h != 0 && img_ibuf_color.w != 0 && img_ibuf_color.img != NULL)
+		if (img_acquired)
 		{
-			//img_ibuf_color = read_ppm("/home/labsticc/Bureau/australia.ppm");
-
 			// Start measuring time
 			start = clock();
-			//gettimeofday (&start , NULL);
 
-			dbprintf("\nSECOND IMAGE WIDTH = %d HEIGHT = %d \n", img_ibuf_color.w, img_ibuf_color.h);
-			uchar newval[3];
-			int i,j;
-			int image_size=img_ibuf_color.w*img_ibuf_color.h;
-			for(i = 0,j=0; i < image_size; i ++,j+=3)
-			{
-				newval[0]=img_ibuf_color.img[j];
-				newval[1]=img_ibuf_color.img[j+1];
-				newval[2]=img_ibuf_color.img[j+2];
-			}
-			#ifdef DEBUG
-			std::cout << "SECOND IMAGE RECOVERY B=" << (int)newval[0] << " G=" << (int)newval[1] << " R=" << (int)newval[2] << std::endl;
-			#endif
+			img_ibuf_g.h 	= picture->rows;
+			img_ibuf_g.w 	= picture->cols;
+			img_ibuf_g.img 	= picture->data;
 
-			img_ibuf_g = rgb2gray(img_ibuf_color);
 		#ifdef WRITE_IMG
 			write_pgm(img_ibuf_g, "/home/labsticc/Bureau/search_res/gray.pgm");
 		#endif
@@ -467,11 +455,11 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 			write_pgm(img_ibuf_ero, "/home/labsticc/Bureau/search_res/erode.pgm");
 #endif
 
-			#ifdef HIL //Erwan Moréac, Mandatory free since we have to use malloc
-				if(img_ibuf_color.img != NULL)
+			#ifdef HIL
+				if(img_acquired)
 				{
-					free_ppm(img_ibuf_color); 
-					img_ibuf_color.img = NULL;
+					delete picture; 	//Free memory of the allocated current picture
+					img_acquired = false;
 				}
 			#endif
 
@@ -482,7 +470,6 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 			free_pgm(img_ibuf_sp);
 			free_pgm(img_ibuf_se);
 			free_pgm(img_ibuf_ms);
-			free_pgm(img_ibuf_g);
 #ifdef MEDIAN_FILTER
 			free_pgm(img_ibuf_me);
 #endif
@@ -715,10 +702,15 @@ int main(int argc, char **argv)
 	search_land_pub = boost::make_shared<ros::Publisher>(
 		nh.advertise<std_msgs::Float32>("/search_landing_notification_topic", 1));
 
+
+	#ifdef HIL
+	#else
+		picture = new cv::Mat(); //EM, Must be done only once to allow zero-copy transfer
+	#endif
+
+
 	gettimeofday(&current, NULL);
-
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
-
 	ROS_INFO("[TASK WRAPPER][RUNNING]");
 	ros::spin();
 }
@@ -730,64 +722,33 @@ void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 
 void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 {
-	// Erwan Moréac 22/02/18, Image size update
-	img_ibuf_color.h = image_cam->height;
-	img_ibuf_color.w = image_cam->width;
-	dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", img_ibuf_color.w, img_ibuf_color.h);
-
 	// Erwan Moréac 22/02/18, use of cv_bridge to get the opencv::Mat of the picture
 	try
 	{
-		cv_bridge::CvImagePtr image_DATA = cv_bridge::toCvCopy(image_cam, "bgr8");
+		cv_bridge::CvImagePtr image_DATA = cv_bridge::toCvCopy(image_cam, "mono8");
 		std_msgs::Float32 elapsed_time;
-		
-		if(hardware==1) //Hardware version
-		{
-			// Image dimensions
-			int width = img_ibuf_color.w;
-			int height = img_ibuf_color.h;
-			// We are using packetized streams so set length to max
-			sl_descriptor_read.length = width*height*sizeof(unsigned int);
-			sl_descriptor_write.length = width*height*sizeof(unsigned char);
+		img_acquired = true;
+		std::cout << "COPY DONE " << std::endl;
 
+		#ifdef HIL //mandatory malloc to save image from a remote computer
 			imcpy_start = clock();
-			//EM, No changes is HIL or not
-			memcpy_consecutive_to_padded(image_DATA->image.data, sl_mem_to_stream_dma_buffer,  width * height);
+			picture = new cv::Mat(image_DATA->image);
 			imcpy_end = clock();
 
 			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-			std::cout << "HARDWARE Image COPY time : " << elapsed_time.data << std::endl;
+			std::cout << "SOFTWARE HIL Image COPY time : " << elapsed_time.data << std::endl;
+			dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
 
-		} else { //Software version
-			#ifdef HIL //mandatory malloc to save image from a remote computer
-				imcpy_start = clock();
-				img_ibuf_color.img = (unsigned char *)malloc(3*img_ibuf_color.w * img_ibuf_color.h * sizeof(unsigned char));
-				
-				//Use of uint32_t to copy data 4x faster instead of copying byte by byte
-				// /!\ The image size in bytes MUST BE a multiple of 32
-				uint32_t * ptrRes;
-				uint32_t * ptrIn;
-				ptrIn  = (uint32_t *)image_DATA->image.data;
-				ptrRes = (uint32_t *)img_ibuf_color.img;
-				int image_size=img_ibuf_color.w*img_ibuf_color.h;
-				int int_img_size=(image_size*3)>>2; //int_img_size = image_size * 3 bytes (BGR) / 4 bytes (int)
+		#else //Zero-copy transfer
+			imcpy_start = clock();
+			*picture = image_DATA->image;
+			imcpy_end = clock();
+			
+			ROS_INFO("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
+			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
+		#endif
 
-				for(int i=0;i<int_img_size;i++)
-					ptrRes[i] = ptrIn[i];
-				imcpy_end = clock();
-
-				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
-
-			#else //Zero-copy transfer
-				imcpy_start = clock();
-				img_ibuf_color.img = image_DATA->image.data;
-				imcpy_end = clock();
-
-				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
-			#endif
-		}
 		ROS_INFO("IMAGE RECOVERY SUCCEED");
 	}
 	catch (cv_bridge::Exception &e)

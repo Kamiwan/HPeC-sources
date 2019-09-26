@@ -82,8 +82,9 @@ extern "C" {
 //#define WRITE_IMG //DEGUG only
 
 boost::shared_ptr<ros::Publisher> search_land_pub;
+cv::Mat * picture;
+bool img_acquired;
 
-PPM_IMG img_ibuf_color;
 PGM_IMG img_ibuf_g;
 PGM_IMG img_ibuf_ceh;
 PGM_IMG img_ibuf_me1;
