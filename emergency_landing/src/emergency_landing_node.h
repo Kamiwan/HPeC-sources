@@ -20,6 +20,9 @@
  * 
  * Main header for emergency_landing node
  *************************************************************************************/
+#ifndef EMERGENCY_LANDING_NODE_H
+#define EMERGENCY_LANDING_NODE_H
+
 #include <ros/ros.h>
 #include <stdio.h>
 #include <string.h>
@@ -38,8 +41,9 @@
 #include <iostream>
 
 extern "C" {
-#include "image.h"
-#include "debug.h"
+    #include "image.h"
+    #include "debug.h"
+    #include "simple_dma.h"
 }
 
 #include <sensor_msgs/NavSatFix.h>
@@ -49,26 +53,22 @@ extern "C" {
 #include <boost/thread.hpp>
 #include "std_msgs/Int32.h"
 #include "std_msgs/Float32.h"
-
 #include "std_msgs/String.h"
-#include <sstream>
 #include "communication/area_location.h"
-#include "sgdma_dispatcher.h"
-#include "sgdma_dispatcher_regs.h"
+#include <sstream>
 
-#define SDRAM_SPAN (0x04000000)
-#define HW_REGS_SPAN (0x00020000)
-#define HWREG_BASE (0xff200000)
-#define DDR_FPGA_CMA_BASE_ADDR 0xC0000000
-#define LW_HPS2FPGA_AXI_MASTER 0xFF200000
-
-#define USE_DDR_FPGA 0 //EM, parameter to use or not the FPGA DDR RAM
-
-//EM, 11/04/18, Hardware version preparation
+#define SDRAM_SPAN   ( 0x400000 )
 #define DMA_READ_CSR_BASEADDR 0xFF200000
-#define DMA_READ_DESC_BASEADDR 0xFF201000
-#define DMA_WRITE_CSR_BASEADDR 0xFF202000
-#define DMA_WRITE_DESC_BASEADDR 0xFF203000
+#define DMA_WRITE_CSR_BASEADDR 0xFF201000
+#define FPGA_DDR_BASEADDR 0xC0000000
+
+#define DMAWRITE_STATUS_REG_OFFSET  0x0	
+#define DMAWRITE_ADDR_REG_OFFSET    0x1	
+#define DMAWRITE_LENGTH_REG_OFFSET  0x2	
+#define DMAWRITE_CTRL_REG_OFFSET    0x3	
+
+#define PIO_PR_RESET_BASEADDR 0xFF214000
+
 
 //Erwan Moréac, 05/03/18 : Setup #define
 #define HIL				 //Code modifications for Hardware In the Loop
@@ -103,29 +103,21 @@ int nb_labels;
 COMPONENT *ccl;
 int count = 0;
 
-int hardware = 0;
-int fd;
-
-FILE *cma_dev_file;
-char cma_addr_string[10];
-
 time_t start, ends,t1;
 time_t imcpy_start,imcpy_end;
 struct timeval beginning, current, end;
 
-unsigned int sl_cma_base_addr;
-void *sl_virtual_base_sdram;
-void *sl_virtual_reconfig_ctrl;
+int hardware = 0;
+int fd;
+FILE *cma_dev_file;
+char cma_addr_string[10];
 
-volatile unsigned int *sl_mem_to_stream_dma_buffer = NULL;
-volatile unsigned char *sl_stream_to_mem_dma_buffer = NULL;
-
-// Create  Dispatcher
-tcSGDMADispatcher     sl_dispatcher_read;
-tcSGDMADispatcher     sl_dispatcher_write;
-// Create  descriptor
-tsSGDMADescriptor sl_descriptor_read;
-tsSGDMADescriptor sl_descriptor_write;
+unsigned int            cma_base_addr;
+void                    *virtual_base_sdram;
+volatile unsigned int   *simple_dma_read_addr;
+volatile unsigned int   *simple_dma_write_addr;
+volatile unsigned int   *mem_to_stream_dma_buffer = NULL;
+volatile unsigned char  *stream_to_mem_dma_buffer = NULL;
 
 struct pixel *data;
 unsigned char *header;
@@ -144,11 +136,6 @@ boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
 long elapse_time_u(struct timeval *end, struct timeval *start);
 long time_micros(struct timeval *end, struct timeval *start);
 
-// source ppm color image 24bits RGB (packed)
-// The video IP cores used for edge detection require the RGB 24 bits of each pixel to be
-// word aligned (aka 1 byte of padding per pixel). | unused 8 bits | red 8 bits | green 8 bits | blue 8 bits |
-void memcpy_consecutive_to_padded(unsigned char *from, volatile unsigned int *to, int pixels);
-
 int acquire();
 void release();
 
@@ -161,3 +148,4 @@ void stop();
 void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
 void image_callback(const sensor_msgs::Image::ConstPtr &image_cam);
 
+#endif

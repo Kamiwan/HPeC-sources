@@ -166,6 +166,7 @@ add_executable(emergency_landing_node
 			src/sgdma_dispatcher.cpp
 			src/csr_map.cpp
 			src/utils.cpp
+			src/simple_dma.c
 	)
 
 ## Rename C++ executable without prefix
