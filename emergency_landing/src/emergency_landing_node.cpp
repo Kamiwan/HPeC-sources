@@ -55,7 +55,7 @@ int acquire()
     }
 
 	mem_to_stream_dma_buffer = (volatile unsigned int *)(virtual_base_sdram);
-	stream_to_mem_dma_buffer = (volatile unsigned char *)(virtual_base_sdram + 0x2000000);
+	stream_to_mem_dma_buffer = (volatile unsigned char *)(virtual_base_sdram + 0x200000);
 
 	//get virtual addr that maps to the simple_dma_read component (through HPS-FPGA lightweight bridge)
 	simple_dma_read_addr = (volatile unsigned int *)mmap( NULL, 4096, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd, DMA_READ_CSR_BASEADDR );
@@ -154,7 +154,7 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
     		//reset soft the DMAs if busy
     		reset_dma(simple_dma_read_addr);
     
-			memcpy((unsigned char *)mem_to_stream_dma_buffer, img_ibuf_g.img , width*height);
+			std::memcpy((unsigned char *)mem_to_stream_dma_buffer, img_ibuf_g.img , width*height);
 
     		// Configure DMAs to the correct addresses 
     		*(simple_dma_write_addr+DMAWRITE_CTRL_REG_OFFSET)=0x1; //reset soft 
@@ -169,7 +169,7 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
     		start_dma(simple_dma_read_addr,cma_base_addr,width*height*sizeof(unsigned char));	
     		ROS_INFO("length = %x\n", *(simple_dma_read_addr+SIMPLE_DMA_LENGTH_OFST));
     		ROS_INFO("base addr = %x\n", *(simple_dma_read_addr+SIMPLE_DMA_ADDRESS_OFST));
-			
+
     		//START IP Matching
     		*(simple_dma_write_addr+DMAWRITE_CTRL_REG_OFFSET)=8;
     		while (transfer_done(simple_dma_read_addr)==0);
