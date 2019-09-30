@@ -1,114 +1,26 @@
-#include <ros/ros.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <image_transport/image_transport.h>
-#include <vector>
-#include <stdint.h>
-
-#include <opencv2/highgui/highgui.hpp>
-#include <cv_bridge/cv_bridge.h>
-#include <iostream>
-
-extern "C" {
-#include "image.h"
-#include "debug.h"
-#include "harris.h"
-#include "freak.h"
-}
-
-#include <sensor_msgs/NavSatFix.h>
-#include <sensor_msgs/image_encodings.h>
-
-#include <ros/callback_queue.h>
-#include <boost/thread.hpp>
-#include "std_msgs/Int32.h"
-#include "std_msgs/Float32.h"
-
-#include "std_msgs/String.h"
-#include <sstream>
-#include "communication/area_location.h"
-#include "sgdma_dispatcher.h"
-#include "sgdma_dispatcher_regs.h"
-
-
-
-#define SDRAM_SPAN (0x04000000)
-#define HW_REGS_SPAN (0x00020000)
-#define HWREG_BASE (0xff200000)
-
-//EM, 11/04/18, Hardware version preparation
-#define DMA_READ_CSR_BASEADDR 0xFF200000
-#define DMA_READ_DESC_BASEADDR 0xFF201000
-#define DMA_WRITE_CSR_BASEADDR 0xFF202000
-#define DMA_WRITE_DESC_BASEADDR 0xFF203000
-#define OCRAM_SBASE	0xC0000000	/* Rootport onchip RAM base */
-#define OCRAM_SIZE	0x8000	/* Rootport onchip RAM size */
-
-//Erwan Moréac, 05/03/18 : Setup #define
-#define HIL				 //Code modifications for Hardware In the Loop
-#define AREA_MIN 400	 //TODO : create a function to make it dependent of the UAV height and FOV
-#define AREA_MAX 2073601 //This value exceeds the area of an HD picture 1920 x 1080 in pixels
-#define HARRIS_INPUT_TOPIC "/video_flow"
-#define HARRIS_OUTPUT_IMAGE_TOPIC "search_output/image"
-//#define HARRIS_OUTPUT_AREA_LOCATION_TOPIC "search_output/areas"
-
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-//DEGUG only #define WRITE_IMG
-
-boost::shared_ptr<ros::Publisher> search_land_pub;
-
-PPM_IMG img_ibuf_color;
-
-int hardware = 0;
-int fd;
-
-FILE *cma_dev_file;
-char cma_addr_string[10];
-
-time_t start, ends,t1;
-time_t imcpy_start,imcpy_end;
-struct timeval beginning, current, end;
-
-unsigned int cma_base_addr;
-void *virtual_base_sdram;
-
-volatile unsigned int *mem_to_stream_dma_buffer = NULL;
-volatile unsigned char *stream_to_mem_dma_buffer = NULL;
-
-// Create  Dispatcher
-tcSGDMADispatcher     dispatcher_read;
-tcSGDMADispatcher     dispatcher_write;
-// Create  descriptor
-tsSGDMADescriptor descriptor_read;
-tsSGDMADescriptor descriptor_write;
-
-struct pixel *data;
-unsigned char *header;
-
-double diameter;
-double altitude;
-double camera_angle;
-double image_height;
-
-bool run = false;
-int current_ver = 0;
-boost::shared_ptr<boost::thread> worker_thread;
-boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
-
-void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position);
-void image_callback(const sensor_msgs::Image::ConstPtr &image_cam);
-
-extern void RST_RANSAC(Point *point1,Point *point2,int N_SAMPLES,int threshold,float *theta,int *tx,int *ty );
-static void save_keypoints( const char* filename, keyPoint* keypoints, size_t count   );
-PGM_IMG harriscornerhw(PPM_IMG img_ibuf_color,int threshold,keyPoint *keyPoints,int *kpcount,int sort);
-static void save_descriptor( const  char *filename, descriptor* descriptors, size_t desc_count );
-
+/* 
+ * This file is part of the HPeC distribution (https://github.com/Kamiwan/HPeC-sources).
+ * Copyright (c) 2018 Lab-STICC Laboratory.
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
+/*************************************************************************************
+ * Author(s) :  Erwan Moréac, erwan.moreac@univ-ubs.fr (EM)
+ * Created on: January, 2018
+ * 
+ * Main file of harris_detector node
+ *************************************************************************************/
+#include "harris_detector_node.hpp"
 
 long elapse_time_u(struct timeval *end, struct timeval *start)
 {
@@ -128,19 +40,7 @@ long time_micros(struct timeval *end, struct timeval *start)
 	return -1;
 }
 
-// source ppm color image 24bits RGB (packed)
-// The video IP cores used for edge detection require the RGB 24 bits of each pixel to be
-// word aligned (aka 1 byte of padding per pixel). | unused 8 bits | red 8 bits | green 8 bits | blue 8 bits |
-void memcpy_consecutive_to_padded(unsigned char *from, volatile unsigned int *to, int pixels)
-{
-	int i;
-	for (i = 0; i < pixels; i++)
-	{
-		*(to + i) = (((unsigned int)*((unsigned char *)(from + i * 3 + 2))) & 0xff) |
-					((((unsigned int)*((unsigned char *)(from + i * 3 + 1))) << 8) & 0xff00) |
-					((((unsigned int)*((unsigned char *)(from + i * 3 + 0))) << 16) & 0xff0000);
-	}
-}
+
 
 int acquire()
 {
@@ -148,13 +48,13 @@ int acquire()
 	// Open /dev/mem
 	if ((fd = open("/dev/mem", (O_RDWR | O_SYNC))) == -1)
 	{
-		dbprintf("ERROR: could not open \"/dev/mem\"...\n");
+		ROS_ERROR("ERROR: could not open \"/dev/mem\"...\n");
 		exit (1);
 	}
 	// Open /dev/cma_block
 	if ((cma_dev_file = fopen("/dev/cma_block", "r")) == NULL)
 	{
-		dbprintf("ERROR: could not open \"/dev/cma_block\"...\n");
+		ROS_ERROR("ERROR: could not open \"/dev/cma_block\"...\n");
 		close(fd);
 		exit (1);
 	}
@@ -166,50 +66,39 @@ int acquire()
 	fclose(cma_dev_file);
 
 	// get virtual addr that maps to the sdram region (through HPS-FPGA non-lightweight bridge)
-	virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), MAP_SHARED, fd, cma_base_addr);
-	if (virtual_base_sdram == MAP_FAILED)
-	{
-		printf("ERROR: mmap() failed...\n");
-		close(fd);
-		exit (1);
-	}
+   	virtual_base_sdram = mmap( NULL, SDRAM_SPAN, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd, cma_base_addr /* FPGA_DDR_BASEADDR*/ );
+   	if( virtual_base_sdram == MAP_FAILED ) {
+       	ROS_ERROR( "ERROR: mmap() failed...\n" );
+       	close( fd );
+       	return(1);
+    }
 
 	mem_to_stream_dma_buffer = (volatile unsigned int *)(virtual_base_sdram);
-	stream_to_mem_dma_buffer = (volatile unsigned char *)(virtual_base_sdram + 0x2000000);
+	stream_to_mem_dma_buffer = (volatile unsigned char *)(virtual_base_sdram + 0x200000);
 
-	// Create  Dispatcher
-	dispatcher_read.init(DMA_READ_CSR_BASEADDR, DMA_READ_DESC_BASEADDR, 0);
-	dispatcher_write.init(DMA_WRITE_CSR_BASEADDR, DMA_WRITE_DESC_BASEADDR, 0);
-	
-	// EM, HW version update, Configure DMAs to the correct addresses
-	// Set the HPS Memory start address
-	descriptor_read.read_addr = cma_base_addr;
-	descriptor_read.write_addr = cma_base_addr;
-	descriptor_write.read_addr = cma_base_addr+0x2000000;
-	descriptor_write.write_addr = cma_base_addr+0x2000000;
-	// We are using packetized streams so set length to max
-	descriptor_read.length = 640*480*sizeof(unsigned int);
-	descriptor_write.length = 640*480*sizeof(unsigned char);
-	// The dispatcher will use the End of Packet flag to end the transfer
-	descriptor_read.control.msBits.end_on_eop = 1;
-	descriptor_read.control.msBits.gen_sop = 1;
-	descriptor_read.control.msBits.gen_eop = 1;
-	descriptor_write.control.msBits.end_on_eop = 1;
-	descriptor_write.control.msBits.gen_sop = 1;
-	descriptor_write.control.msBits.gen_eop = 1;
-	descriptor_read.control.msBits.go = 0;
-	descriptor_write.control.msBits.go = 0;
-	// configure the DMAs
-	dispatcher_read.WriteDescriptor(descriptor_read);
-	dispatcher_write.WriteDescriptor(descriptor_write);
+	//get virtual addr that maps to the simple_dma_read component (through HPS-FPGA lightweight bridge)
+	simple_dma_read_addr = (volatile unsigned int *)mmap( NULL, 4096, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd, DMA_READ_CSR_BASEADDR );
+    if( simple_dma_read_addr == MAP_FAILED ) {
+       	ROS_ERROR( "ERROR: simple_dma_read mmap() failed...\n" );
+       	close( fd );
+       	return(1);
+    }
 
-	// ALL SUCCEDED ;
+	//get virtual addr that maps to the simple_dma_write component (through HPS-FPGA lightweight bridge)
+	simple_dma_write_addr = (volatile unsigned int *)mmap( NULL, 4096, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd, DMA_WRITE_CSR_BASEADDR );
+    if( simple_dma_write_addr == MAP_FAILED ) {
+       	ROS_ERROR( "ERROR: simple_dma_write mmap() failed...\n" );
+       	close( fd );
+       	return(1);
+    }
+
+	// ALL SUCCEDED 
 	return 0;
 }
 
 void release()
 {
-	if (munmap(virtual_base_sdram, SDRAM_SPAN) != 0)
+	if( munmap(virtual_base_sdram, SDRAM_SPAN) != 0 )
 	{
 		ROS_ERROR("ERROR: munmap() failed...\n");
 	}
@@ -217,12 +106,12 @@ void release()
 }
 
 
+
 void harris_detector_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 {
 	ROS_ERROR("[THREAD][RUNNING][HW]: Vision Based Autonomous Landing HARDWARE VERSION \r\n");
 	//ROS_ERROR("Rgb2gray, median filter, canny edge detector, morphological closing in hw...\r\n");
 
-    PGM_IMG img_ibuf_g;
     PGM_IMG img_ibuf_ha;
     PGM_IMG img_ibuf_corr;
     keyPoint *refKeyPoints,*keyPoints;
@@ -242,10 +131,12 @@ void harris_detector_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 
 
 	run = true;
+	img_acquired = false;
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
 
 	//Erwan Moréac 22/02/18, Topic Subscribtion (Input) and Publication (Output)
+	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 	image_transport::ImageTransport it(*workerHandle_ptr);
 	image_transport::Subscriber cam_sub = it.subscribe(HARRIS_INPUT_TOPIC, 1, image_callback);
 	image_transport::Publisher pub = it.advertise(HARRIS_OUTPUT_IMAGE_TOPIC, 1);
@@ -285,24 +176,28 @@ void harris_detector_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 		ROS_ERROR("Could not INIT");
 	}
 
-
-	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 	std_msgs::Float32 elapsed_time;
 	while (workerHandle_ptr->ok())
 	{
 		queue.callAvailable();
 
 		//EM, Add a test in the case the camera topic is not activated
-		if (img_ibuf_color.h != 0 && img_ibuf_color.w != 0)
+		if (img_acquired)
 		{
 			// Start measuring time
 			start = clock();
+
+			img_ibuf_ha.h 	= picture->rows;
+			img_ibuf_ha.w 	= picture->cols;
+			img_ibuf_ha.img = picture->data;
+
+
 			t1=clock();
 			
 			refKeyPoints=(keyPoint *)malloc(MAX_KEYPOINT* sizeof(keyPoint));
 			
 			//memset(virtual_base_bram,0,MAX_KEYPOINT*8);
-			img_ibuf_ha=harriscornerhw(img_ibuf_color,32,refKeyPoints,&refKpCount,0);
+			img_ibuf_ha=greyharriscornerhw(img_ibuf_ha,32,refKeyPoints,&refKpCount,0);
 				#ifdef WRITE_IMG
 				write_pgm(img_ibuf_ha, "harrisref.pgm");
 				#endif
@@ -325,9 +220,10 @@ void harris_detector_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 			cv::waitKey(10);
 			pub.publish(msg);
 
-			free_ppm(img_ibuf_color);
-			free(refKeyPoints);
+			delete picture; 	//Free memory of the allocated current picture
+			img_acquired = false;
 
+			free(refKeyPoints);
 			dbprintf("wrapper_time %.0f %.0f\n", ((double)time_micros(&end, &beginning)), elapsed_time.data);
 			search_land_pub->publish(elapsed_time);
 			rate.sleep();
@@ -348,7 +244,6 @@ void harris_detector_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_p
 {
 	ROS_ERROR("[THREAD][RUNNING][SW]: Vision Based Autonomous Landing for ppm color images \r\n");
 
-    PGM_IMG img_ibuf_g;
     PGM_IMG img_ibuf_ha;
     PGM_IMG img_ibuf_corr;
     keyPoint *refKeyPoints,*keyPoints;
@@ -361,12 +256,12 @@ void harris_detector_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_p
     int descriptorCount=0;
     float theta;
     int tx,ty;
-    int hardware = 0;
     int fd;
     FILE* cma_dev_file;
     char cma_addr_string[10];
 
 	run = true;
+	img_acquired = false;
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
 
@@ -418,7 +313,7 @@ void harris_detector_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_p
 		queue.callAvailable();
 
 		//EM, Add a test in the case the camera topic is not activated
-		if (img_ibuf_color.h != 0 && img_ibuf_color.w != 0 && img_ibuf_color.img != NULL)
+		if (img_acquired)
 		{
  			refKeyPoints=(keyPoint *)malloc(MAX_KEYPOINT* sizeof(keyPoint));
     		printf("Reference image Harris Corner...\r\n");
@@ -426,12 +321,14 @@ void harris_detector_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_p
 			// Start measuring time
 			start = clock();
 
-			printf("Reference image Rgb2gray...\r\n");
-         	img_ibuf_g = rgb2gray(img_ibuf_color);
+			img_ibuf_ha.h 	= picture->rows;
+			img_ibuf_ha.w 	= picture->cols;
+			img_ibuf_ha.img = picture->data;
+
 			#ifdef WRITE_IMG
-				write_pgm(img_ibuf_g, "grayref.pgm");
+				write_pgm(img_ibuf_ha, "grayref.pgm");
 			#endif
-    		img_ibuf_ha=harriscorner(img_ibuf_g,32,refKeyPoints,&refKpCount,0);
+    		img_ibuf_ha = harriscorner(img_ibuf_ha,32,refKeyPoints,&refKpCount,0);
 			#ifdef WRITE_IMG
 				write_pgm(img_ibuf_ha, "harrisref.pgm");
 			#endif
@@ -451,16 +348,15 @@ void harris_detector_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_p
 			dbprintf("wrapper_time %.0f %.0f\n", ((double)time_micros(&end, &beginning)), elapsed_time.data);
 
    			free_pgm(img_ibuf_ha);
-       		free_pgm(img_ibuf_g);
 			free(refKeyPoints);
 
-			#ifdef HIL //Erwan Moréac, Mandatory free since we have to use malloc
-				if(img_ibuf_color.img != NULL)
+			#ifdef HIL
+				if(img_acquired)
 				{
-					free_ppm(img_ibuf_color); //Erwan Moréac 22/02/18, pointer adress is given so zero copy, no free
-					img_ibuf_color.img = NULL;
+					delete picture; 	//Free memory of the allocated current picture
+					img_acquired = false;
 				}
-			#endif		
+			#endif	
 
 			search_land_pub->publish(elapsed_time);
 			rate.sleep();
@@ -501,110 +397,8 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 	gettimeofday(&current, NULL);
 
 	dbprintf("\n Hardware = %d\n",hardware);
-	if(hardware==1){ //EM, Perform soft reset on the IP before to switch to another mode than HW
-
-		//EM, Stops the current task to switch mode
-		descriptor_read.control.msBits.go = 0;
-		descriptor_write.control.msBits.go = 0;
-		dispatcher_read.WriteDescriptor(descriptor_read);
-		dispatcher_write.WriteDescriptor(descriptor_write);
-
-		dbprintf("busy : %d\n",dispatcher_read.GetStatusReg().msBits.busy);
-		dispatcher_read.SetControlReg(0x1); //EM, Stop Dispatcher on read DMA
-		while(dispatcher_read.GetStatusReg().msBits.stopped)
-		{
-			dbprintf("busy : %d\n",dispatcher_read.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_read.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_read.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_read.GetStatusReg().msBits.irq); 
-		}
-
-		dispatcher_read.SetControlReg(0x2); //EM, Reset Dispatcher on read DMA
-		while(dispatcher_read.GetStatusReg().msBits.resetting)
-		{
-			dbprintf("busy : %d\n",dispatcher_read.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_read.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_read.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_read.GetStatusReg().msBits.irq); 
-		}
-
-		dbprintf("busy : %d\n",dispatcher_write.GetStatusReg().msBits.busy);
-		dispatcher_write.SetControlReg(0x1); //EM, Stop Dispatcher on write DMA
-		while(dispatcher_write.GetStatusReg().msBits.stopped)
-		{
-			dbprintf("busy : %d\n",dispatcher_write.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_write.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_write.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_write.GetStatusReg().msBits.irq); 
-		}
-
-		dispatcher_write.SetControlReg(0x2); //EM, Reset Dispatcher on write DMA
-		while(dispatcher_write.GetStatusReg().msBits.resetting)
-		{
-			dbprintf("busy : %d\n",dispatcher_write.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_write.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_write.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_write.GetStatusReg().msBits.irq); 
-		}
-
-		dispatcher_write.SetControlReg(0x20); //EM, Reset Descriptor on write DMA
-		while(dispatcher_write.GetStatusReg().msBits.stopped)
-		{
-			dbprintf("busy : %d\n",dispatcher_write.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_write.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_write.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_write.GetStatusReg().msBits.irq); 
-		}
-
-		dispatcher_read.SetControlReg(0x20); //EM, Reset Descriptor on read DMA
-		while(dispatcher_read.GetStatusReg().msBits.stopped)
-		{
-			dbprintf("busy : %d\n",dispatcher_read.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",dispatcher_read.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",dispatcher_read.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",dispatcher_read.GetStatusReg().msBits.irq); 
-		}
-
-		dispatcher_write.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on write DMA
-		dispatcher_read.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on read DMA
-
-
+	if(hardware==1){ 
+			/* MAYBE NEED TO STOP DMA */
 	}
 
 
@@ -641,20 +435,21 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "harris_detector_node");
 	ros::NodeHandle nh;
-	
-	//beginning = clock();
 	gettimeofday(&beginning, NULL);
+
 	ros::Subscriber mgt_topic;
 	mgt_topic = nh.subscribe("/harris_detector_mgt_topic", 1, managing_controller_request);
-
 	search_land_pub = boost::make_shared<ros::Publisher>(
 		nh.advertise<std_msgs::Float32>("/harris_detector_notification_topic", 1));
-	//current = clock();
+
+	#ifdef HIL
+	#else
+		picture = new cv::Mat(); //EM, Must be done only once to allow zero-copy transfer
+	#endif
+
 	gettimeofday(&current, NULL);
-
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
-
-	ROS_ERROR("[TASK WRAPPER][RUNNING]");
+	ROS_INFO("[TASK WRAPPER][RUNNING]");
 	ros::spin();
 }
 
@@ -665,75 +460,39 @@ void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 
 void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 {
-	// Erwan Moréac 22/02/18, Image size update
-	img_ibuf_color.h = image_cam->height;
-	img_ibuf_color.w = image_cam->width;
-	dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", img_ibuf_color.w, img_ibuf_color.h);
-
 	// Erwan Moréac 22/02/18, use of cv_bridge to get the opencv::Mat of the picture
 	try
 	{
-		cv_bridge::CvImagePtr image_DATA = cv_bridge::toCvCopy(image_cam, "bgr8");
+		cv_bridge::CvImagePtr image_DATA = cv_bridge::toCvCopy(image_cam, "mono8");
 		std_msgs::Float32 elapsed_time;
-		
-		if(hardware==1) //Hardware version
-		{
-			// Image dimensions
-			int width = img_ibuf_color.w;
-			int height = img_ibuf_color.h;
-			// We are using packetized streams so set length to max
-			descriptor_read.length = width*height*sizeof(unsigned int);
-			descriptor_write.length = width*height*sizeof(unsigned char);
+		img_acquired = true;
 
+		#ifdef HIL // mandatory new to save image from a remote computer
 			imcpy_start = clock();
-			//EM, No changes is HIL or not
-			memcpy_consecutive_to_padded(image_DATA->image.data, mem_to_stream_dma_buffer,  width * height);
+			picture = new cv::Mat(image_DATA->image);
 			imcpy_end = clock();
 
 			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-			std::cout << "HARDWARE Image COPY time : " << elapsed_time.data << std::endl;
+			std::cout << "SOFTWARE HIL Image COPY time : " << elapsed_time.data << std::endl;
+			dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
 
-		} else { //Software version
-			#ifdef HIL //mandatory malloc to save image from a remote computer
-				imcpy_start = clock();
-				img_ibuf_color.img = (unsigned char *)malloc(3*img_ibuf_color.w * img_ibuf_color.h * sizeof(unsigned char));
-				
-				//Use of uint32_t to copy data 4x faster instead of copying byte by byte
-				// /!\ The image size in bytes MUST BE a multiple of 32
-				uint32_t * ptrRes;
-				uint32_t * ptrIn;
-				ptrIn  = (uint32_t *)image_DATA->image.data;
-				ptrRes = (uint32_t *)img_ibuf_color.img;
-				int image_size=img_ibuf_color.w*img_ibuf_color.h;
-				int int_img_size=(image_size*3)>>2; //int_img_size = image_size * 3 bytes (BGR) / 4 bytes (int)
+		#else // Zero-copy transfer
+			imcpy_start = clock();
+			*picture = image_DATA->image;
+			imcpy_end = clock();
+			
+			ROS_INFO("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
+			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
+		#endif
 
-				for(int i=0;i<int_img_size;i++)
-					ptrRes[i] = ptrIn[i];
-				imcpy_end = clock();
-
-				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
-
-			#else //Zero-copy transfer
-				imcpy_start = clock();
-				img_ibuf_color.img = image_DATA->image.data;
-				imcpy_end = clock();
-
-				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
-			#endif
-		}
-
-		ROS_ERROR("IMAGE RECOVERY SUCCEED");
-		//std::cout << "ORIGINAL PICTURE : " << image_DATA->image << std::endl;
-		//std::cout << "PICTURE PIXELS : " << img_ibuf_color.img << std::endl;
+		ROS_INFO("IMAGE RECOVERY SUCCEED");
 	}
 	catch (cv_bridge::Exception &e)
 	{
-		ROS_ERROR("Could not convert from '%s' to 'bgr'.", image_cam->encoding.c_str());
+		ROS_INFO("Could not convert from '%s' to 'bgr'.", image_cam->encoding.c_str());
 	}
 }
-
 
 static void save_descriptor( const  char *filename, descriptor* descriptors, size_t desc_count )
 {
@@ -751,59 +510,51 @@ static void save_descriptor( const  char *filename, descriptor* descriptors, siz
     else fprintf(stderr, "Can't create descriptor file\n");
 }
 
-PGM_IMG harriscornerhw(PPM_IMG img_ibuf_color,int threshold,keyPoint *keyPoints,int *kpcount,int sort)
+
+PGM_IMG greyharriscornerhw(PGM_IMG img_ibuf_g,int threshold,keyPoint *keyPoints,int *kpcount,int sort)
 {
     PGM_IMG result;
     time_t start, t1,t2;
     // Image dimensions
     int i, j,incr;
-    result.w = img_ibuf_color.w;
-    result.h = img_ibuf_color.h;
-    int width =img_ibuf_color.w;
-    int height = img_ibuf_color.h;
+    result.w 	= img_ibuf_g.w;
+    result.h 	= img_ibuf_g.h;
+    int width  	= img_ibuf_g.w;
+    int height  = img_ibuf_g.h;
 
     start  =clock();
 
-    // Tell the dispatcher to start
-    descriptor_read.control.msBits.go = 1;
-    descriptor_write.control.msBits.go = 1;
+	//stop soft the DMAs if busy
+    stop_dma(simple_dma_read_addr);
+    //reset soft the DMAs if busy
+    reset_dma(simple_dma_read_addr);
+    	
+	std::memcpy((unsigned char *)mem_to_stream_dma_buffer, img_ibuf_g.img , width*height);
 
-    // Turn on the DMAs
-    dispatcher_read.WriteDescriptor(descriptor_read);
-    dispatcher_write.WriteDescriptor(descriptor_write);
-    // wait until the dma transfer complete
-    //start = clock();
-    /* while( dispatcher_read.GetStatusReg().msBits.busy)
-    {
-	printf("busy : %d\n",dispatcher_read.GetStatusReg().msBits.busy);
-	printf("desc_buf_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
-	printf("desc_buf_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_buf_full);
-	printf("desc_res_empty : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_empty);
-	printf("desc_res_full : %d\n",dispatcher_read.GetStatusReg().msBits.desc_res_full);
-	printf("stopped : %d\n",dispatcher_read.GetStatusReg().msBits.stopped);
-	printf("resetting  : %d\n",dispatcher_read.GetStatusReg().msBits.resetting );
-	printf("stop_on_err  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_err );
-	printf("stop_on_early  : %d\n",dispatcher_read.GetStatusReg().msBits.stop_on_early );
-	printf("irq  : %d\n",dispatcher_read.GetStatusReg().msBits.irq );
-    };
-    */
-    /* t1 = clock();
- 	printf("read memory transfer done... %.0f ms \r\n",((double) (t1 - start)) * 1000 / CLOCKS_PER_SEC); */
-    while( dispatcher_write.GetStatusReg().msBits.busy)
-    {
-	/* printf("busy : %d\n",dispatcher_write.GetStatusReg().msBits.busy);
-	printf("desc_buf_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
-	printf("desc_buf_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_buf_full);
-	printf("desc_res_empty : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_empty);
-	printf("desc_res_full : %d\n",dispatcher_write.GetStatusReg().msBits.desc_res_full);
-	printf("stopped : %d\n",dispatcher_write.GetStatusReg().msBits.stopped);
-	printf("resetting  : %d\n",dispatcher_write.GetStatusReg().msBits.resetting );
-	printf("stop_on_err  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_err );
-	printf("stop_on_early  : %d\n",dispatcher_write.GetStatusReg().msBits.stop_on_early );
-	printf("irq  : %d\n",dispatcher_write.GetStatusReg().msBits.irq ); */
-    };
-    t2 = clock();
- 	printf("write memory transfer done... %.0f ms \r\n",((double) (t2 - start)) * 1000 / CLOCKS_PER_SEC); 
+    // Configure DMAs to the correct addresses 
+    *(simple_dma_write_addr+DMAWRITE_CTRL_REG_OFFSET)=0x1; //reset soft 
+    *(simple_dma_write_addr+DMAWRITE_STATUS_REG_OFFSET)=0; //clear go  on write
+    *(simple_dma_write_addr+DMAWRITE_CTRL_REG_OFFSET)=0x0; //clear reset
+
+    //addresss in word (4 symbols for word) !!!
+    *(simple_dma_write_addr+DMAWRITE_ADDR_REG_OFFSET)=cma_base_addr+0x200000;
+    //length in bytes !!!
+    *(simple_dma_write_addr+DMAWRITE_LENGTH_REG_OFFSET)= width*height*sizeof(unsigned char);
+    t1=clock();
+
+    start_dma(simple_dma_read_addr,cma_base_addr,width*height*sizeof(unsigned char));	
+    ROS_INFO("length = %x\n", *(simple_dma_read_addr+SIMPLE_DMA_LENGTH_OFST));
+    ROS_INFO("base addr = %x\n", *(simple_dma_read_addr+SIMPLE_DMA_ADDRESS_OFST));
+    //START IP Matching
+    *(simple_dma_write_addr+DMAWRITE_CTRL_REG_OFFSET)=8;
+    while (transfer_done(simple_dma_read_addr)==0);
+
+	// wait until the dma write transfer complete
+  	while (*(simple_dma_write_addr+DMAWRITE_STATUS_REG_OFFSET)!=1); 
+	*(simple_dma_write_addr+DMAWRITE_CTRL_REG_OFFSET)=0x0; //clear reset    
+
+	t2 = clock();
+ 	ROS_INFO("write memory transfer done... %.0f ms \r\n",((double) (t2 - t1)) * 1000 / CLOCKS_PER_SEC); 
 
     // Copy the harris detected image from the stream-to-mem buffer
     result.w = width;
@@ -839,6 +590,7 @@ PGM_IMG harriscornerhw(PPM_IMG img_ibuf_color,int threshold,keyPoint *keyPoints,
     }		  
     return result;
 }
+
 
 static void save_keypoints( const char* filename, keyPoint* keypoints, size_t count   )
 {

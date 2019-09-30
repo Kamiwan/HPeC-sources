@@ -163,7 +163,6 @@ add_executable(emergency_landing_node
 			src/zone.c
 			src/emergency_landing_node.cpp	
 			src/debug.c
-			src/sgdma_dispatcher.cpp
 			src/csr_map.cpp
 			src/utils.cpp
 			src/simple_dma.c

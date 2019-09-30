@@ -189,7 +189,7 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 			elapsed_time.data = ((double)(end_bgr_cvt - start_bgr_cvt)) * 1000 / CLOCKS_PER_SEC;
 			std::cout << "HW BGRA to BGR conv time : " << elapsed_time.data << std::endl;
 
-			sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", rtz_out).toImageMsg();
+			sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", rtz_out).toImageMsg();
 			cv::waitKey(1);
 			img_stab_pub.publish(msg);
 
@@ -292,7 +292,7 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 				count++;
 			}
 
-			msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", rtz_picture).toImageMsg();
+			msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", rtz_picture).toImageMsg();
 			cv::waitKey(10);
 			img_stab_pub.publish(msg);
 
@@ -527,7 +527,7 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 	// Erwan Moréac 22/02/18, use of cv_bridge to get the opencv::Mat of the picture
 	try
 	{
-		cv_bridge::CvImagePtr image_DATA = cv_bridge::toCvCopy(image_cam, "bgr8");
+		cv_bridge::CvImagePtr image_DATA = cv_bridge::toCvCopy(image_cam, "mono8");
 		std_msgs::Float32 elapsed_time;
 		img_acquired = true;
 

@@ -219,11 +219,9 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 			dbprintf("wrapper_time %.0f %.0f\n", ((double)time_micros(&end, &beginning)), elapsed_time.data);
 			search_land_pub->publish(elapsed_time);
 
-			if(img_acquired)
-			{
-				delete picture; 	//Free memory of the allocated current picture
-				img_acquired = false;
-			}
+			delete picture; 	//Free memory of the allocated current picture
+			img_acquired = false;
+			
 			rate.sleep();
 		} // end if test Image size
 	}	 // end while
@@ -560,9 +558,8 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 		cv_bridge::CvImagePtr image_DATA = cv_bridge::toCvCopy(image_cam, "mono8");
 		std_msgs::Float32 elapsed_time;
 		img_acquired = true;
-		std::cout << "COPY DONE " << std::endl;
 
-		#ifdef HIL //mandatory malloc to save image from a remote computer
+		#ifdef HIL // mandatory new to save image from a remote computer
 			imcpy_start = clock();
 			picture = new cv::Mat(image_DATA->image);
 			imcpy_end = clock();
@@ -571,7 +568,7 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 			std::cout << "SOFTWARE HIL Image COPY time : " << elapsed_time.data << std::endl;
 			dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
 
-		#else //Zero-copy transfer
+		#else // Zero-copy transfer
 			imcpy_start = clock();
 			*picture = image_DATA->image;
 			imcpy_end = clock();
