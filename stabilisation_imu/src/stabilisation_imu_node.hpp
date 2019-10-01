@@ -134,5 +134,8 @@ int  acquire();
 void release();
 void launch_custom_dma();
 
+void mc_input_grey_422_setup_no_split(const cv::Mat & Y_in, 
+                        volatile unsigned char * mem_to_mc_input_buffer,
+                        volatile unsigned char * uv_mem_to_mc_input_buffer);
 
 #endif

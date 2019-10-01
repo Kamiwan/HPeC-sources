@@ -56,10 +56,10 @@ boost::shared_ptr<ros::NodeHandle> workerHandle_ptr;
 boost::shared_ptr<ros::NodeHandle> main_node_handle_ptr;
 boost::shared_ptr<ros::Publisher> search_land_pub;
 
-void 		 	*virtual_base_sdram;
-volatile int 	*virtual_dmareg_addr;
-volatile char 	*pio_reset_iomem;
-uint32_t  	 	mc_addr;
+void 		 		*virtual_base_sdram;
+volatile int 		*virtual_dmareg_addr;
+volatile char 		*pio_reset_iomem;
+volatile uint32_t 	*mc_addr;
 int     fd;
 FILE*   cma_dev_file;
 unsigned int cma_base_addr=0;
@@ -94,6 +94,7 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 	ros::Subscriber imu_sub = workerHandle_ptr->subscribe<sensor_msgs::Imu>("mavros/imu/data", 1000, imu_callback);
 	// TOPICS ADVERTISING
 	image_transport::Publisher img_stab_pub = it.advertise(STAB_IMU_OUTPUT_TOPIC, 1);
+	sensor_msgs::ImagePtr msg;
 
 	//EM, App parameters reading
 	// /!\ Node activation rate is mandatory, add it in parameters folder
@@ -112,8 +113,8 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 	}
 
 	bool first_time_rtz = true;
-	double theta, x, y, last_theta, last_x, last_y;
-	double cumul_theta, cumul_x, cumul_y;
+	double theta = 0.0, x = 0.0, y = 0.0, last_theta = 0.0, last_x = 0.0, last_y = 0.0;
+	double cumul_theta = 0.0, cumul_x = 0.0, cumul_y = 0.0;
 	std_msgs::Float32 elapsed_time;
 	int count = 0;
 
@@ -122,11 +123,11 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 		//EM, This call checks if a something from a topic has been received 
 		//	  and run callback functions if yes.
 		queue.callAvailable();
-		// Start measuring time
-        start = clock();
 
 		if(!first_time_imu && img_acquired)
 		{
+			// Start measuring time
+        	start = clock();
 
 			get_rtz_param_from_ins_values(*picture, yaw, pitch,
 										roll, prev_yaw, prev_pitch,
@@ -156,19 +157,10 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 						);
 			printf("MC422 configured\n");
 			
-			cv::Mat yuv_image;
-			printf("Convert RGB to YUV\n");
-			time_t start_yuv_cvt = clock();
-			cv::cvtColor(*picture, yuv_image, CV_BGR2YCrCb);
-			time_t end_yuv_cvt = clock();
-			elapsed_time.data = ((double)(end_yuv_cvt - start_yuv_cvt)) * 1000 / CLOCKS_PER_SEC;
-			std::cout << "HW RGB to YUV conv time : " << elapsed_time.data << std::endl;			
 
-			time_t start_422 = clock();
-			mc_input_422_setup(yuv_image, y_mem_to_mc_input_buffer, uv_mem_to_mc_input_buffer);
-			time_t end_422 = clock();
-			elapsed_time.data = ((double)(end_422 - start_422)) * 1000 / CLOCKS_PER_SEC;
-			std::cout << "HW 422 input setup time : " << elapsed_time.data << std::endl;
+			mc_input_grey_422_setup_no_split(*picture, 
+											y_mem_to_mc_input_buffer,
+                       						uv_mem_to_mc_input_buffer);
 
 			launch_custom_dma();
 			        
@@ -180,26 +172,14 @@ void stabilisation_imu_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHand
         	printf("status maching %x \n",*(virtual_dmareg_addr+MATCHING_STATUS_REG_OFFSET));
         	*(virtual_dmareg_addr+MATCHING_CTRL_REG_OFFSET)=0;
 
-			cv::Mat rtz_picture(IMAGE_HEIGHT, IMAGE_WIDTH, CV_8UC4, (unsigned char *)output_stream_to_mem_dma_buffer ); //zero copy
-			cv::Mat rtz_out;
+			cv::Mat rtz_picture(IMAGE_HEIGHT, IMAGE_WIDTH, CV_8UC1, (unsigned char *)output_stream_to_mem_dma_buffer ); //zero copy
 
-			time_t start_bgr_cvt = clock();
-			cv::cvtColor(rtz_picture, rtz_out, cv::COLOR_BGRA2BGR);
-			time_t end_bgr_cvt = clock();
-			elapsed_time.data = ((double)(end_bgr_cvt - start_bgr_cvt)) * 1000 / CLOCKS_PER_SEC;
-			std::cout << "HW BGRA to BGR conv time : " << elapsed_time.data << std::endl;
-
-			sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", rtz_out).toImageMsg();
+			msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", rtz_picture).toImageMsg();
 			cv::waitKey(1);
 			img_stab_pub.publish(msg);
 
-			#ifdef HIL
-				if(img_acquired)
-				{
-					delete picture; 	//Free memory of the allocated current picture
-					img_acquired = false;
-				}
-			#endif
+			delete picture; 	//Free memory of the allocated current picture
+			img_acquired = false;
 
 			//EM, Compute execution time
 			ends = clock();
@@ -252,8 +232,8 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 	ros::Rate rate(rate_double);
 
 	bool first_time_rtz = true;
-	double theta, x, y, last_theta, last_x, last_y;
-	double theta_cumul, x_cumul, y_cumul;
+	double theta = 0.0, x = 0.0, y = 0.0, last_theta = 0.0, last_x = 0.0, last_y = 0.0;
+	double cumul_theta = 0.0, cumul_x = 0.0, cumul_y = 0.0;
 	cv::Mat rtz_picture;
 	int count = 0;
 
@@ -277,7 +257,7 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 			rtz_picture = rotozoom_ins(*picture, first_time_rtz,
 										theta, x, y,
 										last_theta, last_x, last_y,
-										theta_cumul, x_cumul, y_cumul);
+										cumul_theta, cumul_x, cumul_y);
 
 			if (first_time_rtz)
 				first_time_rtz = false;
@@ -293,16 +273,13 @@ void stabilisation_imu_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle
 			}
 
 			msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", rtz_picture).toImageMsg();
-			cv::waitKey(10);
+			cv::waitKey(1);
 			img_stab_pub.publish(msg);
 
 			#ifdef HIL
-				if(img_acquired)
-				{
 					delete picture; 	//Free memory of the allocated current picture
-					img_acquired = false;
-				}
 			#endif
+			img_acquired = false;
 
 			//EM, Compute execution time
 			ends = clock();
@@ -537,7 +514,7 @@ void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 			imcpy_end = clock();
 
 			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-			std::cout << "SOFTWARE HIL Image COPY time : " << elapsed_time.data << std::endl;
+			std::cout << "HIL Image COPY time : " << elapsed_time.data << std::endl;
 			dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
 
 		#else //Zero-copy transfer
@@ -587,6 +564,7 @@ cv::Mat rotozoom_ins(const cv::Mat & pic, bool first_time,
 	if (FILTERING) 
 	{
 		double delta_x_limit = 180 * (pic.cols / HFOV);
+		double delta_y_limit = 180 * (pic.rows / VFOV);
 		if (first_time)
 		{
 			x_cumul		= x;
@@ -595,34 +573,57 @@ cv::Mat rotozoom_ins(const cv::Mat & pic, bool first_time,
 		} else {
 			double delta_theta = theta - last_theta;
 			if (delta_theta > M_PI) 
+			{
 				delta_theta = delta_theta - 2*M_PI;
-			if (delta_theta < -M_PI) 
+				std::cout << "delta_theta > M_PI =" << delta_theta << std::endl;
+			}
+			if (delta_theta < -M_PI)
+			{
 				delta_theta = delta_theta + 2*M_PI;
+				std::cout << "delta_theta < -M_PI =" << delta_theta << std::endl;
+			}
 			theta_cumul = LEARN_RATE * ( theta_cumul + delta_theta);
 
 			double delta_x = x - last_x;
 			if (delta_x > delta_x_limit) 
+			{
 				delta_x = delta_x - 2*delta_x_limit;
+				std::cout << "delta_x > delta_x_limit =" << delta_x << std::endl;
+			}
 			if (delta_x < -delta_x_limit)
+			{
 				delta_x = delta_x + 2*delta_x_limit;
+				std::cout << "delta_x < -delta_x_limit =" << delta_x << std::endl;
+			}
 			x_cumul = LEARN_RATE * ( x_cumul + delta_x);
 
 			double delta_y = y - last_y;
+			if (delta_y > delta_y_limit) 
+			{
+				delta_y = delta_y - 2*delta_y_limit;
+				std::cout << "delta_y > delta_y_limit =" << delta_y << std::endl;
+			}
+			if (delta_y < -delta_y_limit)
+			{
+				delta_y = delta_y + 2*delta_y_limit;
+				std::cout << "delta_y < -delta_y_limit =" << delta_y << std::endl;
+			}
 			y_cumul = LEARN_RATE * (y_cumul + delta_y);
 			
 			std::cout << "delta theta=" << delta_theta << " x=" << delta_x << " y=" << delta_y << std::endl;
+			std::cout << "IN theta_cumul=" << theta_cumul << " x_cumul=" << x_cumul << " y_cumul=" << y_cumul << std::endl;
 		} // end first_time
 	} // end filtering
 
-	cv::Mat T(2, 3, CV_64FC1); //EM, use CV_64FC1 to get double data type
+	cv::Mat T(2, 3, CV_32FC1); //EM, use CV_32FC1 to get double data type
 
-	T.at<double>(0,0) = cos(theta_cumul);
-    T.at<double>(0,1) = -sin(theta_cumul);
-    T.at<double>(1,0) = sin(theta_cumul);
-    T.at<double>(1,1) = cos(theta_cumul);
+	T.at<float>(0,0) = (float)cos(theta_cumul);
+    T.at<float>(0,1) = (float)-sin(theta_cumul);
+    T.at<float>(1,0) = (float)sin(theta_cumul);
+    T.at<float>(1,1) = (float)cos(theta_cumul);
 
-    T.at<double>(0,2) = x_cumul;
-    T.at<double>(1,2) = y_cumul;
+    T.at<float>(0,2) = (float)x_cumul;
+    T.at<float>(1,2) = (float)y_cumul;
 
 	std::cout << "cumul theta=" << theta_cumul << " x_cumul=" << x_cumul << " y_cumul=" << y_cumul << std::endl;
 
@@ -642,6 +643,7 @@ void rotozoom_compute_params(const cv::Mat & pic, bool first_time,
 	if (FILTERING) 
 	{
 		double delta_x_limit = 180 * (pic.cols / HFOV);
+		double delta_y_limit = 180 * (pic.rows / VFOV);
 		if (first_time)
 		{
 			x_cumul		= x;
@@ -650,22 +652,45 @@ void rotozoom_compute_params(const cv::Mat & pic, bool first_time,
 		} else {
 			double delta_theta = theta - last_theta;
 			if (delta_theta > M_PI) 
+			{
 				delta_theta = delta_theta - 2*M_PI;
-			if (delta_theta < -M_PI) 
+				std::cout << "delta_theta > M_PI =" << delta_theta << std::endl;
+			}
+			if (delta_theta < -M_PI)
+			{
 				delta_theta = delta_theta + 2*M_PI;
+				std::cout << "delta_theta < -M_PI =" << delta_theta << std::endl;
+			}
 			theta_cumul = LEARN_RATE * ( theta_cumul + delta_theta);
 
 			double delta_x = x - last_x;
 			if (delta_x > delta_x_limit) 
+			{
 				delta_x = delta_x - 2*delta_x_limit;
+				std::cout << "delta_x > delta_x_limit =" << delta_x << std::endl;
+			}
 			if (delta_x < -delta_x_limit)
+			{
 				delta_x = delta_x + 2*delta_x_limit;
+				std::cout << "delta_x < -delta_x_limit =" << delta_x << std::endl;
+			}
 			x_cumul = LEARN_RATE * ( x_cumul + delta_x);
 
 			double delta_y = y - last_y;
+			if (delta_y > delta_y_limit) 
+			{
+				delta_y = delta_y - 2*delta_y_limit;
+				std::cout << "delta_y > delta_y_limit =" << delta_y << std::endl;
+			}
+			if (delta_y < -delta_y_limit)
+			{
+				delta_y = delta_y + 2*delta_y_limit;
+				std::cout << "delta_y < -delta_y_limit =" << delta_y << std::endl;
+			}
 			y_cumul = LEARN_RATE * (y_cumul + delta_y);
 			
 			std::cout << "delta theta=" << delta_theta << " x=" << delta_x << " y=" << delta_y << std::endl;
+			std::cout << "IN theta_cumul=" << theta_cumul << " x_cumul=" << x_cumul << " y_cumul=" << y_cumul << std::endl;
 		} // end first_time
 	} // end filtering
 }// end rotozoom_compute_params
@@ -785,19 +810,20 @@ int  acquire()
     	return 1;
     }
 
+	// EM, To try Dynamic reconfiguration
     //pio reset setup
-	pio_reset_iomem = (volatile char *)mmap( NULL, 4096, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd, PIO_PR_RESET_BASEADDR);
-    if( pio_reset_iomem == MAP_FAILED ) {
-    	printf( "ERROR: mmap() failed...\n" );
-    	close( fd );
-    	return 1;
-    }
+	//pio_reset_iomem = (volatile char *)mmap( NULL, 4096, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd, PIO_PR_RESET_BASEADDR);
+    //if( pio_reset_iomem == MAP_FAILED ) {
+    //	printf( "ERROR: mmap() failed...\n" );
+    //	close( fd );
+    //	return 1;
+    //}
 
     // reset pr_region 
-	*pio_reset_iomem=0x0;
-        printf( "RESET Region\n" );
-        FPGA_reconfiguration(fd,"/home/ubuntu/reconfig_masks/mc_inpixal_mask.rbf");
-    *pio_reset_iomem=0x1;
+	//*pio_reset_iomem=0x0;
+    //    printf( "RESET Region\n" );
+    //    FPGA_reconfiguration(fd,"/home/ubuntu/reconfig_masks/mc_inpixal_mask.rbf");
+    //*pio_reset_iomem=0x1;
 
     y_mem_to_mc_input_buffer        = (volatile unsigned char *)(virtual_base_sdram); // EM, MC Y input
     uv_mem_to_mc_input_buffer       = (volatile unsigned char *)(virtual_base_sdram + 0x3000000); // EM, MC UV input
@@ -806,9 +832,9 @@ int  acquire()
 
     //############### InPixal IP INIT configuration ###############
 	#ifdef PLATFORM_32_BITS // EM, only works on a 32-bit platform
-		mc_addr = (volatile int *)mmap( 0, 4096, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MC_CTRL_BASEADDR);
+		mc_addr = (volatile uint32_t *)mmap( 0, 4096, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MC_CTRL_BASEADDR);
 		mc422_init( &mc_device_ip,      // device output structure
-					mc_addr,           // pointer value to mc422 register @s
+					(uint32_t)mc_addr,           // pointer value to mc422 register @s
 					IMAGE_WIDTH, IMAGE_HEIGHT,      // input img size
 					IMAGE_WIDTH, IMAGE_HEIGHT,      // output img size
 					MC_OUTPUT_DEINTERLACING_DONTCARE,   // deinterlacing_mode
@@ -844,11 +870,12 @@ void release()
 	if( munmap( (void*)virtual_dmareg_addr, 4096 ) != 0 ) {
         	printf( "ERROR: virtual_dmareg_addr munmap() failed...\n" );
 	}
-	if( munmap( (void*)pio_reset_iomem, 4096 ) != 0 ) {
-        	printf( "ERROR: pio_reset_iomem munmap() failed...\n" );
-	}
+	// EM, To try Dynamic reconfiguration
+	//if( munmap( (void*)pio_reset_iomem, 4096 ) != 0 ) {
+    //    	printf( "ERROR: pio_reset_iomem munmap() failed...\n" );
+	//}
 	#ifdef PLATFORM_32_BITS // EM, only works on a 32-bit platform
-		if( munmap( mc_addr, 4096 ) != 0 ) {
+		if( munmap( (void*)mc_addr, 4096 ) != 0 ) {
 				printf( "ERROR: mc_addr munmap() failed...\n" );
 		}
 	#endif
@@ -866,7 +893,7 @@ void release()
 void launch_custom_dma()
 {
 		printf("Turn on output custom DMA\n");
-        memset((void*)output_stream_to_mem_dma_buffer,0,sizeof(int)*IMAGE_WIDTH*IMAGE_HEIGHT);
+        memset((void*)output_stream_to_mem_dma_buffer,0,sizeof(char)*IMAGE_WIDTH*IMAGE_HEIGHT);
         
         *(virtual_dmareg_addr+MATCHING_CTRL_REG_OFFSET)=0x1; //reset soft 
         *(virtual_dmareg_addr+MATCHING_STATUS_REG_OFFSET)=0; //clear go  on write
@@ -875,7 +902,28 @@ void launch_custom_dma()
         //addresss in word (4 symbols for word) !!!
         *(virtual_dmareg_addr+MATCHING_WRITE_ADDR_REG_OFFSET)=cma_base_addr+0x1000000;
         //length in bytes !!!
-        *(virtual_dmareg_addr+MATCHING_WRITE_LENGTH_REG_OFFSET)= sizeof(int)*IMAGE_WIDTH*IMAGE_HEIGHT;
+        *(virtual_dmareg_addr+MATCHING_WRITE_LENGTH_REG_OFFSET)= sizeof(char)*IMAGE_WIDTH*IMAGE_HEIGHT;
         //START IP Matching
         *(virtual_dmareg_addr+MATCHING_CTRL_REG_OFFSET)=8;
 }		
+
+
+
+/*******************************************************************
+ * mc_input_grey_422_setup_no_split
+ * Author : EM 
+ * 
+ * Configure motion compensation input
+*******************************************************************/
+void mc_input_grey_422_setup_no_split(const cv::Mat & Y_in, 
+                        volatile unsigned char * mem_to_mc_input_buffer,
+                        volatile unsigned char * uv_mem_to_mc_input_buffer)
+{
+    int width  = Y_in.cols;
+    int height = Y_in.rows;
+    // Y 422 part setup
+    std::memcpy((unsigned char *)mem_to_mc_input_buffer, Y_in.data , width*height);
+
+    // UV 422 part setup
+    memset((void*)uv_mem_to_mc_input_buffer,0x80,sizeof(char)*width*height);
+}
