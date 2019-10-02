@@ -2,4 +2,5 @@ emergency_landing: 30.
 obstacle_detection: 10.
 fake_sensors: 10.
 drone_move_planner: 20.
-detection_tracking: 30.
+detection_tracking: 50.
+harris_detector: 30.

@@ -581,7 +581,7 @@
         <image>
           <width>640</width>
           <height>480</height>
-          <format>R8G8B8</format>
+          <format>L8</format>
         </image>
         <clip>
           <near>0.02</near>
@@ -651,7 +651,7 @@
         <image>
           <width>640</width>
           <height>480</height>
-          <format>R8G8B8</format>
+          <format>L8</format>
         </image>
         <clip>
           <near>0.02</near>

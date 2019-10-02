@@ -158,10 +158,10 @@ add_executable(harris_detector_node
 			src/median.c
 			src/sobel.c
 			src/debug.c
-			src/sgdma_dispatcher.cpp
 			src/csr_map.cpp
 			src/nms.c
 			src/RST_Ransac.c
+			src/simple_dma.c
 	)
 
 ## Rename C++ executable without prefix

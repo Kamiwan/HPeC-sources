@@ -22,19 +22,6 @@
  *************************************************************************************/
 #include "emergency_landing_node.h"
 
-// source ppm color image 24bits RGB (packed)
-// The video IP cores used for edge detection require the RGB 24 bits of each pixel to be
-// word aligned (aka 1 byte of padding per pixel). | unused 8 bits | red 8 bits | green 8 bits | blue 8 bits |
-void memcpy_consecutive_to_padded(unsigned char *from, volatile unsigned int *to, int pixels)
-{
-	int i;
-	for (i = 0; i < pixels; i++)
-	{
-		*(to + i) = (((unsigned int)*((unsigned char *)(from + i * 3 + 2))) & 0xff) |
-					((((unsigned int)*((unsigned char *)(from + i * 3 + 1))) << 8) & 0xff00) |
-					((((unsigned int)*((unsigned char *)(from + i * 3 + 0))) << 16) & 0xff0000);
-	}
-}
 
 int acquire()
 {
@@ -42,132 +29,57 @@ int acquire()
 	// Open /dev/mem
 	if ((fd = open("/dev/mem", (O_RDWR | O_SYNC))) == -1)
 	{
-		dbprintf("ERROR: could not open \"/dev/mem\"...\n");
+		ROS_ERROR("ERROR: could not open \"/dev/mem\"...\n");
 		exit (1);
 	}
 	// Open /dev/cma_block
 	if ((cma_dev_file = fopen("/dev/cma_block", "r")) == NULL)
 	{
-		dbprintf("ERROR: could not open \"/dev/cma_block\"...\n");
+		ROS_ERROR("ERROR: could not open \"/dev/cma_block\"...\n");
 		close(fd);
 		exit (1);
 	}
 
 	// Determine the CMA block physical address
 	fgets(cma_addr_string, sizeof(cma_addr_string), cma_dev_file);
-	sl_cma_base_addr = strtol(cma_addr_string, NULL, 16);
-
-	dbprintf("Use CMA memory block at phys addr: 0x%x\n", sl_cma_base_addr);
-
+	cma_base_addr = strtol(cma_addr_string, NULL, 16);
+	dbprintf("Use CMA memory block at phys addr: 0x%x\n", cma_base_addr);
 	fclose(cma_dev_file);
 
 	// get virtual addr that maps to the sdram region (through HPS-FPGA non-lightweight bridge)
-	if(USE_DDR_FPGA)
-	{
-		sl_virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), 
-							MAP_SHARED, fd, DDR_FPGA_CMA_BASE_ADDR); //EM, replace by sl_cma_base_addr
-	}
-	else
-	{
-		sl_virtual_base_sdram = mmap(NULL, SDRAM_SPAN, (PROT_READ | PROT_WRITE), 
-							MAP_SHARED, fd, sl_cma_base_addr); 
-	}
+   	virtual_base_sdram = mmap( NULL, SDRAM_SPAN, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd, cma_base_addr /* FPGA_DDR_BASEADDR*/ );
+   	if( virtual_base_sdram == MAP_FAILED ) {
+       	ROS_ERROR( "ERROR: mmap() failed...\n" );
+       	close( fd );
+       	return(1);
+    }
 
-	if (sl_virtual_base_sdram == MAP_FAILED)
-	{
-		printf("ERROR: mmap() failed...\n");
-		close(fd);
-		exit (1);
-	}
+	mem_to_stream_dma_buffer = (volatile unsigned int *)(virtual_base_sdram);
+	stream_to_mem_dma_buffer = (volatile unsigned char *)(virtual_base_sdram + 0x200000);
 
-	sl_mem_to_stream_dma_buffer = (volatile unsigned int *)(sl_virtual_base_sdram);
-	sl_stream_to_mem_dma_buffer = (volatile unsigned char *)(sl_virtual_base_sdram + 0x2000000);
+	//get virtual addr that maps to the simple_dma_read component (through HPS-FPGA lightweight bridge)
+	simple_dma_read_addr = (volatile unsigned int *)mmap( NULL, 4096, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd, DMA_READ_CSR_BASEADDR );
+    if( simple_dma_read_addr == MAP_FAILED ) {
+       	ROS_ERROR( "ERROR: simple_dma_read mmap() failed...\n" );
+       	close( fd );
+       	return(1);
+    }
 
-	// Create  Dispatcher
-	sl_dispatcher_read.init(DMA_READ_CSR_BASEADDR, DMA_READ_DESC_BASEADDR, 0);
-	sl_dispatcher_write.init(DMA_WRITE_CSR_BASEADDR, DMA_WRITE_DESC_BASEADDR, 0);
+	//get virtual addr that maps to the simple_dma_write component (through HPS-FPGA lightweight bridge)
+	simple_dma_write_addr = (volatile unsigned int *)mmap( NULL, 4096, ( PROT_READ | PROT_WRITE ), MAP_SHARED, fd, DMA_WRITE_CSR_BASEADDR );
+    if( simple_dma_write_addr == MAP_FAILED ) {
+       	ROS_ERROR( "ERROR: simple_dma_write mmap() failed...\n" );
+       	close( fd );
+       	return(1);
+    }
 
-	// EM, HW version update, Configure DMAs to the correct addresses
-	// Set the HPS Memory start address
-	if(USE_DDR_FPGA)
-	{
-		sl_descriptor_read.read_addr 	= DDR_FPGA_CMA_BASE_ADDR;
-		sl_descriptor_read.write_addr 	= DDR_FPGA_CMA_BASE_ADDR;
-		sl_descriptor_write.read_addr 	= DDR_FPGA_CMA_BASE_ADDR+0x2000000;
-		sl_descriptor_write.write_addr	= DDR_FPGA_CMA_BASE_ADDR+0x2000000;
-	}
-	else
-	{
-		sl_descriptor_read.read_addr	= sl_cma_base_addr; 
-		sl_descriptor_read.write_addr 	= sl_cma_base_addr;
-		sl_descriptor_write.read_addr 	= sl_cma_base_addr+0x2000000;
-		sl_descriptor_write.write_addr  = sl_cma_base_addr+0x2000000;
-	}
-
-	// We are using packetized streams so set length to max
-	sl_descriptor_read.length = 640*480*sizeof(unsigned int);
-	sl_descriptor_write.length = 640*480*sizeof(unsigned char);
-	// The dispatcher will use the End of Packet flag to end the transfer
-	sl_descriptor_read.control.msBits.end_on_eop = 1;
-	sl_descriptor_read.control.msBits.gen_sop = 1;
-	sl_descriptor_read.control.msBits.gen_eop = 1;
-	sl_descriptor_write.control.msBits.end_on_eop = 1;
-	sl_descriptor_write.control.msBits.gen_sop = 1;
-	sl_descriptor_write.control.msBits.gen_eop = 1;
-	sl_descriptor_read.control.msBits.go = 0;
-	sl_descriptor_write.control.msBits.go = 0;
-
-	// configure the DMAs
-	tuSgdmaCtrl csr_read ={0};
-    tuSgdmaCtrl csr_write ={0};
-	    
-    csr_read.msBits.reset_dispatcher=0;
-    csr_read.msBits.stop_dispatcher=1;   
-    csr_read.msBits.stop_desc=1;   
-    csr_write.msBits.reset_dispatcher=0;
-    csr_write.msBits.stop_dispatcher=1;
-    csr_write.msBits.stop_desc=1;
-    
-	  
-    if ((sl_dispatcher_read.GetStatusReg().msBits.busy) ||
-	(sl_dispatcher_write.GetStatusReg().msBits.busy))
-   	{
-	    //stop soft the DMAs
-       	sl_dispatcher_write.SetControlReg(csr_write.mnWord);
-      	sl_dispatcher_read.SetControlReg(csr_read.mnWord);
-	   
-	   	while( sl_dispatcher_read.GetStatusReg().msBits.stopped !=0);
-   	}
-    //stop soft the DMAs
-    csr_read.msBits.reset_dispatcher=1;
-    csr_read.msBits.stop_dispatcher=0;   
-    csr_read.msBits.stop_desc=0;   
-    csr_write.msBits.reset_dispatcher=1;
-    csr_write.msBits.stop_dispatcher=0;
-    csr_write.msBits.stop_desc=0;
-    //stop soft the DMAs
-   	sl_dispatcher_write.SetControlReg(csr_write.mnWord);
-    sl_dispatcher_read.SetControlReg(csr_read.mnWord);
-	   
-   	while( sl_dispatcher_read.GetStatusReg().msBits.resetting !=0);
-
-    csr_read.msBits.reset_dispatcher=0;
-    csr_read.msBits.stop_dispatcher=0;   
-    csr_read.msBits.stop_desc=0;   
-    csr_write.msBits.reset_dispatcher=0;
-    csr_write.msBits.stop_dispatcher=0;
-    csr_write.msBits.stop_desc=0;
-    //stop/reset off soft the DMAs
-	sl_dispatcher_write.SetControlReg(csr_write.mnWord);
-    sl_dispatcher_read.SetControlReg(csr_read.mnWord);
-
-	// ALL SUCCEDED ;
+	// ALL SUCCEDED 
 	return 0;
 }
 
 void release()
 {
-	if (munmap(sl_virtual_base_sdram, SDRAM_SPAN) != 0)
+	if( munmap(virtual_base_sdram, SDRAM_SPAN) != 0 )
 	{
 		ROS_ERROR("ERROR: munmap() failed...\n");
 	}
@@ -183,6 +95,7 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 	run = true;
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
+	img_acquired = false;
 
 	//Erwan Moréac 22/02/18, Topic Subscribtion (Input) and Publication (Output)
 	image_transport::ImageTransport it(*workerHandle_ptr);
@@ -191,7 +104,6 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 	sensor_msgs::ImagePtr msg;
 	cv::Mat imOutput;
 
-
 	double rate_double;
 	if (!workerHandle_ptr->getParam("/node_activation_rates/emergency_landing", rate_double))
 	{
@@ -199,31 +111,26 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 		rate_double = 1;
 	}
 	ros::Rate rate(rate_double);
-
 	if (!workerHandle_ptr->getParam("/drone_features/diameter", diameter))
 	{
 		ROS_INFO("Could not read drone's diameter. Setting to 0.6 meters");
 		diameter = 0.6;
 	}
-
 	if (!workerHandle_ptr->getParam("/camera_features/camera_angle", camera_angle))
 	{
 		ROS_INFO("Could not read camera's angle. Setting to 0.4 radian");
 		camera_angle = 0.4;
 	}
-
 	if (!workerHandle_ptr->getParam("/camera_features/image_height", image_height))
 	{
 		ROS_INFO("Could not read image's height. Setting to 480");
 		image_height = 480;
 	}
 	altitude = 60;
-
 	if (acquire() != 0)
 	{
 		ROS_INFO("Could not INIT");
 	}
-
 
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 	std_msgs::Float32 elapsed_time;
@@ -232,48 +139,54 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 		queue.callAvailable();
 
 		//EM, Add a test in the case the camera topic is not activated
-		if (img_ibuf_color.h != 0 && img_ibuf_color.w != 0)
+		if (img_acquired)
 		{
 			// Start measuring time
 			start = clock();
+			img_ibuf_g.h 	= picture->rows;
+			img_ibuf_g.w 	= picture->cols;
+			img_ibuf_g.img 	= picture->data;
+			int width  = img_ibuf_g.w;
+    		int height = img_ibuf_g.h;
+
+			//stop soft the DMAs if busy
+    		stop_dma(simple_dma_read_addr);
+    		//reset soft the DMAs if busy
+    		reset_dma(simple_dma_read_addr);
+    
+			std::memcpy((unsigned char *)mem_to_stream_dma_buffer, img_ibuf_g.img , width*height);
+
+    		// Configure DMAs to the correct addresses 
+    		*(simple_dma_write_addr+DMAWRITE_CTRL_REG_OFFSET)=0x1; //reset soft 
+    		*(simple_dma_write_addr+DMAWRITE_STATUS_REG_OFFSET)=0; //clear go  on write
+    		*(simple_dma_write_addr+DMAWRITE_CTRL_REG_OFFSET)=0x0; //clear reset
+
+    		//addresss in word (4 symbols for word) !!!
+    		*(simple_dma_write_addr+DMAWRITE_ADDR_REG_OFFSET)=cma_base_addr+0x200000;
+    		//length in bytes !!!
+    		*(simple_dma_write_addr+DMAWRITE_LENGTH_REG_OFFSET)= width*height*sizeof(unsigned char);
+    		t1=clock();
+    		start_dma(simple_dma_read_addr,cma_base_addr,width*height*sizeof(unsigned char));	
+    		ROS_INFO("length = %x\n", *(simple_dma_read_addr+SIMPLE_DMA_LENGTH_OFST));
+    		ROS_INFO("base addr = %x\n", *(simple_dma_read_addr+SIMPLE_DMA_ADDRESS_OFST));
+
+    		//START IP Matching
+    		*(simple_dma_write_addr+DMAWRITE_CTRL_REG_OFFSET)=8;
+    		while (transfer_done(simple_dma_read_addr)==0);
+			time_t t2 = clock();
+ 			ROS_INFO("read memory transfer done... %.0f ms \r\n",((double) (t2 - t1)) * 1000 / CLOCKS_PER_SEC); 
 			t1=clock();
-			
-			#ifdef DEBUG
-			std::cout << "Descriptor READ parameters: " << std::endl;
-			sl_dispatcher_read.DisplayDescriptor(sl_descriptor_read);
-			std::cout << "\nDescriptor WRITE parameters: " << std::endl;
-			sl_dispatcher_write.DisplayDescriptor(sl_descriptor_write);
-			#endif
-
-			// Tell the dispatcher to start
-			sl_descriptor_read.control.msBits.go = 1;
-			sl_descriptor_write.control.msBits.go = 1;
-			// Turn on the DMAs
-			sl_dispatcher_read.WriteDescriptor(sl_descriptor_read);
-			sl_dispatcher_write.WriteDescriptor(sl_descriptor_write);
-
-			// wait until the dma transfer complete
-			while(sl_dispatcher_write.GetStatusReg().msBits.busy)
-			{
-				dbprintf("busy : %d\n",sl_dispatcher_write.GetStatusReg().msBits.busy);
-				dbprintf("desc_buf_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
-				dbprintf("desc_buf_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_full);
-				dbprintf("desc_res_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_empty);
-				dbprintf("desc_res_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_full);
-				dbprintf("stopped : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stopped);
-				dbprintf("resetting  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.resetting);
-				dbprintf("stop_on_err  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_err);
-				dbprintf("stop_on_early  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_early);
-				dbprintf("irq  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.irq); 
-			};
-
-			dbprintf("TRANSFERT OK ############################################## \n");
+			// wait until the dma write transfer complete
+  			while (*(simple_dma_write_addr+DMAWRITE_STATUS_REG_OFFSET)!=1); 
+			*(simple_dma_write_addr+DMAWRITE_CTRL_REG_OFFSET)=0x0; //clear reset    
+			t2 = clock();
+ 			ROS_INFO("write memory transfer done... %.0f ms \r\n",((double) (t2 - t1)) * 1000 / CLOCKS_PER_SEC); 
 
 			// Copy the edge detected image from the stream-to-mem buffer
-			img_ibuf_ero.w = img_ibuf_color.w;
-			img_ibuf_ero.h = img_ibuf_color.h;
+			img_ibuf_ero.w = img_ibuf_g.w;
+			img_ibuf_ero.h = img_ibuf_g.h;
 
-			img_ibuf_ero.img = (unsigned char *)sl_stream_to_mem_dma_buffer; //zero copy
+			img_ibuf_ero.img = (unsigned char *)stream_to_mem_dma_buffer; //zero copy
 			ends = clock();
 			gettimeofday(&end, NULL);
 			dbprintf("input padding time %.0f ms \r\n",((double) (t1 - start)) * 1000 / CLOCKS_PER_SEC);
@@ -304,8 +217,11 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 			std::cout << "HARDWARE TOTAL time : " << elapsed_time.data << std::endl;
 
 			dbprintf("wrapper_time %.0f %.0f\n", ((double)time_micros(&end, &beginning)), elapsed_time.data);
-
 			search_land_pub->publish(elapsed_time);
+
+			delete picture; 	//Free memory of the allocated current picture
+			img_acquired = false;
+			
 			rate.sleep();
 		} // end if test Image size
 	}	 // end while
@@ -323,10 +239,12 @@ void search_landing_area_hwsw(const boost::shared_ptr<ros::NodeHandle> &workerHa
 void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHandle_ptr)
 {
 	ROS_INFO("[THREAD][RUNNING][SW]: Vision Based Autonomous Landing for ppm color images \r\n");
-
-	run = true;
 	ros::CallbackQueue queue;
 	workerHandle_ptr->setCallbackQueue(&queue);
+
+	//EM, initalize booleans for imu and image
+	img_acquired = false;
+	run = true;
 
 	ros::Subscriber gps_sub = workerHandle_ptr->subscribe("mavros/global_position/global", 1, gps_callback);
 
@@ -378,29 +296,15 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 		queue.callAvailable();
 
 		//EM, Add a test in the case the camera topic is not activated
-		if (img_ibuf_color.h != 0 && img_ibuf_color.w != 0 && img_ibuf_color.img != NULL)
+		if (img_acquired)
 		{
-			//img_ibuf_color = read_ppm("/home/labsticc/Bureau/australia.ppm");
-
 			// Start measuring time
 			start = clock();
-			//gettimeofday (&start , NULL);
 
-			dbprintf("\nSECOND IMAGE WIDTH = %d HEIGHT = %d \n", img_ibuf_color.w, img_ibuf_color.h);
-			uchar newval[3];
-			int i,j;
-			int image_size=img_ibuf_color.w*img_ibuf_color.h;
-			for(i = 0,j=0; i < image_size; i ++,j+=3)
-			{
-				newval[0]=img_ibuf_color.img[j];
-				newval[1]=img_ibuf_color.img[j+1];
-				newval[2]=img_ibuf_color.img[j+2];
-			}
-			#ifdef DEBUG
-			std::cout << "SECOND IMAGE RECOVERY B=" << (int)newval[0] << " G=" << (int)newval[1] << " R=" << (int)newval[2] << std::endl;
-			#endif
+			img_ibuf_g.h 	= picture->rows;
+			img_ibuf_g.w 	= picture->cols;
+			img_ibuf_g.img 	= picture->data;
 
-			img_ibuf_g = rgb2gray(img_ibuf_color);
 		#ifdef WRITE_IMG
 			write_pgm(img_ibuf_g, "/home/labsticc/Bureau/search_res/gray.pgm");
 		#endif
@@ -467,11 +371,11 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 			write_pgm(img_ibuf_ero, "/home/labsticc/Bureau/search_res/erode.pgm");
 #endif
 
-			#ifdef HIL //Erwan Moréac, Mandatory free since we have to use malloc
-				if(img_ibuf_color.img != NULL)
+			#ifdef HIL
+				if(img_acquired)
 				{
-					free_ppm(img_ibuf_color); 
-					img_ibuf_color.img = NULL;
+					delete picture; 	//Free memory of the allocated current picture
+					img_acquired = false;
 				}
 			#endif
 
@@ -482,7 +386,6 @@ void search_landing_area_sw(const boost::shared_ptr<ros::NodeHandle> &workerHand
 			free_pgm(img_ibuf_sp);
 			free_pgm(img_ibuf_se);
 			free_pgm(img_ibuf_ms);
-			free_pgm(img_ibuf_g);
 #ifdef MEDIAN_FILTER
 			free_pgm(img_ibuf_me);
 #endif
@@ -577,98 +480,12 @@ void managing_controller_request(const std_msgs::Int32::ConstPtr &value)
 {
 	//current = clock();
 	gettimeofday(&current, NULL);
-	tuSgdmaCtrl csr_read ={0};
-    tuSgdmaCtrl csr_write ={0};
 
 	dbprintf("\n Hardware = %d\n",hardware);
-	if(hardware==1){ //EM, Perform soft reset on the IP before to switch to another mode than HW
+	if(hardware==1)  //EM, Perform soft reset on the IP before to switch to another mode than HW
+	{
+		/* MAYBE NEED TO STOP DMA */
 
-		//EM, Stops the current task to switch mode
-		sl_descriptor_read.control.msBits.go = 0;
-		sl_descriptor_write.control.msBits.go = 0;
-		sl_dispatcher_read.WriteDescriptor(sl_descriptor_read);
-		sl_dispatcher_write.WriteDescriptor(sl_descriptor_write);
-
-		dbprintf("busy : %d\n",sl_dispatcher_read.GetStatusReg().msBits.busy);
-		csr_read.msBits.reset_dispatcher=0;
-	    csr_read.msBits.stop_dispatcher=1;   
-    	csr_read.msBits.stop_desc=1; 
-		sl_dispatcher_read.SetControlReg(csr_read.mnWord); //EM, Stop Dispatcher on read DMA
-
-		while(sl_dispatcher_read.GetStatusReg().msBits.stopped)
-		{
-			dbprintf("busy : %d\n",sl_dispatcher_read.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.irq); 
-		}
-
-		csr_read.msBits.reset_dispatcher=1;
-	    csr_read.msBits.stop_dispatcher=0;   
-    	csr_read.msBits.stop_desc=0;   
-    	sl_dispatcher_read.SetControlReg(csr_read.mnWord); //EM, Reset Dispatcher on read DMA
-		while(sl_dispatcher_read.GetStatusReg().msBits.resetting)
-		{
-			dbprintf("busy : %d\n",sl_dispatcher_read.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",sl_dispatcher_read.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",sl_dispatcher_read.GetStatusReg().msBits.irq); 
-		}
-
-		dbprintf("busy : %d\n",sl_dispatcher_write.GetStatusReg().msBits.busy);
-		
-		csr_write.msBits.reset_dispatcher=0;
-    	csr_write.msBits.stop_dispatcher=1;
-    	csr_write.msBits.stop_desc=1;
-		sl_dispatcher_write.SetControlReg(csr_write.mnWord); //EM, Stop Dispatcher on write DMA
-
-		while(sl_dispatcher_write.GetStatusReg().msBits.stopped)
-		{
-			dbprintf("busy : %d\n",sl_dispatcher_write.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.irq); 
-		}
-
-		csr_write.msBits.reset_dispatcher=1;
-    	csr_write.msBits.stop_dispatcher=0;
-    	csr_write.msBits.stop_desc=0;
-		sl_dispatcher_write.SetControlReg(csr_write.mnWord); //EM, Reset Dispatcher on write DMA
-
-		while(sl_dispatcher_write.GetStatusReg().msBits.resetting)
-		{
-			dbprintf("busy : %d\n",sl_dispatcher_write.GetStatusReg().msBits.busy);
-			dbprintf("desc_buf_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_empty);
-			dbprintf("desc_buf_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_buf_full);
-			dbprintf("desc_res_empty : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_empty);
-			dbprintf("desc_res_full : %d\n",sl_dispatcher_write.GetStatusReg().msBits.desc_res_full);
-			dbprintf("stopped : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stopped);
-			dbprintf("resetting  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.resetting);
-			dbprintf("stop_on_err  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_err);
-			dbprintf("stop_on_early  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.stop_on_early);
-			dbprintf("irq  : %d\n",sl_dispatcher_write.GetStatusReg().msBits.irq); 
-		}
-
-		sl_dispatcher_write.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on write DMA
-		sl_dispatcher_read.SetControlReg(0x0); //EM, Unset Reset and Stop Dispatcher on read DMA
 	}
 
 
@@ -715,10 +532,15 @@ int main(int argc, char **argv)
 	search_land_pub = boost::make_shared<ros::Publisher>(
 		nh.advertise<std_msgs::Float32>("/search_landing_notification_topic", 1));
 
+
+	#ifdef HIL
+	#else
+		picture = new cv::Mat(); //EM, Must be done only once to allow zero-copy transfer
+	#endif
+
+
 	gettimeofday(&current, NULL);
-
 	dbprintf("wrapper_ver %.0f 0\n", ((double)time_micros(&current, &beginning)));
-
 	ROS_INFO("[TASK WRAPPER][RUNNING]");
 	ros::spin();
 }
@@ -730,64 +552,32 @@ void gps_callback(const sensor_msgs::NavSatFix::ConstPtr &position)
 
 void image_callback(const sensor_msgs::Image::ConstPtr &image_cam)
 {
-	// Erwan Moréac 22/02/18, Image size update
-	img_ibuf_color.h = image_cam->height;
-	img_ibuf_color.w = image_cam->width;
-	dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", img_ibuf_color.w, img_ibuf_color.h);
-
 	// Erwan Moréac 22/02/18, use of cv_bridge to get the opencv::Mat of the picture
 	try
 	{
-		cv_bridge::CvImagePtr image_DATA = cv_bridge::toCvCopy(image_cam, "bgr8");
+		cv_bridge::CvImagePtr image_DATA = cv_bridge::toCvCopy(image_cam, "mono8");
 		std_msgs::Float32 elapsed_time;
-		
-		if(hardware==1) //Hardware version
-		{
-			// Image dimensions
-			int width = img_ibuf_color.w;
-			int height = img_ibuf_color.h;
-			// We are using packetized streams so set length to max
-			sl_descriptor_read.length = width*height*sizeof(unsigned int);
-			sl_descriptor_write.length = width*height*sizeof(unsigned char);
+		img_acquired = true;
 
+		#ifdef HIL // mandatory new to save image from a remote computer
 			imcpy_start = clock();
-			//EM, No changes is HIL or not
-			memcpy_consecutive_to_padded(image_DATA->image.data, sl_mem_to_stream_dma_buffer,  width * height);
+			picture = new cv::Mat(image_DATA->image);
 			imcpy_end = clock();
 
 			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-			std::cout << "HARDWARE Image COPY time : " << elapsed_time.data << std::endl;
+			std::cout << "SOFTWARE HIL Image COPY time : " << elapsed_time.data << std::endl;
+			dbprintf("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
 
-		} else { //Software version
-			#ifdef HIL //mandatory malloc to save image from a remote computer
-				imcpy_start = clock();
-				img_ibuf_color.img = (unsigned char *)malloc(3*img_ibuf_color.w * img_ibuf_color.h * sizeof(unsigned char));
-				
-				//Use of uint32_t to copy data 4x faster instead of copying byte by byte
-				// /!\ The image size in bytes MUST BE a multiple of 32
-				uint32_t * ptrRes;
-				uint32_t * ptrIn;
-				ptrIn  = (uint32_t *)image_DATA->image.data;
-				ptrRes = (uint32_t *)img_ibuf_color.img;
-				int image_size=img_ibuf_color.w*img_ibuf_color.h;
-				int int_img_size=(image_size*3)>>2; //int_img_size = image_size * 3 bytes (BGR) / 4 bytes (int)
+		#else // Zero-copy transfer
+			imcpy_start = clock();
+			*picture = image_DATA->image;
+			imcpy_end = clock();
+			
+			ROS_INFO("\n IMAGE WIDTH = %d HEIGHT = %d \n", picture->cols, picture->rows);
+			elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
+			std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
+		#endif
 
-				for(int i=0;i<int_img_size;i++)
-					ptrRes[i] = ptrIn[i];
-				imcpy_end = clock();
-
-				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
-
-			#else //Zero-copy transfer
-				imcpy_start = clock();
-				img_ibuf_color.img = image_DATA->image.data;
-				imcpy_end = clock();
-
-				elapsed_time.data = ((double)(imcpy_end - imcpy_start)) * 1000 / CLOCKS_PER_SEC;
-				std::cout << "SOFTWARE Image COPY time : " << elapsed_time.data << std::endl;
-			#endif
-		}
 		ROS_INFO("IMAGE RECOVERY SUCCEED");
 	}
 	catch (cv_bridge::Exception &e)
