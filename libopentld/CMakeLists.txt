@@ -9,7 +9,7 @@ add_definitions(-std=c++11 -fPIC -g -O0)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS)
-#find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED)
 
 SET(CMAKE_CXX_FLAGS " -I/usr/local/include ")
 set (CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} ")
