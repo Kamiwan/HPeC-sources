@@ -30,25 +30,6 @@ find_package(Qt4 REQUIRED COMPONENTS
   QtGui
 )
 
-
-set(OPENTLD_OUTPUT_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/../)
-
-include(ExternalProject)
-
-externalproject_add(opentld
-  PREFIX libopentld
-  SVN_REPOSITORY  https://github.com/Ronan0912/OpenTLD/trunk/
-  SVN_REVISION    -rHEAD
-  PATCH_COMMAND   patch -p0 -i ${PROJECT_SOURCE_DIR}/opentld/patches/diff1.patch
-                  &&
-                  patch -p0 -i ${PROJECT_SOURCE_DIR}/opentld/patches/diff2.patch
-  BUILD_IN_SOURCE 1
-  BUILD_COMMAND   cmake --build .
-  INSTALL_COMMAND ${PROJECT_SOURCE_DIR}/opentld/install.sh
-                  ${OPENTLD_OUTPUT_DIR}
-)
-
-
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 #blabla blabla 
@@ -170,12 +151,11 @@ include_directories(
   ${catkin_INCLUDE_DIRS} 
   /opt/ros/kinetic/include/image_transport
   ${OpenCV_INCLUDE_DIRS}
-  ${OPENTLD_OUTPUT_DIR}/include/libopentld
   /usr/local/include
   ../shared_memory_lib/src
+  ../libopentld
 )
 
-link_directories(${OPENTLD_OUTPUT_DIR}/lib/libopentld/)
 
 ## Declare a C++ library
 #add_library(${PROJECT_NAME}(
