@@ -29,6 +29,7 @@
 
 #include "NNClassifier.h"
 #include "TLDUtil.h"
+#include <opencv2/imgproc/imgproc.hpp>
 
 using namespace std;
 using namespace cv;
@@ -45,8 +46,7 @@ TLD::TLD()
     valid = false;
     wasValid = false;
     learning = false;
-    currBB = NULL;
-    prevBB = new Rect(0,0,0,0);
+    currBB = prevBB = NULL;
 
     detectorCascade = new DetectorCascade();
     nnClassifier = detectorCascade->nnClassifier;
@@ -58,61 +58,23 @@ TLD::~TLD()
 {
     storeCurrentData();
 
-    if(currBB)
-    {
-        delete currBB;
-        currBB = NULL;
-    }
-
-    if(detectorCascade)
-    {
-        delete detectorCascade;
-        detectorCascade = NULL;
-    }
-
-    if(medianFlowTracker)
-    {
-        delete medianFlowTracker;
-        medianFlowTracker = NULL;
-    }
-
-    if(prevBB)
-    {
-        delete prevBB;
-        prevBB = NULL;
-    }
+    delete detectorCascade;
+    delete medianFlowTracker;
 }
 
 void TLD::release()
 {
     detectorCascade->release();
     medianFlowTracker->cleanPreviousData();
-
-    if(currBB)
-    {
-        delete currBB;
-        currBB = NULL;
-    }
+    delete currBB;
 }
 
 void TLD::storeCurrentData()
 {
     prevImg.release();
     prevImg = currImg; //Store old image (if any)
-    if(currBB)//Store old bounding box (if any)
-    {
-        prevBB->x = currBB->x;
-        prevBB->y = currBB->y;
-        prevBB->width = currBB->width;
-        prevBB->height = currBB->height;
-    }
-    else
-    {
-        prevBB->x = 0;
-        prevBB->y = 0;
-        prevBB->width = 0;
-        prevBB->height = 0;
-    }
+    delete prevBB;
+    prevBB = currBB;        //Store old bounding box (if any)
 
     detectorCascade->cleanPreviousData(); //Reset detector results
     medianFlowTracker->cleanPreviousData();
@@ -132,11 +94,6 @@ void TLD::selectObject(const Mat &img, Rect *bb)
     detectorCascade->init();
 
     currImg = img;
-    if(currBB)
-    {
-        delete currBB;
-        currBB = NULL;
-    }
     currBB = tldCopyRect(bb);
     currConf = 1;
     valid = true;
@@ -149,7 +106,7 @@ void TLD::processImage(const Mat &img)
 {
     storeCurrentData();
     Mat grey_frame;
-    cvtColor(img, grey_frame, CV_BGR2GRAY);
+    cvtColor(img, grey_frame, CV_RGB2GRAY);
     currImg = grey_frame; // Store new image , right after storeCurrentData();
 
     if(trackerEnabled)
@@ -174,11 +131,8 @@ void TLD::fuseHypotheses()
     int numClusters = detectorCascade->detectionResult->numClusters;
     Rect *detectorBB = detectorCascade->detectionResult->detectorBB;
 
-    if(currBB)
-    {
-        delete currBB;
-        currBB = NULL;
-    }
+
+    currBB = NULL;
     currConf = 0;
     valid = false;
 
@@ -192,11 +146,6 @@ void TLD::fuseHypotheses()
     if(trackerBB != NULL)
     {
         float confTracker = nnClassifier->classifyBB(currImg, trackerBB);
-        if(currBB)
-        {
-            delete currBB;
-            currBB = NULL;
-        }
 
         if(numClusters == 1 && confDetector > confTracker && tldOverlapRectRect(*trackerBB, *detectorBB) < 0.5)
         {
@@ -221,11 +170,6 @@ void TLD::fuseHypotheses()
     }
     else if(numClusters == 1)
     {
-        if(currBB)
-        {
-            delete currBB;
-            currBB = NULL;
-        }
         currBB = tldCopyRect(detectorBB);
         currConf = confDetector;
     }
@@ -365,7 +309,7 @@ void TLD::learn()
 
         if(overlap[i] < 0.2)
         {
-            if(!detectorCascade->ensembleClassifier->enabled || detectionResult->posteriors[i] > 0.5)   //Should be 0.5 according to the paper
+            if(!detectorCascade->ensembleClassifier->enabled || detectionResult->posteriors[i] > 0.1)   //TODO: Shouldn't this read as 0.5?
             {
                 negativeIndices.push_back(i);
             }
@@ -657,7 +601,6 @@ void TLD::readFromFile(const char *path)
 
     ec->initFeatureOffsets();
 
-    fclose(file);
 }
 
 

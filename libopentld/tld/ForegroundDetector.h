@@ -29,18 +29,20 @@
 
 #include <vector>
 
-#include <opencv/cv.hpp>
+#include <opencv/cv.h>
 
 #include "DetectionResult.h"
 
 namespace tld
 {
 
+using namespace std;
+
 class ForegroundDetector
 {
 public:
     int fgThreshold;
-    int minBlobSize;
+    double minArea;
     cv::Mat bgImg;
     DetectionResult *detectionResult;
 

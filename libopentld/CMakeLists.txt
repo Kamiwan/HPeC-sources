@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 2.8.3)
 project(libopentld)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
-add_definitions(-std=c++11 -fPIC)
+add_definitions(-std=c++11 -fPIC -g -O0)
 #add_definitions(-std=c++11 -O3 -mcpu=cortex-a9 -mfloat-abi=hard -ffast-math -mfpu=neon -ftree-vectorize)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS)
-find_package(OpenCV REQUIRED)
+#find_package(OpenCV REQUIRED)
 
 SET(CMAKE_CXX_FLAGS " -I/usr/local/include ")
 set (CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} ")
@@ -28,7 +28,6 @@ catkin_package(CATKIN_DEPENDS)
 include_directories(${catkin_INCLUDE_DIRS}
     mftracker
     tld
-    3rdparty/cvblobs
     ${OpenCV_INCLUDE_DIRS}
 )
 
@@ -50,12 +49,6 @@ add_library(${PROJECT_NAME} SHARED
     tld/TLD.cpp
     tld/TLDUtil.cpp
     tld/VarianceFilter.cpp
-    3rdparty/cvblobs/blob.cpp
-    3rdparty/cvblobs/BlobContour.cpp
-    3rdparty/cvblobs/BlobOperators.cpp
-    3rdparty/cvblobs/BlobProperties.cpp
-    3rdparty/cvblobs/BlobResult.cpp
-    3rdparty/cvblobs/ComponentLabeling.cpp
     mftracker/BB.h
     mftracker/BBPredict.h
     mftracker/FBTrack.h
@@ -73,13 +66,7 @@ add_library(${PROJECT_NAME} SHARED
     tld/TLD.h
     tld/TLDUtil.h
     tld/VarianceFilter.h
-    3rdparty/cvblobs/blob.h
-    3rdparty/cvblobs/BlobContour.h
-    3rdparty/cvblobs/BlobLibraryConfiguration.h
-    3rdparty/cvblobs/BlobOperators.h
-    3rdparty/cvblobs/BlobProperties.h
-    3rdparty/cvblobs/BlobResult.h
-    3rdparty/cvblobs/ComponentLabeling.h)
+)
 
 target_link_libraries(libopentld ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
