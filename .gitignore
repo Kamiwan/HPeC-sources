@@ -1,4 +1,4 @@
-# Ignore the global catkin CMake
+# Ignore the global catkin CMakeLists.txt
 CMakeLists.txt
 
 # Ignore the folder of Visual Studio Code project
