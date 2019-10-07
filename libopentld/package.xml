@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>OpenTLD</name>
+  <name>opentld</name>
   <version>0.0.0</version>
   <description>The libopentld package</description>
 

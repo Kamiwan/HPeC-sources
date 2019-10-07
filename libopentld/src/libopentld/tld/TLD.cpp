@@ -106,7 +106,17 @@ void TLD::processImage(const Mat &img)
 {
     storeCurrentData();
     Mat grey_frame;
-    cvtColor(img, grey_frame, CV_RGB2GRAY);
+    
+    if(img.channels() >=3)
+    {
+        cvtColor(img, grey_frame, CV_RGB2GRAY);
+        std::cout << "Mat input is a color img" << std::endl;
+    } else
+    {
+        grey_frame = img;
+        std::cout << "Mat input is Grayscale" << std::endl;
+    }
+
     currImg = grey_frame; // Store new image , right after storeCurrentData();
 
     if(trackerEnabled)

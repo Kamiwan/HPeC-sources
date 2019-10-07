@@ -292,8 +292,10 @@ void Main::imageReceivedCB(const sensor_msgs::ImageConstPtr &msg)
     try
     {
         if (enc::isColor(msg->encoding))
+        {
             img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::RGB8);
-        else
+            cv::cvtColor(img_buffer_ptr->image, img_buffer_ptr->image, CV_BGR2GRAY);
+        } else
         {
             img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::MONO8);
             std::cout << "imageReceivedCB cvtColor, cols = " << img_buffer_ptr->image.cols << " ; rows = " << img_buffer_ptr->image.rows  << " ; nb channels = " << img_buffer_ptr->image.dims << std::endl;
@@ -323,17 +325,18 @@ void Main::hpecImageReceivedCB(const sensor_msgs::ImageConstPtr &msg)
             try
             {
                 if (enc::isColor(msg->encoding))
+                {
                     img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::RGB8);
-                else
+                    std::cout << "HIL hpec color picture, cols = " << img_buffer_ptr->image.cols << " ; rows = " << img_buffer_ptr->image.rows  << " ; nb channels = " << img_buffer_ptr->image.dims << std::endl;
+                    cv::cvtColor(img_buffer_ptr->image, img_buffer_ptr->image, CV_BGR2GRAY);
+                } else
                 {
                     img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::MONO8);
-                    std::cout << "HIL SPECIAL hpecImageReceivedCB cvtColor, cols = " << img_buffer_ptr->image.cols << " ; rows = " << img_buffer_ptr->image.rows  << " ; nb channels = " << img_buffer_ptr->image.dims << std::endl;
-                    cv::cvtColor(img_buffer_ptr->image, img_buffer_ptr->image, CV_GRAY2BGR);
+                    std::cout << "HIL hpec grey picture, cols = " << img_buffer_ptr->image.cols << " ; rows = " << img_buffer_ptr->image.rows  << " ; nb channels = " << img_buffer_ptr->image.dims << std::endl;
                 }
 
                 if(img_buffer_ptr->image.cols > 0 && 
-                    img_buffer_ptr->image.rows > 0 && 
-                    img_buffer_ptr->image.dims == 2 )
+                    img_buffer_ptr->image.rows > 0 )
                 {
                     imcpy_start = clock();
                     picture = new cv::Mat(img_buffer_ptr->image);
@@ -343,9 +346,10 @@ void Main::hpecImageReceivedCB(const sensor_msgs::ImageConstPtr &msg)
                     img_buffer_ptr.reset();
 
                     std::cout << "HIL hpecImageReceivedCB cvtColor, cols = " << img.cols << " ; rows = " << img.rows  << " ; nb channels = " << img.dims << std::endl;
-                    if (img.rows > 0 && img.cols > 0 && img.dims == 2)
+                    if (img.rows > 0 && img.cols > 0 )
                     {
-                        cv::cvtColor(img, gray, CV_BGR2GRAY);
+                        //cv::cvtColor(img, gray, CV_BGR2GRAY);
+                        gray = img;
                     } else
                     {
                         ROS_ERROR("BAD Img properties, delete current image");
@@ -353,8 +357,6 @@ void Main::hpecImageReceivedCB(const sensor_msgs::ImageConstPtr &msg)
                         picture = NULL;
                     }
                     imcpy_end = clock();
-                    std::cout << "cvtColor DONE, The error is after " << std::endl;
-                
                 } else 
                 {
                     ROS_ERROR("HIL : Bad input image from Image Callback");
@@ -375,11 +377,12 @@ void Main::hpecImageReceivedCB(const sensor_msgs::ImageConstPtr &msg)
         {
             if (enc::isColor(msg->encoding))
                 img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::RGB8);
+                std::cout << "hpec 0 copy color cvtColor, cols = " << img.cols << " ; rows = " << img.rows  << " ; nb channels = " << img.dims << std::endl;
+                cv::cvtColor(img_buffer_ptr->image, img_buffer_ptr->image, CV_BGR2GRAY);
             else
             {
                 img_buffer_ptr = cv_bridge::toCvCopy(msg, enc::MONO8);
-                std::cout << "hpecImageReceivedCB cvtColor, cols = " << img.cols << " ; rows = " << img.rows  << " ; nb channels = " << img.dims << std::endl;
-                cv::cvtColor(img_buffer_ptr->image, img_buffer_ptr->image, CV_GRAY2BGR);
+                std::cout << "hpec 0 copy grey, cols = " << img.cols << " ; rows = " << img.rows  << " ; nb channels = " << img.dims << std::endl;
             }
         }
         catch (cv_bridge::Exception &e)
@@ -397,8 +400,9 @@ void Main::hpecGetLastImageFromBuffer()
 
     img_header = img_buffer_ptr->header;
     img = img_buffer_ptr->image;
-    std::cout << "hpecGetLastImageFromBuffer cvtColor, cols = " << img.cols << " ; rows = " << img.rows  << " ; nb channels = " << img.dims << std::endl;
-    cv::cvtColor(img, gray, CV_BGR2GRAY);
+    std::cout << "hpec GetLastImageFromBuffer, cols = " << img.cols << " ; rows = " << img.rows  << " ; nb channels = " << img.dims << std::endl;
+    //cv::cvtColor(img, gray, CV_BGR2GRAY);
+    gray = img;
 
     imcpy_end = clock();
 
