@@ -31,6 +31,7 @@
 
 #include <iostream>
 #include <math.h>   // atan2
+#include <tf2/LinearMath/Quaternion.h> // to convert yaw to quaternion, see GpsMoveOrder
 
 #include "std_msgs/Int32.h"
 #include "std_msgs/Float32.h"
@@ -47,6 +48,7 @@
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/GlobalPositionTarget.h>
+#include <geographic_msgs/GeoPoseStamped.h>
 
 #include "tld_msgs/BoundingBox.h"
 #include "communication/nav_control.h"
@@ -94,7 +96,7 @@ class NavCommand
     mavros_msgs::CommandBool          arm_cmd_;
     mavros_msgs::CommandTOL           takeoff_cmd_;
     mavros_msgs::CommandTOL           landing_cmd_;
-    mavros_msgs::GlobalPositionTarget next_gps_position_;
+    geographic_msgs::GeoPoseStamped   next_gps_position_;
 
     // Attributes to store current and destination data
     mavros_msgs::State  current_state_;

@@ -103,7 +103,7 @@ void NavCommand::InitializePublishers()
             ("mavros/setpoint_position/local", 10);
     cmd_vel_pub_ = nh_.advertise<geometry_msgs::TwistStamped>
             ("mavros/setpoint_velocity/cmd_vel",10);
-    global_pos_pub_ = nh_.advertise<mavros_msgs::GlobalPositionTarget>
+    global_pos_pub_ = nh_.advertise<geographic_msgs::GeoPoseStamped>
             ("mavros/setpoint_position/global", 10);
 }
 
@@ -409,19 +409,26 @@ void NavCommand::TakeoffOrder(double target_altitude)
 void NavCommand::GpsMoveOrder(double target_altitude, 
         double target_latitude, double target_longitude, double yaw)
 {
-    next_gps_position_.header.stamp	= ros::Time::now();
-    next_gps_position_.header.frame_id = "fcu";
-    next_gps_position_.altitude 	= target_altitude;
-    next_gps_position_.latitude 	= target_latitude;
-    next_gps_position_.longitude 	= target_longitude;
-    next_gps_position_.yaw_rate     = 1;
+    next_gps_position_.header.stamp      = ros::Time::now();
+    next_gps_position_.header.frame_id   = "fcu";
+    next_gps_position_.pose.position.altitude    = target_altitude;
+    next_gps_position_.pose.position.latitude    = target_latitude;
+    next_gps_position_.pose.position.longitude   = target_longitude;
 
     if(yaw == kDefaultNoYaw)
         yaw = ComputeHeadingYaw(target_altitude, target_latitude, target_longitude);
+            
+    tf2::Quaternion rotation;
+    rotation.setRPY(0,0,yaw); // in radian!
+    next_gps_position_.pose.orientation.w = rotation.w();
+    next_gps_position_.pose.orientation.x = rotation.x();
+    next_gps_position_.pose.orientation.y = rotation.y();
+    next_gps_position_.pose.orientation.z = rotation.z();
 
-    next_gps_position_.yaw = yaw;
-    ROS_INFO_STREAM("Next Latitude = " << next_gps_position_.latitude << " Next Longitude = " << next_gps_position_.longitude);
-    ROS_INFO_STREAM("Next Yaw = " << next_gps_position_.yaw);
+    ROS_INFO_STREAM("Next Latitude = " << next_gps_position_.pose.position.latitude << " Next Longitude = " << next_gps_position_.pose.position.longitude);
+    ROS_INFO_STREAM("Next Yaw = " << yaw);
+    ROS_INFO_STREAM("Quaternion x = " << next_gps_position_.pose.orientation.x << " ; y = " << next_gps_position_.pose.orientation.y
+                << " ; z = " << next_gps_position_.pose.orientation.z << " ; w = " << next_gps_position_.pose.orientation.w);
 
     //Update Class Attributes
     destination_altitude_   = target_altitude;
@@ -434,14 +441,20 @@ void NavCommand::GpsMoveOrder(double target_altitude,
 
 void NavCommand::NoYawGpsMoveOrder(double target_altitude, double target_latitude, double target_longitude)
 {
-    next_gps_position_.header.stamp	= ros::Time::now();
-    next_gps_position_.header.frame_id = "fcu";
-    next_gps_position_.altitude 	= target_altitude;
-    next_gps_position_.latitude 	= target_latitude;
-    next_gps_position_.longitude 	= target_longitude;
-    next_gps_position_.yaw_rate     = 0;
+    next_gps_position_.header.stamp      = ros::Time::now();
+    next_gps_position_.header.frame_id   = "fcu";
+    next_gps_position_.pose.position.altitude    = target_altitude;
+    next_gps_position_.pose.position.latitude    = target_latitude;
+    next_gps_position_.pose.position.longitude   = target_longitude;
 
-    ROS_INFO_STREAM("Next Latitude = " << next_gps_position_.latitude << " Next Longitude = " << next_gps_position_.longitude);
+    tf2::Quaternion rotation;
+    rotation.setRPY(0,0,0); // in radian!
+    next_gps_position_.pose.orientation.w = rotation.w();
+    next_gps_position_.pose.orientation.x = rotation.x();
+    next_gps_position_.pose.orientation.y = rotation.y();
+    next_gps_position_.pose.orientation.z = rotation.z();
+
+    ROS_INFO_STREAM("Next Latitude = " << next_gps_position_.pose.position.latitude << " Next Longitude = " << next_gps_position_.pose.position.longitude);
     global_pos_pub_.publish(next_gps_position_);
 }
 
